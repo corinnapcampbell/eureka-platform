@@ -41,9 +41,13 @@ export default function SubmitIdea({ session }) {
     if (!form.problem || !form.solution) return
     setGeneratingAI(true)
     try {
-      const response = await fetch('/api/generate-profile', {
+      const response = await 
+      fetch('https://gvjtmyesrrdwkcwkusiz.supabase.co/functions/v1/generate-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+},
         body: JSON.stringify({
           title: form.title,
           problem: form.problem,
