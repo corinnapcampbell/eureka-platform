@@ -34,7 +34,7 @@ export default function Dashboard({ session }) {
         borderBottom: '0.5px solid var(--border)'
       }}>
         <span className="serif" style={{ fontSize: 20 }}>
-          Eur<span style={{ color: 'var(--gold)' }}>e</span>ka
+          eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>{session.user.email}</span>

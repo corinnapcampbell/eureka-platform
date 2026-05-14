@@ -39,7 +39,7 @@ export default function Auth() {
  
       <div onClick={() => navigate('/')} style={{ marginBottom: '2rem', cursor: 'pointer' }}>
         <span className="serif" style={{ fontSize: 24, letterSpacing: '-0.5px' }}>
-          Eur<span style={{ color: 'var(--gold)' }}>e</span>ka
+          eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
         </span>
       </div>
  

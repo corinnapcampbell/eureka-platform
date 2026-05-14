@@ -13,7 +13,7 @@ export default function Landing() {
         borderBottom: '0.5px solid var(--border)'
       }}>
         <div className="serif" style={{ fontSize: 22, letterSpacing: '-0.5px' }}>
-          Eur<span style={{ color: 'var(--gold)' }}>e</span>ka
+          eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button onClick={() => navigate('/auth')} style={{
@@ -36,7 +36,7 @@ export default function Landing() {
         </div>
  
         <h1 className="serif animate-fadeUp" style={{ fontSize: 56, lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: '1.25rem', animationDelay: '0.1s' }}>
-          Store, protect, and<br />present your ideas<br /><em style={{ color: 'var(--gold)' }}>beautifully.</em>
+          Store, protect, and<br />share your ideas at<br /><em style={{ color: 'var(--gold)' }}>myeurekaidea.com</em>
         </h1>
  
         <p className="animate-fadeUp" style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 480, marginBottom: '2.5rem', animationDelay: '0.2s' }}>

@@ -62,7 +62,7 @@ export default function SharedIdea() {
  
       <div className="animate-fadeUp" style={{ maxWidth: 480, width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <span className="serif" style={{ fontSize: 22 }}>Eur<span style={{ color: 'var(--gold)' }}>e</span>ka</span>
+          <span className="serif" style={{ fontSize: 22 }}>eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea</span>
         </div>
  
         <div style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 16, padding: '2.5rem' }}>
@@ -105,7 +105,7 @@ export default function SharedIdea() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
       <nav style={{ maxWidth: 800, margin: '0 auto', padding: '1.5rem 2rem', borderBottom: '0.5px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span className="serif" style={{ fontSize: 20 }}>Eur<span style={{ color: 'var(--gold)' }}>e</span>ka</span>
+        <span className="serif" style={{ fontSize: 20 }}>eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea</span>
         <div style={{ fontSize: 12, color: 'var(--muted)', background: 'var(--gold-light)', borderRadius: 20, padding: '4px 12px' }}>
           🔒 NDA accepted · access logged
         </div>
@@ -143,7 +143,7 @@ export default function SharedIdea() {
  
         <div style={{ background: 'var(--ink)', borderRadius: 14, padding: '1.5rem 2rem', textAlign: 'center' }}>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
-            Interested in this idea? Contact the creator through Eureka.<br />
+            Interested in this idea? Contact the creator through eurekAIdea.<br />
             <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>This idea is protected. Your access has been logged.</span>
           </p>
         </div>

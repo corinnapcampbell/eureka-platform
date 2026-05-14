@@ -104,7 +104,7 @@ export default function SubmitIdea({ session }) {
       <div style={{ background: 'var(--ink)', padding: '0' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span className="serif" style={{ fontSize: 20, color: '#fff' }}>
-            Eur<span style={{ color: 'var(--gold-mid)' }}>e</span>ka
+            eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
           </span>
           <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>← Back to vault</button>
         </div>

@@ -78,7 +78,7 @@ export default function IdeaDetail({ session }) {
         borderBottom: '0.5px solid var(--border)'
       }}>
         <span className="serif" style={{ fontSize: 20 }}>
-          Eur<span style={{ color: 'var(--gold)' }}>e</span>ka
+          eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
         </span>
         <button onClick={() => navigate('/dashboard')} style={btnSecondary}>← Back to vault</button>
       </nav>
