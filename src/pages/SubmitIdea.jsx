@@ -41,20 +41,19 @@ export default function SubmitIdea({ session }) {
     if (!form.problem || !form.solution) return
     setGeneratingAI(true)
     try {
-      const response = await 
-      fetch('https://gvjtmyesrrdwkcwkusiz.supabase.co/functions/v1/generate-profile', {
+      const response = await fetch('https://gvjtmyesrrdwkcwkusiz.supabase.co/functions/v1/generate-profile', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-},
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
         body: JSON.stringify({
           title: form.title,
           problem: form.problem,
           solution: form.solution,
           target_audience: form.target_audience,
-          market_size: form.market_size
-        })
+          market_size: form.market_size,
+        }),
       })
       const data = await response.json()
       update('ai_profile', data.profile || '')
