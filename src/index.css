@@ -3,9 +3,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
  
 :root {
-  --gold: #BA7517;
-  --gold-light: #FAEEDA;
-  --gold-mid: #EF9F27;
+  --gold: #3B5273;
+  --gold-light: #EBF0F7;
+  --gold-mid: #4A6491;
   --ink: #2C2C2A;
   --muted: #888780;
   --border: rgba(44,44,42,0.12);
