@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router-dom'
+
 const PRIVACY_HTML = `
 <style>
   .pp h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #2C2C2A; }
@@ -141,10 +143,20 @@ const PRIVACY_HTML = `
 `
 
 export default function PrivacyPolicy() {
+  const navigate = useNavigate()
   return (
-    <div
-      style={{ backgroundColor: '#fff', maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}
-      dangerouslySetInnerHTML={{ __html: PRIVACY_HTML }}
-    />
+    <div style={{ backgroundColor: '#fff', maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}>
+      <button
+        onClick={() => navigate('/')}
+        style={{
+          background: '#2C2C2A', color: '#fff', border: 'none',
+          borderRadius: 8, padding: '10px 20px', fontSize: 14,
+          fontWeight: 500, cursor: 'pointer', marginBottom: 24,
+        }}
+      >
+        ← Back to eurekAIdea
+      </button>
+      <div dangerouslySetInnerHTML={{ __html: PRIVACY_HTML }} />
+    </div>
   )
 }
