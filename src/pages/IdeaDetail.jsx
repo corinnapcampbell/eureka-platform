@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
+import Logo from '../components/Logo'
  
 export default function IdeaDetail({ session }) {
   const { id } = useParams()
@@ -77,9 +78,7 @@ export default function IdeaDetail({ session }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '0.5px solid var(--border)'
       }}>
-        <span className="serif" style={{ fontSize: 20 }}>
-          eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
-        </span>
+        <Logo size={20} />
         <button onClick={() => navigate('/dashboard')} style={btnSecondary}>← Back to vault</button>
       </nav>
  

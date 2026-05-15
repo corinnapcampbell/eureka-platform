@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
+import Logo from '../components/Logo'
  
 export default function Dashboard({ session }) {
   const [ideas, setIdeas] = useState([])
@@ -33,9 +34,7 @@ export default function Dashboard({ session }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '0.5px solid var(--border)'
       }}>
-        <span className="serif" style={{ fontSize: 20 }}>
-          eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
-        </span>
+        <Logo size={20} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>{session.user.email}</span>
           <button onClick={signOut} style={{

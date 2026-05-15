@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
+import Logo from '../components/Logo'
  
 export default function SharedIdea() {
   const { token } = useParams()
@@ -62,7 +63,7 @@ export default function SharedIdea() {
  
       <div className="animate-fadeUp" style={{ maxWidth: 480, width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <span className="serif" style={{ fontSize: 22 }}>eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea</span>
+          <Logo size={22} />
         </div>
  
         <div style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 16, padding: '2.5rem' }}>
@@ -105,7 +106,7 @@ export default function SharedIdea() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
       <nav style={{ maxWidth: 800, margin: '0 auto', padding: '1.5rem 2rem', borderBottom: '0.5px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span className="serif" style={{ fontSize: 20 }}>eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea</span>
+        <Logo size={20} />
         <div style={{ fontSize: 12, color: 'var(--muted)', background: 'var(--gold-light)', borderRadius: 20, padding: '4px 12px' }}>
           🔒 NDA accepted · access logged
         </div>

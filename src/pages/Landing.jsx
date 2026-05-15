@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import Logo from '../components/Logo'
  
 export default function Landing() {
   const navigate = useNavigate()
@@ -12,9 +13,7 @@ export default function Landing() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '0.5px solid var(--border)'
       }}>
-        <div className="serif" style={{ fontSize: 22, letterSpacing: '-0.5px' }}>
-          eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
-        </div>
+        <Logo size={22} />
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button onClick={() => navigate('/auth')} style={{
             background: 'none', border: '0.5px solid var(--border)',
@@ -82,7 +81,7 @@ export default function Landing() {
  
       {/* Footer */}
       <div style={{ borderTop: '0.5px solid var(--border)', padding: '2rem', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-        © {new Date().getFullYear()} Eureka. All rights reserved.
+        © {new Date().getFullYear()} <Logo size={13} /> All rights reserved.
       </div>
     </div>
   )

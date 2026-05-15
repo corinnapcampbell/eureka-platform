@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase'
+import Logo from '../components/Logo'
  
 export default function Auth() {
   const [searchParams] = useSearchParams()
@@ -38,9 +39,7 @@ export default function Auth() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'var(--surface)' }}>
  
       <div onClick={() => navigate('/')} style={{ marginBottom: '2rem', cursor: 'pointer' }}>
-        <span className="serif" style={{ fontSize: 24, letterSpacing: '-0.5px' }}>
-          eureka<span style={{ color: 'var(--gold-mid)' }}>AI</span>dea
-        </span>
+        <Logo size={24} />
       </div>
  
       <div className="animate-fadeUp" style={{
