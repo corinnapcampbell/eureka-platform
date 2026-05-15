@@ -12,12 +12,13 @@ export default function SharedIdea() {
  
   useEffect(() => {
     async function fetchLink() {
-      const { data: link } = await supabase
+      const { data: link, error } = await supabase
         .from('shared_links')
         .select('*, ideas(*)')
         .eq('token', token)
-        .single()
- 
+        .maybeSingle()
+
+      if (error) console.error('shared_links fetch error:', error.message, error.code)
       if (!link || !link.ideas) {
         setStage('error')
         return
@@ -33,12 +34,13 @@ export default function SharedIdea() {
     setAccepting(true)
  
     // Log access
-    await supabase.from('idea_access_log').insert({
+    const { error: logError } = await supabase.from('idea_access_log').insert({
       idea_id: idea.id,
       viewer_email: email,
       viewer_ip: 'logged',
       nda_accepted: true,
     })
+    if (logError) console.error('idea_access_log insert error:', logError.message, logError.code)
  
     setStage('idea')
     setAccepting(false)
