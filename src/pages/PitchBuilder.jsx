@@ -288,9 +288,14 @@ export default function PitchBuilder({ session }) {
       <div style={{ background: 'var(--ink)' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Logo size={20} />
-          <button onClick={() => navigate(`/idea/${ideaId}`)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer' }}>
-            ← Back to idea
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={() => navigate(`/deck/${ideaId}`)} style={{ background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: '#7b9ff7', cursor: 'pointer' }}>
+              Build Deck →
+            </button>
+            <button onClick={() => navigate(`/idea/${ideaId}`)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer' }}>
+              ← Back to idea
+            </button>
+          </div>
         </div>
       </div>
 

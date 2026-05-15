@@ -185,7 +185,7 @@ export default function IdeaDetail({ session }) {
         )}
  
         {/* Build Pitch CTA */}
-        <div style={{ background: 'var(--gold-light)', border: '0.5px solid var(--gold)', borderRadius: 14, padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ background: 'var(--gold-light)', border: '0.5px solid var(--gold)', borderRadius: 14, padding: '1.5rem 2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
           <div>
             <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold)', marginBottom: '0.25rem' }}>Turn this into an investor pitch</p>
             <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>Build a branded presentation and export it as a PDF — ready to share with investors or co-founders.</p>
@@ -195,6 +195,20 @@ export default function IdeaDetail({ session }) {
             borderRadius: 8, padding: '10px 22px', fontSize: 13, fontWeight: 500, flexShrink: 0, cursor: 'pointer',
           }}>
             Build Pitch →
+          </button>
+        </div>
+
+        {/* Pitch Deck CTA */}
+        <div style={{ background: '#0e0e1f', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 14, padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#7b9ff7', marginBottom: '0.25rem' }}>Build a visual pitch deck</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>8-slide deck with cover, problem, solution, market, business model, advantage, roadmap, and closing. Share publicly or present live.</p>
+          </div>
+          <button onClick={() => navigate(`/deck/${id}`)} style={{
+            background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', color: '#fff', border: 'none',
+            borderRadius: 8, padding: '10px 22px', fontSize: 13, fontWeight: 500, flexShrink: 0, cursor: 'pointer',
+          }}>
+            Build Pitch Deck →
           </button>
         </div>
 

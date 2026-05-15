@@ -10,6 +10,8 @@ import SharedIdea from './pages/SharedIdea'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import Terms from './pages/Terms'
 import PitchBuilder from './pages/PitchBuilder'
+import DeckBuilder from './pages/DeckBuilder'
+import DeckViewer from './pages/DeckViewer'
  
 function ProtectedRoute({ session, children }) {
   if (!session) return <Navigate to="/auth" replace />
@@ -57,9 +59,15 @@ export default function App() {
         </ProtectedRoute>
       } />
       <Route path="/share/:token" element={<SharedIdea />} />
+      <Route path="/deck/view/:shareToken" element={<DeckViewer />} />
       <Route path="/pitch/:ideaId" element={
         <ProtectedRoute session={session}>
           <PitchBuilder session={session} />
+        </ProtectedRoute>
+      } />
+      <Route path="/deck/:ideaId" element={
+        <ProtectedRoute session={session}>
+          <DeckBuilder session={session} />
         </ProtectedRoute>
       } />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
