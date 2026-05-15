@@ -8,6 +8,7 @@ import SubmitIdea from './pages/SubmitIdea'
 import IdeaDetail from './pages/IdeaDetail'
 import SharedIdea from './pages/SharedIdea'
 import PrivacyPolicy from './pages/PrivacyPolicy'
+import Terms from './pages/Terms'
  
 function ProtectedRoute({ session, children }) {
   if (!session) return <Navigate to="/auth" replace />
@@ -56,6 +57,7 @@ export default function App() {
       } />
       <Route path="/share/:token" element={<SharedIdea />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

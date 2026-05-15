@@ -81,7 +81,13 @@ export default function Landing() {
  
       {/* Footer */}
       <div style={{ borderTop: '0.5px solid var(--border)', padding: '2rem', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
-        © {new Date().getFullYear()} <Logo size={13} /> All rights reserved.
+        <div style={{ marginBottom: '0.5rem' }}>
+          © {new Date().getFullYear()} <Logo size={13} dark /> All rights reserved.
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
+          <a href="/privacy-policy" style={{ color: 'var(--muted)', textDecoration: 'none' }}>Privacy Policy</a>
+          <a href="/terms" style={{ color: 'var(--muted)', textDecoration: 'none' }}>Terms of Use</a>
+        </div>
       </div>
     </div>
   )
