@@ -13,7 +13,7 @@ export default function Landing() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '0.5px solid var(--border)'
       }}>
-        <Logo size={22} />
+        <Logo size={22} dark />
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button onClick={() => navigate('/auth')} style={{
             background: 'none', border: '0.5px solid var(--border)',

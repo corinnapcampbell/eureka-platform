@@ -39,7 +39,7 @@ export default function Auth() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'var(--surface)' }}>
  
       <div onClick={() => navigate('/')} style={{ marginBottom: '2rem', cursor: 'pointer' }}>
-        <Logo size={24} />
+        <Logo size={24} dark />
       </div>
  
       <div className="animate-fadeUp" style={{
