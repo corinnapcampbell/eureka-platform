@@ -87,21 +87,15 @@ export default function PitchBuilder({ session }) {
   async function getSuggestion(sectionKey) {
     setLoadingSuggestion(l => ({ ...l, [sectionKey]: true }))
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pitch-section`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            section: sectionKey,
-            idea_title: idea?.title,
-            ...Object.fromEntries(SECTIONS.map(s => [s.key, pitchRef.current[s.key]])),
-          }),
-        }
-      )
+      const res = await fetch('/api/functions/generate-pitch-section', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section_name: sectionKey,
+          existing_sections: pitchRef.current,
+          idea_context: { title: idea?.title },
+        }),
+      })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const { suggestion } = await res.json()
       setSuggestions(s => ({ ...s, [sectionKey]: suggestion || '' }))
