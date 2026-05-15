@@ -35,7 +35,7 @@ export default function Landing() {
         </div>
  
         <h1 className="serif animate-fadeUp" style={{ fontSize: 56, lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: '1.25rem', animationDelay: '0.1s' }}>
-          Store, protect, and<br />share your ideas at<br /><em style={{ color: 'var(--gold)' }}>myeurekaidea.com</em>
+          Store, protect, share<br />and present your ideas<br /><em style={{ color: 'var(--gold)' }}>to the world</em>
         </h1>
  
         <p className="animate-fadeUp" style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 480, marginBottom: '2.5rem', animationDelay: '0.2s' }}>
@@ -59,7 +59,7 @@ export default function Landing() {
           <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '1rem' }}>Your idea is safe here</p>
           <h2 className="serif" style={{ fontSize: 32, marginBottom: '1.5rem', maxWidth: 500 }}>Three layers of protection, automatic.</h2>
  
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', marginBottom: '2rem' }}>
+          <div className="feature-cards">
             {[
               { icon: '⬡', title: 'Blockchain timestamp', desc: 'A cryptographic fingerprint of your idea is anchored to the blockchain the moment you submit — permanent, immutable, and independently verifiable.' },
               { icon: '◎', title: 'NDA-gated sharing', desc: 'Anyone you share with must confirm NDA terms before seeing a single word. Every viewer is logged with their identity, timestamp, and IP address.' },

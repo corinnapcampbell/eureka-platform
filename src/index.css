@@ -53,6 +53,16 @@ input, textarea, select { font-family: 'DM Sans', sans-serif; }
  
 .animate-fadeUp  { animation: fadeUp 0.5s ease both; }
 .animate-fadeIn  { animation: fadeIn 0.4s ease both; }
+
+.feature-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+@media (min-width: 640px) {
+  .feature-cards { grid-template-columns: repeat(3, 1fr); }
+}
  
 .spinner {
   width: 20px; height: 20px;
