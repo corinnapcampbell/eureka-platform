@@ -10,6 +10,7 @@ export default function SubmitIdea({ session }) {
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [generatingAI, setGeneratingAI] = useState(false)
+  const [submitted, setSubmitted] = useState(null)
 
   const [form, setForm] = useState({
     title: '',
@@ -91,6 +92,7 @@ export default function SubmitIdea({ session }) {
       problem: form.problem,
       solution: form.solution,
       terms: form.what_looking_for.join(', '),
+      asking_price: form.asking_price,
       pricing_model: form.pricing_model,
       visibility: form.visibility,
       ai_profile: form.ai_profile,
@@ -98,10 +100,38 @@ export default function SubmitIdea({ session }) {
     }).select().single()
 
     setSaving(false)
-    if (!error && data) navigate(`/idea/${data.id}`)
+    if (!error && data) setSubmitted(data)
   }
 
   const steps = ['Basics', 'Problem & Solution', 'Your Terms', 'Review']
+
+  if (submitted) return (
+    <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
+      <div style={{ background: 'var(--ink)', padding: '0' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 2rem' }}>
+          <Logo size={20} />
+        </div>
+      </div>
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '5rem 2rem', textAlign: 'center' }}>
+        <div style={{ fontSize: 44, marginBottom: '1.5rem' }}>⬡</div>
+        <h2 className="serif" style={{ fontSize: 36, marginBottom: '0.75rem' }}>Your idea is protected!</h2>
+        <p style={{ color: 'var(--muted)', fontSize: 16, lineHeight: 1.7, marginBottom: '2.5rem' }}>
+          A cryptographic timestamp has been created. Your idea is sealed in the vault.
+        </p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => navigate(`/idea/${submitted.id}`)} style={{
+            background: 'var(--ink)', color: '#fff', border: 'none',
+            borderRadius: 8, padding: '12px 28px', fontSize: 14, fontWeight: 500,
+          }}>View your idea →</button>
+          <button onClick={() => navigate(`/pitch/${submitted.id}`)} style={{
+            background: 'var(--gold-light)', color: 'var(--gold)',
+            border: '0.5px solid var(--gold)',
+            borderRadius: 8, padding: '12px 28px', fontSize: 14, fontWeight: 500,
+          }}>✨ Build Your Pitch</button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>

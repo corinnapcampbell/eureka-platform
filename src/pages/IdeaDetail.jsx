@@ -12,7 +12,10 @@ export default function IdeaDetail({ session }) {
   const [generatingLink, setGeneratingLink] = useState(false)
   const [copied, setCopied] = useState(false)
   const [deleting, setDeleting] = useState(false)
- 
+  const [editing, setEditing] = useState(false)
+  const [editForm, setEditForm] = useState(null)
+  const [editSaving, setEditSaving] = useState(false)
+
   useEffect(() => {
     async function fetchIdea() {
       const { data } = await supabase
@@ -21,6 +24,17 @@ export default function IdeaDetail({ session }) {
         .eq('id', id)
         .single()
       setIdea(data)
+      if (data) setEditForm({
+        title: data.title || '',
+        category: data.category || [],
+        target_audience: data.target_audience || '',
+        market_size: data.market_size || '',
+        problem: data.problem || '',
+        solution: data.solution || '',
+        what_looking_for: data.terms ? data.terms.split(', ').filter(Boolean) : [],
+        asking_price: data.asking_price || '',
+        pricing_model: data.pricing_model || 'One-time buyout',
+      })
       setLoading(false)
     }
     fetchIdea()
@@ -47,6 +61,40 @@ export default function IdeaDetail({ session }) {
     setTimeout(() => setCopied(false), 2000)
   }
  
+  async function saveEdit() {
+    setEditSaving(true)
+    const { data } = await supabase.from('ideas').update({
+      title:           editForm.title,
+      category:        editForm.category,
+      target_audience: editForm.target_audience,
+      market_size:     editForm.market_size,
+      problem:         editForm.problem,
+      solution:        editForm.solution,
+      terms:           editForm.what_looking_for.join(', '),
+      asking_price:    editForm.asking_price,
+      pricing_model:   editForm.pricing_model,
+    }).eq('id', id).select().single()
+    if (data) setIdea(data)
+    setEditSaving(false)
+    setEditing(false)
+  }
+
+  function toggleEditCategory(c) {
+    setEditForm(f => ({
+      ...f,
+      category: f.category.includes(c) ? f.category.filter(v => v !== c) : [...f.category, c],
+    }))
+  }
+
+  function toggleEditLookingFor(o) {
+    setEditForm(f => ({
+      ...f,
+      what_looking_for: f.what_looking_for.includes(o)
+        ? f.what_looking_for.filter(v => v !== o)
+        : [...f.what_looking_for, o],
+    }))
+  }
+
   async function deleteIdea() {
     if (!window.confirm('Are you sure you want to delete this idea? This cannot be undone.')) return
     setDeleting(true)
@@ -79,7 +127,10 @@ export default function IdeaDetail({ session }) {
         borderBottom: '0.5px solid var(--border)'
       }}>
         <Logo size={20} />
-        <button onClick={() => navigate('/dashboard')} style={btnSecondary}>← Back to vault</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setEditing(true)} style={btnSecondary}>Edit idea</button>
+          <button onClick={() => navigate('/dashboard')} style={btnSecondary}>← Back to vault</button>
+        </div>
       </nav>
  
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '3rem 2rem' }}>
@@ -133,6 +184,20 @@ export default function IdeaDetail({ session }) {
           </div>
         )}
  
+        {/* Build Pitch CTA */}
+        <div style={{ background: 'var(--gold-light)', border: '0.5px solid var(--gold)', borderRadius: 14, padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold)', marginBottom: '0.25rem' }}>Turn this into an investor pitch</p>
+            <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>Build a branded presentation and export it as a PDF — ready to share with investors or co-founders.</p>
+          </div>
+          <button onClick={() => navigate(`/pitch/${id}`)} style={{
+            background: 'var(--gold)', color: '#fff', border: 'none',
+            borderRadius: 8, padding: '10px 22px', fontSize: 13, fontWeight: 500, flexShrink: 0, cursor: 'pointer',
+          }}>
+            Build Pitch →
+          </button>
+        </div>
+
         {/* Share section */}
         <div style={{ background: 'var(--ink)', borderRadius: 14, padding: '2rem', marginBottom: '1.5rem' }}>
           <h3 className="serif" style={{ fontSize: 22, color: '#fff', marginBottom: '0.5rem' }}>Share this idea</h3>
@@ -173,10 +238,116 @@ export default function IdeaDetail({ session }) {
           </button>
         </div>
       </div>
+
+      {/* Edit Idea modal */}
+      {editing && editForm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '2rem 1rem' }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 680, padding: '2rem', margin: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 className="serif" style={{ fontSize: 24 }}>Edit idea</h2>
+              <button onClick={() => setEditing(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--muted)', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <EditField label="Title">
+              <input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} style={editInputStyle} />
+            </EditField>
+
+            <EditField label="Category">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['SaaS','Marketplace','FinTech','HealthTech','EdTech','AI / ML','Hardware','Consumer','B2B','Sustainability','Other'].map(c => (
+                  <button key={c} onClick={() => toggleEditCategory(c)} style={{
+                    fontSize: 13, borderRadius: 6, padding: '6px 13px', border: '0.5px solid',
+                    borderColor: editForm.category.includes(c) ? 'var(--gold)' : 'var(--border)',
+                    background: editForm.category.includes(c) ? 'var(--gold-light)' : 'transparent',
+                    color: editForm.category.includes(c) ? 'var(--gold)' : 'var(--muted)', cursor: 'pointer',
+                  }}>{c}</button>
+                ))}
+              </div>
+            </EditField>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <EditField label="Target audience">
+                <input value={editForm.target_audience} onChange={e => setEditForm(f => ({ ...f, target_audience: e.target.value }))} style={editInputStyle} />
+              </EditField>
+              <EditField label="Market size">
+                <select value={editForm.market_size} onChange={e => setEditForm(f => ({ ...f, market_size: e.target.value }))} style={editInputStyle}>
+                  <option value="">Select range</option>
+                  <option>Niche (&lt; $10M)</option>
+                  <option>Small ($10M–$100M)</option>
+                  <option>Medium ($100M–$1B)</option>
+                  <option>Large ($1B+)</option>
+                  <option>Not sure</option>
+                </select>
+              </EditField>
+            </div>
+
+            <EditField label="Problem">
+              <textarea value={editForm.problem} onChange={e => setEditForm(f => ({ ...f, problem: e.target.value }))} rows={4} style={{ ...editInputStyle, resize: 'vertical' }} />
+            </EditField>
+
+            <EditField label="Solution">
+              <textarea value={editForm.solution} onChange={e => setEditForm(f => ({ ...f, solution: e.target.value }))} rows={4} style={{ ...editInputStyle, resize: 'vertical' }} />
+            </EditField>
+
+            <EditField label="What are you looking for?">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['Sell / License','Find a co-founder','Find investors','Open to offers','Just storing for now'].map(o => (
+                  <button key={o} onClick={() => toggleEditLookingFor(o)} style={{
+                    fontSize: 13, borderRadius: 6, padding: '6px 13px', border: '0.5px solid',
+                    borderColor: editForm.what_looking_for.includes(o) ? 'var(--gold)' : 'var(--border)',
+                    background: editForm.what_looking_for.includes(o) ? 'var(--gold-light)' : 'transparent',
+                    color: editForm.what_looking_for.includes(o) ? 'var(--gold)' : 'var(--muted)', cursor: 'pointer',
+                  }}>{o}</button>
+                ))}
+              </div>
+            </EditField>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <EditField label="Asking price">
+                <input value={editForm.asking_price} onChange={e => setEditForm(f => ({ ...f, asking_price: e.target.value }))} placeholder="e.g. $5,000 or negotiable" style={editInputStyle} />
+              </EditField>
+              <EditField label="Deal structure">
+                <select value={editForm.pricing_model} onChange={e => setEditForm(f => ({ ...f, pricing_model: e.target.value }))} style={editInputStyle}>
+                  <option>One-time buyout</option>
+                  <option>Revenue share</option>
+                  <option>Monthly license</option>
+                  <option>Equity stake</option>
+                  <option>Negotiable</option>
+                </select>
+              </EditField>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '0.5px solid var(--border)' }}>
+              <button onClick={() => setEditing(false)} style={{ background: 'none', border: '0.5px solid var(--border)', borderRadius: 8, padding: '10px 20px', fontSize: 14, color: 'var(--muted)', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={saveEdit} disabled={editSaving} style={{ background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 500, opacity: editSaving ? 0.6 : 1, cursor: 'pointer' }}>
+                {editSaving ? 'Saving...' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
- 
+
+function EditField({ label, children }) {
+  return (
+    <div style={{ marginBottom: '1.25rem' }}>
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{label}</label>
+      {children}
+    </div>
+  )
+}
+
+const editInputStyle = {
+  width: '100%', border: '0.5px solid var(--border)', borderRadius: 8,
+  padding: '10px 14px', fontSize: 14, color: 'var(--ink)',
+  background: 'var(--surface)', outline: 'none', lineHeight: 1.5,
+  boxSizing: 'border-box', fontFamily: 'inherit',
+}
+
 function Section({ title, content }) {
   return (
     <div style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '1.25rem 1.5rem' }}>

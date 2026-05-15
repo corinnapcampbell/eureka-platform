@@ -9,6 +9,7 @@ import IdeaDetail from './pages/IdeaDetail'
 import SharedIdea from './pages/SharedIdea'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import Terms from './pages/Terms'
+import PitchBuilder from './pages/PitchBuilder'
  
 function ProtectedRoute({ session, children }) {
   if (!session) return <Navigate to="/auth" replace />
@@ -56,6 +57,11 @@ export default function App() {
         </ProtectedRoute>
       } />
       <Route path="/share/:token" element={<SharedIdea />} />
+      <Route path="/pitch/:ideaId" element={
+        <ProtectedRoute session={session}>
+          <PitchBuilder session={session} />
+        </ProtectedRoute>
+      } />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" replace />} />
