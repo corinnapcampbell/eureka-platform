@@ -2,7 +2,18 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
-import { generateIdeaPDF, dedupeArray, hasMultipleSteps } from '../utils/generatePDF'
+import { generateIdeaPDF, dedupeArray } from '../utils/generatePDF'
+
+function splitHowItWorks(text) {
+  if (!text?.trim()) return []
+  const numMatches = [...text.matchAll(/(?:^|\n)\s*\d+[.)]\s*([^\n]+)/g)]
+  if (numMatches.length >= 2) return numMatches.map(m => m[1].trim()).filter(Boolean)
+  const lines = text.split(/\n+/).map(l => l.replace(/^[-•*\d.)\s]+/, '').trim()).filter(l => l.length > 4)
+  if (lines.length >= 2) return lines
+  const sentences = text.split(/(?<=[.!?])\s+(?=[A-Z])/).map(s => s.trim()).filter(s => s.length > 10)
+  if (sentences.length >= 2) return sentences
+  return [text.trim()]
+}
 
 export default function SharedIdea() {
   const { token } = useParams()
@@ -293,21 +304,24 @@ export default function SharedIdea() {
           </div>
         )}
 
-        {/* Card 3: How It Works — numbered circles only when genuinely multi-step */}
-        {idea.how_it_works && (
-          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>How It Works</p>
-            {hasMultipleSteps(idea.how_it_works)
-              ? idea.how_it_works.split('\n').filter(Boolean).map((step, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
-                    <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 2 }}>{step}</p>
-                  </div>
-                ))
-              : <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.how_it_works}</p>
-            }
-          </div>
-        )}
+        {/* Card 3: How It Works */}
+        {idea.how_it_works && (() => {
+          const steps = splitHowItWorks(idea.how_it_works)
+          return (
+            <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>How It Works</p>
+              {steps.length === 1
+                ? <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{steps[0]}</p>
+                : steps.map((step, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
+                      <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                      <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 2 }}>{step}</p>
+                    </div>
+                  ))
+              }
+            </div>
+          )
+        })()}
 
         {/* Card 4: Business Model (conditional) */}
         {idea.business_model && (

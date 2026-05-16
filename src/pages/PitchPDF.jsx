@@ -303,26 +303,29 @@ export default function PitchPDF({ session }) {
 
   useEffect(() => {
     async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { navigate(`/idea/${ideaId}`); return }
+
       const { data } = await supabase.from('ideas').select('*').eq('id', ideaId).single()
-      if (data) {
-        setIdea(data)
-        setForm({
-          tagline:               data.tagline               || '',
-          problem:               data.problem               || '',
-          solution:              data.solution              || '',
-          how_it_works:          data.how_it_works          || '',
-          market_size:           data.market_size           || '',
-          target_audience:       data.target_audience       || '',
-          business_model:        data.business_model        || '',
-          competitive_advantage: data.competitive_advantage || '',
-          risks:                 data.risks                 || '',
-          next_steps:            data.next_steps            || '',
-        })
-      }
+      if (!data || data.user_id !== user.id) { navigate(`/idea/${ideaId}`); return }
+
+      setIdea(data)
+      setForm({
+        tagline:               data.tagline               || '',
+        problem:               data.problem               || '',
+        solution:              data.solution              || '',
+        how_it_works:          data.how_it_works          || '',
+        market_size:           data.market_size           || '',
+        target_audience:       data.target_audience       || '',
+        business_model:        data.business_model        || '',
+        competitive_advantage: data.competitive_advantage || '',
+        risks:                 data.risks                 || '',
+        next_steps:            data.next_steps            || '',
+      })
       setLoading(false)
     }
     load()
-  }, [ideaId])
+  }, [ideaId, navigate])
 
   useEffect(() => {
     if (stage === 'preview') {
