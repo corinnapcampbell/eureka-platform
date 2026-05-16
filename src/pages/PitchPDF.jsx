@@ -305,24 +305,6 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
   return `<style>${CSS}</style><div class="pdf-wrap">${coverPage}${page2}${page3}${page4}${page5}${lastPage}</div>`
 }
 
-async function splitBusinessModel(text) {
-  if (!text?.trim()) return { free: [], paid: [] }
-  try {
-    const res = await fetch('/api/functions/split-business-model', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ businessModel: text }),
-    })
-    if (res.ok) {
-      const data = await res.json()
-      if (data.free?.length || data.paid?.length) return data
-    }
-  } catch (e) {
-    console.error('splitBusinessModel error:', e)
-  }
-  return fallbackSplitBM(text)
-}
-
 export default function PitchPDF({ session }) {
   const { ideaId } = useParams()
   const navigate   = useNavigate()
@@ -399,7 +381,59 @@ export default function PitchPDF({ session }) {
 
   async function handleGenerate() {
     setGenerating(true)
-    const bmSplit = await splitBusinessModel(form.business_model)
+    let bmSplit = null
+
+    try {
+      const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
+      if (apiKey && form.business_model?.trim()) {
+        const prompt =
+          `You are a business model analyzer. Read this text and split it into exactly two lists: free tier features and paid tier features. Return ONLY a JSON object with no other text, no markdown, no explanation. Format: {"free": ["feature 1", "feature 2"], "paid": ["feature 1", "feature 2"]}. If you cannot find clear free/paid distinction, infer it intelligently — free tier typically includes basic features, paid tier includes advanced/premium features. Text to analyze: ` +
+          form.business_model
+
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 400,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        })
+
+        const data = await res.json()
+        const raw = data.content?.[0]?.text?.trim() || ''
+        console.log('Business model split raw response:', raw)
+
+        const jsonMatch = raw.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0])
+          if (Array.isArray(parsed.free) || Array.isArray(parsed.paid)) {
+            bmSplit = {
+              free: Array.isArray(parsed.free) ? parsed.free : [],
+              paid: Array.isArray(parsed.paid) ? parsed.paid : [],
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Business model split error:', e)
+    }
+
+    // Fallback: split sentences in half
+    if (!bmSplit?.free?.length && !bmSplit?.paid?.length) {
+      const sentences = (form.business_model || '')
+        .split(/(?<=[.!?])\s+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+      const mid = Math.ceil(sentences.length / 2)
+      bmSplit = { free: sentences.slice(0, mid), paid: sentences.slice(mid) }
+    }
+
     const html = buildPreviewHTML(form, idea, session?.user?.email, bmSplit)
     setPreviewHTML(html)
     setGenerating(false)
