@@ -272,28 +272,14 @@ export default function IdeaDetail({ session }) {
           {/* Build action buttons */}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button
-              onClick={() => navigate(`/pitch-builder/${id}`)}
+              onClick={() => window.open(`/pitch/${id}`, '_blank')}
               style={{
                 background: '#fff', color: '#0e0e1f', border: 'none',
                 borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 600,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              📄 Build Pitch PDF
-            </button>
-            <button
-              onClick={handleDownloadPDF}
-              disabled={downloadingPDF}
-              style={{
-                background: 'rgba(255,255,255,0.1)', color: '#fff',
-                border: '0.5px solid rgba(255,255,255,0.2)',
-                borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 600,
-                cursor: downloadingPDF ? 'not-allowed' : 'pointer',
-                opacity: downloadingPDF ? 0.6 : 1,
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}
-            >
-              {downloadingPDF ? 'Generating...' : '⬇ Download PDF'}
+              📄 View / Download Pitch PDF
             </button>
             <button
               onClick={() => navigate(`/deck/${id}`)}
