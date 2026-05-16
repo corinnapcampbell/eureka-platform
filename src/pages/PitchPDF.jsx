@@ -303,11 +303,13 @@ export default function PitchPDF({ session }) {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { navigate(`/idea/${ideaId}`); return }
+      const [{ data: { user } }, { data }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from('ideas').select('*').eq('id', ideaId).single(),
+      ])
 
-      const { data } = await supabase.from('ideas').select('*').eq('id', ideaId).single()
-      if (!data || data.user_id !== user.id) { navigate(`/idea/${ideaId}`); return }
+      const redirectAway = () => navigate(data?.share_token ? `/share/${data.share_token}` : '/')
+      if (!user || !data || data.user_id !== user.id) { redirectAway(); return }
 
       setIdea(data)
       setForm({
