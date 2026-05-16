@@ -18,6 +18,10 @@ export default function IdeaDetail({ session }) {
   const [editSaving, setEditSaving] = useState(false)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
   const [downloadingPDF, setDownloadingPDF] = useState(false)
+  const [accessLog, setAccessLog] = useState([])
+  const [loadingLog, setLoadingLog] = useState(true)
+  const [showLogModal, setShowLogModal] = useState(false)
+  const [termsExpanded, setTermsExpanded] = useState(false)
 
   useEffect(() => {
     async function fetchIdea() {
@@ -41,6 +45,19 @@ export default function IdeaDetail({ session }) {
       setLoading(false)
     }
     fetchIdea()
+  }, [id])
+
+  useEffect(() => {
+    async function fetchLog() {
+      const { data } = await supabase
+        .from('idea_access_log')
+        .select('*')
+        .eq('idea_id', id)
+        .order('created_at', { ascending: false })
+      setAccessLog(data || [])
+      setLoadingLog(false)
+    }
+    fetchLog()
   }, [id])
 
   async function generateShareLink() {
@@ -106,6 +123,24 @@ export default function IdeaDetail({ session }) {
       console.error('PDF error:', e)
     }
     setDownloadingPDF(false)
+  }
+
+  function exportCSV() {
+    const headers = ['Email', 'Date & Time', 'IP Address', 'NDA Accepted']
+    const rows = accessLog.map(r => [
+      r.viewer_email || '',
+      r.created_at ? new Date(r.created_at).toLocaleString('en-US') : '',
+      r.viewer_ip || '',
+      r.nda_accepted ? 'Yes' : 'No',
+    ])
+    const csv = [headers, ...rows]
+      .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'access-log.csv'; a.click()
+    URL.revokeObjectURL(url)
   }
 
   async function deleteIdea() {
@@ -353,6 +388,120 @@ export default function IdeaDetail({ session }) {
           </div>
         )}
 
+        {/* Protection & Access */}
+        <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.25rem' }}>
+            <span style={{ fontSize: 16 }}>🔐</span>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Idea Protection & Access</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+
+            {/* Left: Protection Status */}
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.85rem' }}>Protection Status</p>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: '0.75rem' }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <span style={{ fontSize: 9, color: '#16a34a', fontWeight: 700 }}>✓</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>Blockchain Timestamp</p>
+                  {idea.blockchain_hash
+                    ? <p style={{ fontSize: 11, color: '#888780' }}>{new Date(idea.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · <code style={{ fontFamily: 'monospace' }}>{idea.blockchain_hash.slice(0, 14)}…</code></p>
+                    : <p style={{ fontSize: 11, color: '#888780' }}>Pending</p>
+                  }
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: '0.75rem' }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <span style={{ fontSize: 9, color: '#16a34a', fontWeight: 700 }}>✓</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>NDA-Gated Sharing</p>
+                  <p style={{ fontSize: 11, color: '#16a34a', fontWeight: 500 }}>Active</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: '1rem' }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#EBF0F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <span style={{ fontSize: 10 }}>⚖</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>California Law</p>
+                  <p style={{ fontSize: 11, color: '#888780' }}>Protected under California Law</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setTermsExpanded(x => !x)}
+                style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                {termsExpanded ? '▲' : '▼'} What viewers agreed to
+              </button>
+
+              {termsExpanded && (
+                <div style={{ marginTop: '0.75rem', background: '#f9f9f7', borderRadius: 8, padding: '0.85rem 1rem', fontSize: 12, color: '#555552', lineHeight: 1.75 }}>
+                  <p style={{ marginBottom: '0.5rem', fontWeight: 600 }}>By accessing this idea, viewers agreed to:</p>
+                  <ul style={{ paddingLeft: '1.1rem', margin: 0 }}>
+                    <li>Keep all information strictly confidential</li>
+                    <li>Not share, reproduce, or distribute any part of this idea</li>
+                    <li>Not use the idea for any commercial purpose without written consent</li>
+                    <li>Their full name/email, IP address, and access timestamp have been permanently logged</li>
+                    <li>This agreement is governed by the laws of California, United States</li>
+                    <li>Violation may constitute misappropriation of trade secrets under applicable law</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Access Log */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2a' }}>Who has viewed this idea</p>
+                {accessLog.length > 0 && (
+                  <button onClick={() => setShowLogModal(true)} style={{ background: 'none', border: 'none', fontSize: 11, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500, padding: 0 }}>
+                    View Full Access Log →
+                  </button>
+                )}
+              </div>
+
+              {loadingLog ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '1.5rem' }}>
+                  <div className="spinner" style={{ width: 20, height: 20 }} />
+                </div>
+              ) : accessLog.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
+                  <div style={{ fontSize: 24, marginBottom: '0.5rem', opacity: 0.35 }}>🔒</div>
+                  <p style={{ fontSize: 13, color: '#888780' }}>No one has viewed this idea yet</p>
+                </div>
+              ) : (
+                <>
+                  {accessLog.slice(0, 5).map((entry, i) => (
+                    <div key={entry.id || i} style={{ padding: '0.65rem 0', borderBottom: i < Math.min(accessLog.length, 5) - 1 ? '0.5px solid rgba(44,44,42,0.07)' : 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>{entry.viewer_email || 'Anonymous'}</span>
+                        <span style={{ fontSize: 10, background: '#dcfce7', color: '#16a34a', borderRadius: 4, padding: '2px 7px', fontWeight: 500, flexShrink: 0 }}>NDA Accepted</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                        <span style={{ fontSize: 11, color: '#888780' }}>
+                          {entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                        </span>
+                        {entry.viewer_ip && <span style={{ fontSize: 10, color: '#b0b0a8' }}>{entry.viewer_ip}</span>}
+                      </div>
+                    </div>
+                  ))}
+                  <p style={{ fontSize: 11, color: '#888780', marginTop: '0.75rem' }}>
+                    {accessLog.length} {accessLog.length === 1 ? 'person has' : 'people have'} viewed this idea
+                  </p>
+                </>
+              )}
+            </div>
+
+          </div>
+        </div>
+
         {/* Danger zone */}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button onClick={deleteIdea} disabled={deleting} style={{
@@ -364,6 +513,83 @@ export default function IdeaDetail({ session }) {
           </button>
         </div>
       </div>
+
+      {/* Access Log modal */}
+      {showLogModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '2rem 1rem' }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 760, padding: '2rem', margin: 'auto' }}>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: 12 }}>
+              <div>
+                <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, marginBottom: '0.2rem' }}>🔐 Full Access Log</h2>
+                <p style={{ fontSize: 13, color: '#888780' }}>{idea.title}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                <button onClick={exportCSV} style={{ background: '#f5f5f3', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: '#2c2c2a', cursor: 'pointer', fontWeight: 500 }}>
+                  ↓ Export CSV
+                </button>
+                <button onClick={() => setShowLogModal(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#888780', cursor: 'pointer', padding: '0 4px' }}>✕</button>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              {[
+                { label: 'Total Views', value: accessLog.length },
+                { label: 'Unique Viewers', value: new Set(accessLog.map(r => r.viewer_email)).size },
+                { label: 'First Viewed', value: accessLog.length ? new Date(accessLog[accessLog.length - 1].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
+                { label: 'Last Viewed', value: accessLog.length ? new Date(accessLog[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
+              ].map(stat => (
+                <div key={stat.label} style={{ background: '#f9f9f7', borderRadius: 10, padding: '0.85rem 1rem' }}>
+                  <p style={{ fontSize: 10, color: '#888780', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>{stat.label}</p>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: '#2c2c2a' }}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Table */}
+            <div style={{ border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, overflow: 'auto', marginBottom: '1.5rem' }}>
+              <div style={{ minWidth: 520 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1fr 1fr', background: '#f5f5f3', padding: '0.65rem 1rem', borderBottom: '0.5px solid rgba(44,44,42,0.1)' }}>
+                  {['Email', 'Date & Time', 'IP Address', 'NDA Status'].map(h => (
+                    <span key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888780' }}>{h}</span>
+                  ))}
+                </div>
+                {accessLog.length === 0 ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#888780', fontSize: 13 }}>No access records yet.</div>
+                ) : (
+                  accessLog.map((entry, i) => (
+                    <div key={entry.id || i} style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1fr 1fr', padding: '0.7rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{entry.viewer_email || 'Anonymous'}</span>
+                      <span style={{ fontSize: 12, color: '#555552' }}>
+                        {entry.created_at ? new Date(entry.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#888780', fontFamily: 'monospace' }}>{entry.viewer_ip || '—'}</span>
+                      <span style={{ fontSize: 11, background: '#dcfce7', color: '#16a34a', borderRadius: 4, padding: '2px 7px', fontWeight: 500, display: 'inline-block', whiteSpace: 'nowrap' }}>
+                        {entry.nda_accepted ? 'NDA Accepted' : 'Pending'}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* NDA terms */}
+            <div style={{ background: '#f9f9f7', borderRadius: 10, padding: '1rem 1.25rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888780', marginBottom: '0.65rem' }}>NDA Terms Agreed By All Viewers</p>
+              <ul style={{ paddingLeft: '1.1rem', margin: 0, fontSize: 12, color: '#555552', lineHeight: 1.8 }}>
+                <li>Keep all information strictly confidential</li>
+                <li>Not share, reproduce, or distribute any part of this idea</li>
+                <li>Not use the idea for any commercial purpose without written consent</li>
+                <li>Their full name/email, IP address, and access timestamp have been permanently logged</li>
+                <li>This agreement is governed by the laws of California, United States</li>
+                <li>Violation may constitute misappropriation of trade secrets under applicable law</li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Edit Idea modal */}
       {editing && editForm && (
