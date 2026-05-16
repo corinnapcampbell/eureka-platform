@@ -22,6 +22,8 @@ export default function IdeaDetail({ session }) {
   const [loadingLog, setLoadingLog] = useState(true)
   const [showLogModal, setShowLogModal] = useState(false)
   const [termsExpanded, setTermsExpanded] = useState(false)
+  const [publishing, setPublishing] = useState(null)   // 'pdf' | 'deck' | null
+  const [deckInfo, setDeckInfo] = useState(null)
 
   useEffect(() => {
     async function fetchIdea() {
@@ -58,6 +60,19 @@ export default function IdeaDetail({ session }) {
       setLoadingLog(false)
     }
     fetchLog()
+  }, [id])
+
+  useEffect(() => {
+    async function fetchDeck() {
+      const { data: deck } = await supabase
+        .from('pitch_decks')
+        .select('share_token, is_public')
+        .eq('idea_id', id)
+        .eq('is_public', true)
+        .maybeSingle()
+      if (deck?.share_token) setDeckInfo(deck)
+    }
+    fetchDeck()
   }, [id])
 
   async function generateShareLink() {
@@ -148,6 +163,51 @@ export default function IdeaDetail({ session }) {
     setDeleting(true)
     await supabase.from('ideas').delete().eq('id', id)
     navigate('/dashboard')
+  }
+
+  const PITCH_SNAPSHOT_FIELDS = [
+    'title', 'tagline', 'problem', 'solution', 'how_it_works', 'market_size',
+    'business_model', 'competitive_advantage', 'risks', 'next_steps',
+    'target_audience', 'category', 'looking_for', 'traction', 'team',
+    'additional_info', 'blockchain_hash', 'created_at',
+  ]
+
+  async function publishDoc(type) {
+    setPublishing(type)
+    const snapshot = {
+      ...Object.fromEntries(PITCH_SNAPSHOT_FIELDS.filter(f => idea[f] != null).map(f => [f, idea[f]])),
+      presenterName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '—',
+      email: session.user.email || '',
+    }
+    const { data: updated } = await supabase
+      .from('ideas')
+      .update({ [`${type}_published`]: true, [`${type}_snapshot`]: snapshot })
+      .eq('id', id)
+      .select()
+      .single()
+    if (updated) setIdea(updated)
+    if (type === 'deck') {
+      await supabase.from('pitch_decks').update({ is_public: true }).eq('idea_id', id)
+      const { data: deck } = await supabase.from('pitch_decks').select('share_token, is_public').eq('idea_id', id).eq('is_public', true).maybeSingle()
+      if (deck?.share_token) setDeckInfo(deck)
+    }
+    setPublishing(null)
+  }
+
+  async function unpublishDoc(type) {
+    setPublishing(type)
+    const { data: updated } = await supabase
+      .from('ideas')
+      .update({ [`${type}_published`]: false })
+      .eq('id', id)
+      .select()
+      .single()
+    if (updated) setIdea(updated)
+    if (type === 'deck') {
+      await supabase.from('pitch_decks').update({ is_public: false }).eq('idea_id', id)
+      setDeckInfo(null)
+    }
+    setPublishing(null)
   }
 
   if (loading) return (
@@ -347,6 +407,110 @@ export default function IdeaDetail({ session }) {
             )}
           </div>
         )}
+
+        {/* Pitch Documents — publish controls */}
+        <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.25rem' }}>
+            <span style={{ fontSize: 16 }}>📄</span>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Pitch Documents</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+
+            {/* PDF panel */}
+            <div style={{ border: '0.5px solid rgba(44,44,42,0.08)', borderRadius: 12, padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>📄</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2a' }}>Pitch PDF</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: idea.pdf_published ? '#4ade80' : '#d1d5db' }} />
+                  <span style={{ fontSize: 11, color: idea.pdf_published ? '#16a34a' : '#888780', fontWeight: 500 }}>
+                    {idea.pdf_published ? 'Published' : 'Not published'}
+                  </span>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: '#888780', marginBottom: '1rem', lineHeight: 1.55 }}>
+                {idea.pdf_published ? 'Visible to NDA-signed investors on the shared page.' : 'Publish to make visible on the shared page.'}
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <a
+                  href={`/pitch/${id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 12, color: '#7b9ff7', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 6, padding: '5px 11px', textDecoration: 'none', fontWeight: 500, background: 'rgba(123,159,247,0.06)' }}
+                >
+                  👁 Preview as Investor
+                </a>
+                {idea.pdf_published ? (
+                  <button
+                    onClick={() => unpublishDoc('pdf')}
+                    disabled={publishing === 'pdf'}
+                    style={{ fontSize: 12, color: '#888780', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 6, padding: '5px 11px', cursor: 'pointer', background: 'none', opacity: publishing === 'pdf' ? 0.6 : 1 }}
+                  >
+                    {publishing === 'pdf' ? '…' : 'Unpublish'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => publishDoc('pdf')}
+                    disabled={publishing === 'pdf'}
+                    style={{ fontSize: 12, color: '#fff', border: 'none', borderRadius: 6, padding: '5px 11px', cursor: publishing === 'pdf' ? 'not-allowed' : 'pointer', background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', opacity: publishing === 'pdf' ? 0.6 : 1, fontWeight: 500 }}
+                  >
+                    {publishing === 'pdf' ? 'Publishing…' : '✓ Publish PDF'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Deck panel */}
+            <div style={{ border: '0.5px solid rgba(44,44,42,0.08)', borderRadius: 12, padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>📊</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2a' }}>Pitch Deck</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: idea.deck_published ? '#4ade80' : '#d1d5db' }} />
+                  <span style={{ fontSize: 11, color: idea.deck_published ? '#16a34a' : '#888780', fontWeight: 500 }}>
+                    {idea.deck_published ? 'Published' : 'Not published'}
+                  </span>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: '#888780', marginBottom: '1rem', lineHeight: 1.55 }}>
+                {idea.deck_published ? 'Visible to NDA-signed investors on the shared page.' : 'Publish to make visible on the shared page.'}
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <a
+                  href={deckInfo ? `/deck/view/${deckInfo.share_token}` : `/deck/${id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 12, color: '#9b7ff7', border: '0.5px solid rgba(155,127,247,0.3)', borderRadius: 6, padding: '5px 11px', textDecoration: 'none', fontWeight: 500, background: 'rgba(155,127,247,0.06)' }}
+                >
+                  👁 Preview as Investor
+                </a>
+                {idea.deck_published ? (
+                  <button
+                    onClick={() => unpublishDoc('deck')}
+                    disabled={publishing === 'deck'}
+                    style={{ fontSize: 12, color: '#888780', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 6, padding: '5px 11px', cursor: 'pointer', background: 'none', opacity: publishing === 'deck' ? 0.6 : 1 }}
+                  >
+                    {publishing === 'deck' ? '…' : 'Unpublish'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => publishDoc('deck')}
+                    disabled={publishing === 'deck'}
+                    style={{ fontSize: 12, color: '#fff', border: 'none', borderRadius: 6, padding: '5px 11px', cursor: publishing === 'deck' ? 'not-allowed' : 'pointer', background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', opacity: publishing === 'deck' ? 0.6 : 1, fontWeight: 500 }}
+                  >
+                    {publishing === 'deck' ? 'Publishing…' : '✓ Publish Deck'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
 
         {/* Card 6: Share link */}
         <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.75rem', marginBottom: '1.25rem' }}>

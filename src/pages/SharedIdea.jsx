@@ -317,43 +317,93 @@ export default function SharedIdea() {
           </div>
         )}
 
-        {/* Card 5: Pitch Documents — read-only for external viewers */}
+        {/* Card 5: Pitch Documents — gated by pdf_published / deck_published */}
         <div style={{ marginBottom: '1.25rem' }}>
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.85rem', paddingLeft: 2 }}>Pitch Documents</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
 
-            {/* PDF: open inline viewer in new tab */}
-            <a
-              href={`/pitch/${idea.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'block', background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}
-            >
-              <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📄</div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>Pitch PDF</p>
-              <p style={{ fontSize: 13, color: '#888780' }}>View &amp; download full investor pitch</p>
-            </a>
+          {!idea.pdf_published && !idea.deck_published ? (
+            <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '2rem', textAlign: 'center' }}>
+              <div style={{ fontSize: 32, marginBottom: '0.6rem', opacity: 0.3 }}>📄</div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#888780', marginBottom: '0.3rem' }}>Pitch documents coming soon</p>
+              <p style={{ fontSize: 12, color: '#b0b0a8' }}>The owner hasn't published any pitch documents yet.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
 
-            {/* Deck: open deck viewer in new tab */}
-            {deckInfo ? (
-              <a
-                href={`/deck/${idea.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: 'block', background: 'linear-gradient(135deg, rgba(123,159,247,0.07), rgba(155,127,247,0.07))', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}
-              >
-                <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📊</div>
-                <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>Pitch Deck</p>
-                <p style={{ fontSize: 13, color: '#888780' }}>View 8-slide visual presentation</p>
-              </a>
-            ) : (
-              <div style={{ display: 'block', background: 'rgba(44,44,42,0.04)', border: '0.5px dashed rgba(44,44,42,0.15)', borderRadius: 14, padding: '1.5rem' }}>
-                <div style={{ fontSize: 28, marginBottom: '0.5rem', opacity: 0.35 }}>📊</div>
-                <p style={{ fontSize: 15, fontWeight: 600, color: '#888780', marginBottom: '0.25rem' }}>Pitch Deck</p>
-                <p style={{ fontSize: 13, color: '#b0b0a8' }}>Deck not yet published by owner</p>
-              </div>
-            )}
-          </div>
+              {idea.pdf_published && (
+                <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: '0.85rem' }}>
+                    <span style={{ fontSize: 22 }}>📄</span>
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2a' }}>Pitch PDF</p>
+                      <p style={{ fontSize: 11, color: '#16a34a', fontWeight: 500 }}>Published ✓</p>
+                    </div>
+                  </div>
+                  {/* Preview thumbnail */}
+                  <div style={{ background: 'linear-gradient(135deg, #0e0e1f, #1a1a32)', borderRadius: 8, height: 80, marginBottom: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', letterSpacing: 0.8, textTransform: 'uppercase' }}>Investor Pitch</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <a
+                      href={`/pitch/${idea.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
+                    >
+                      View
+                    </a>
+                    <a
+                      href={`/pitch/${idea.id}?download=1`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.13)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
+                    >
+                      ↓ Download
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {idea.deck_published && (
+                <div style={{ background: 'linear-gradient(135deg, rgba(123,159,247,0.04), rgba(155,127,247,0.04))', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 14, padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: '0.85rem' }}>
+                    <span style={{ fontSize: 22 }}>📊</span>
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2a' }}>Pitch Deck</p>
+                      <p style={{ fontSize: 11, color: '#16a34a', fontWeight: 500 }}>Published ✓</p>
+                    </div>
+                  </div>
+                  {/* Preview thumbnail */}
+                  <div style={{ background: 'linear-gradient(135deg, #0e0e1f, #1a1a32)', borderRadius: 8, height: 80, marginBottom: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', letterSpacing: 0.8, textTransform: 'uppercase' }}>Pitch Deck</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <a
+                      href={deckInfo ? `/deck/view/${deckInfo.share_token}` : `/deck/${idea.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
+                    >
+                      View
+                    </a>
+                    {deckInfo && (
+                      <a
+                        href={`/deck/view/${deckInfo.share_token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.13)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
+                      >
+                        ↓ Download
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
         </div>
 
         {/* Card 6: AI Executive Summary (collapsed) */}
