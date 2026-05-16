@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
+import { generateIdeaPDF, dedupeArray, hasMultipleSteps } from '../utils/generatePDF'
 
 export default function SharedIdea() {
   const { token } = useParams()
@@ -10,6 +11,8 @@ export default function SharedIdea() {
   const [email, setEmail] = useState('')
   const [accepting, setAccepting] = useState(false)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
+  const [deckInfo, setDeckInfo] = useState(null)   // { share_token } if public deck exists
+  const [downloadingPDF, setDownloadingPDF] = useState(false)
 
   useEffect(() => {
     async function fetchLink() {
@@ -26,6 +29,15 @@ export default function SharedIdea() {
       }
       setIdea(link.ideas)
       setStage('nda')
+
+      // Check whether the owner has published a public deck for this idea
+      const { data: deck } = await supabase
+        .from('pitch_decks')
+        .select('share_token, is_public')
+        .eq('idea_id', link.ideas.id)
+        .eq('is_public', true)
+        .maybeSingle()
+      if (deck?.share_token) setDeckInfo(deck)
     }
     fetchLink()
   }, [token])
@@ -44,6 +56,16 @@ export default function SharedIdea() {
 
     setStage('idea')
     setAccepting(false)
+  }
+
+  function handleDownloadPDF() {
+    setDownloadingPDF(true)
+    try {
+      generateIdeaPDF(idea)
+    } catch (e) {
+      console.error('PDF error:', e)
+    }
+    setDownloadingPDF(false)
   }
 
   if (stage === 'loading') return (
@@ -93,10 +115,10 @@ export default function SharedIdea() {
           )}
         </div>
 
-        {/* Category chips */}
-        {(idea.category || []).length > 0 && (
+        {/* Category chips — deduplicated */}
+        {dedupeArray(idea.category || []).length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginBottom: '2rem' }}>
-            {(idea.category || []).map(c => (
+            {dedupeArray(idea.category || []).map(c => (
               <span key={c} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(123,159,247,0.18)' }}>{c}</span>
             ))}
           </div>
@@ -175,6 +197,8 @@ export default function SharedIdea() {
 
   // ─── PHASE 2: FULL CONTENT ───────────────────────────────────────────────
   const date = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const categories = dedupeArray(idea.category || [])
+  const lookingFor = dedupeArray((idea.terms || '').split(', ').filter(Boolean))
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
@@ -194,9 +218,9 @@ export default function SharedIdea() {
             </div>
           </div>
 
-          {/* Categories + hash badge */}
+          {/* Categories + hash badge — deduplicated */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '1rem' }}>
-            {(idea.category || []).map(c => (
+            {categories.map(c => (
               <span key={c} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(123,159,247,0.18)' }}>{c}</span>
             ))}
             {idea.blockchain_hash && (
@@ -222,7 +246,6 @@ export default function SharedIdea() {
 
         {/* Card 1: Problem & Solution */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-          {/* Problem — dark card */}
           {idea.problem && (
             <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>
@@ -233,7 +256,6 @@ export default function SharedIdea() {
             </div>
           )}
 
-          {/* Solution — gradient border card */}
           {idea.solution && (
             <div style={{ background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', borderRadius: 15, padding: 1.5 }}>
               <div style={{ background: '#fff', borderRadius: 13, padding: '1.5rem', height: '100%' }}>
@@ -247,8 +269,8 @@ export default function SharedIdea() {
           )}
         </div>
 
-        {/* Card 2: Key Details */}
-        {(idea.market_size || idea.terms || (idea.category || []).length > 0) && (
+        {/* Card 2: Key Details — all arrays deduplicated */}
+        {(idea.market_size || idea.terms || categories.length > 0) && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Key Details</p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -258,10 +280,10 @@ export default function SharedIdea() {
                   <span style={{ fontSize: 13, color: '#2c2c2a', fontWeight: 500 }}>{idea.market_size}</span>
                 </div>
               )}
-              {(idea.category || []).map(c => (
+              {categories.map(c => (
                 <div key={c} style={{ background: '#EBF0F7', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#3B5273', fontWeight: 500 }}>{c}</div>
               ))}
-              {idea.terms && idea.terms.split(', ').filter(Boolean).map(t => (
+              {lookingFor.map(t => (
                 <div key={t} style={{ background: '#f0fdf4', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#16a34a', fontWeight: 500 }}>Looking for: {t}</div>
               ))}
               {idea.asking_price && (
@@ -271,16 +293,19 @@ export default function SharedIdea() {
           </div>
         )}
 
-        {/* Card 3: How It Works (conditional) */}
+        {/* Card 3: How It Works — numbered circles only when genuinely multi-step */}
         {idea.how_it_works && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>How It Works</p>
-            {idea.how_it_works.split('\n').filter(Boolean).map((step, i) => (
-              <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
-                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
-                <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 2 }}>{step}</p>
-              </div>
-            ))}
+            {hasMultipleSteps(idea.how_it_works)
+              ? idea.how_it_works.split('\n').filter(Boolean).map((step, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                    <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 2 }}>{step}</p>
+                  </div>
+                ))
+              : <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.how_it_works}</p>
+            }
           </div>
         )}
 
@@ -292,20 +317,41 @@ export default function SharedIdea() {
           </div>
         )}
 
-        {/* Card 5: Pitch Documents */}
+        {/* Card 5: Pitch Documents — read-only for external viewers */}
         <div style={{ marginBottom: '1.25rem' }}>
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.85rem', paddingLeft: 2 }}>Pitch Documents</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            <a href={`/pitch/${idea.id}`} style={{ display: 'block', background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
+
+            {/* PDF: download directly, no login */}
+            <button
+              onClick={handleDownloadPDF}
+              disabled={downloadingPDF}
+              style={{ display: 'block', background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', textAlign: 'left', cursor: 'pointer', opacity: downloadingPDF ? 0.7 : 1 }}
+            >
               <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📄</div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>Pitch PDF</p>
-              <p style={{ fontSize: 13, color: '#888780' }}>Full investor pitch document</p>
-            </a>
-            <a href={`/deck/${idea.id}`} style={{ display: 'block', background: 'linear-gradient(135deg, rgba(123,159,247,0.07), rgba(155,127,247,0.07))', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
-              <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📊</div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>Pitch Deck</p>
-              <p style={{ fontSize: 13, color: '#888780' }}>8-slide visual presentation</p>
-            </a>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>
+                {downloadingPDF ? 'Generating...' : 'Pitch PDF'}
+              </p>
+              <p style={{ fontSize: 13, color: '#888780' }}>Download full investor pitch document</p>
+            </button>
+
+            {/* Deck: link to public view if available, otherwise show placeholder */}
+            {deckInfo ? (
+              <a
+                href={`/deck/view/${deckInfo.share_token}`}
+                style={{ display: 'block', background: 'linear-gradient(135deg, rgba(123,159,247,0.07), rgba(155,127,247,0.07))', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}
+              >
+                <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📊</div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>Pitch Deck</p>
+                <p style={{ fontSize: 13, color: '#888780' }}>View 8-slide visual presentation</p>
+              </a>
+            ) : (
+              <div style={{ display: 'block', background: 'rgba(44,44,42,0.04)', border: '0.5px dashed rgba(44,44,42,0.15)', borderRadius: 14, padding: '1.5rem' }}>
+                <div style={{ fontSize: 28, marginBottom: '0.5rem', opacity: 0.35 }}>📊</div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#888780', marginBottom: '0.25rem' }}>Pitch Deck</p>
+                <p style={{ fontSize: 13, color: '#b0b0a8' }}>Deck not yet published by owner</p>
+              </div>
+            )}
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
+import { generateIdeaPDF, dedupeArray, hasMultipleSteps } from '../utils/generatePDF'
 
 export default function IdeaDetail({ session }) {
   const { id } = useParams()
@@ -16,6 +17,7 @@ export default function IdeaDetail({ session }) {
   const [editForm, setEditForm] = useState(null)
   const [editSaving, setEditSaving] = useState(false)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
+  const [downloadingPDF, setDownloadingPDF] = useState(false)
 
   useEffect(() => {
     async function fetchIdea() {
@@ -96,6 +98,16 @@ export default function IdeaDetail({ session }) {
     }))
   }
 
+  function handleDownloadPDF() {
+    setDownloadingPDF(true)
+    try {
+      generateIdeaPDF(idea, { userEmail: session.user.email })
+    } catch (e) {
+      console.error('PDF error:', e)
+    }
+    setDownloadingPDF(false)
+  }
+
   async function deleteIdea() {
     if (!window.confirm('Are you sure you want to delete this idea? This cannot be undone.')) return
     setDeleting(true)
@@ -138,7 +150,7 @@ export default function IdeaDetail({ session }) {
 
           {/* Categories + protection badge */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '1rem' }}>
-            {(idea.category || []).map(c => (
+            {dedupeArray(idea.category || []).map(c => (
               <span key={c} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(123,159,247,0.18)' }}>{c}</span>
             ))}
             <span style={{
@@ -173,6 +185,20 @@ export default function IdeaDetail({ session }) {
               }}
             >
               📄 Build Pitch PDF
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              disabled={downloadingPDF}
+              style={{
+                background: 'rgba(255,255,255,0.1)', color: '#fff',
+                border: '0.5px solid rgba(255,255,255,0.2)',
+                borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 600,
+                cursor: downloadingPDF ? 'not-allowed' : 'pointer',
+                opacity: downloadingPDF ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              {downloadingPDF ? 'Generating...' : '⬇ Download PDF'}
             </button>
             <button
               onClick={() => navigate(`/deck/${id}`)}
@@ -227,10 +253,10 @@ export default function IdeaDetail({ session }) {
                   <span style={{ fontSize: 13, color: '#2c2c2a', fontWeight: 500 }}>{idea.market_size}</span>
                 </div>
               )}
-              {(idea.category || []).map(c => (
+              {dedupeArray(idea.category || []).map(c => (
                 <div key={c} style={{ background: '#EBF0F7', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#3B5273', fontWeight: 500 }}>{c}</div>
               ))}
-              {idea.terms && idea.terms.split(', ').filter(Boolean).map(t => (
+              {idea.terms && dedupeArray(idea.terms.split(', ').filter(Boolean)).map(t => (
                 <div key={t} style={{ background: '#f0fdf4', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#16a34a', fontWeight: 500 }}>Looking for: {t}</div>
               ))}
               {idea.asking_price && (
@@ -244,12 +270,15 @@ export default function IdeaDetail({ session }) {
         {idea.how_it_works && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>How It Works</p>
-            {idea.how_it_works.split('\n').filter(Boolean).map((step, i) => (
-              <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
-                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
-                <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 2 }}>{step}</p>
-              </div>
-            ))}
+            {hasMultipleSteps(idea.how_it_works)
+              ? idea.how_it_works.split('\n').filter(Boolean).map((step, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                    <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 2 }}>{step}</p>
+                  </div>
+                ))
+              : <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.how_it_works}</p>
+            }
           </div>
         )}
 
