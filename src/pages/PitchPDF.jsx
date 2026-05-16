@@ -357,6 +357,37 @@ export default function PitchPDF({ session }) {
         risks:                 data.risks                 || '',
         next_steps:            data.next_steps            || '',
       })
+
+      // Pre-populate chip arrays so handlePublish always has chip content
+      setHowItWorksChips(
+        (data.how_it_works || '').split('\n')
+          .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
+          .filter(Boolean)
+      )
+      setTargetMarketChips(
+        (data.target_audience || '').split(/,\s*/).map(s => s.trim()).filter(Boolean)
+      )
+      setRisksChips(
+        (data.risks || '').split('\n')
+          .map(s => s.replace(/^[•\-\*]\s*/, '').trim())
+          .filter(Boolean)
+      )
+      setNextStepsChips(
+        (data.next_steps || '').split('\n')
+          .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
+          .filter(Boolean)
+      )
+      const bmLines = (data.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
+      const freeChips = bmLines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
+      const paidChips = bmLines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
+      if (freeChips.length || paidChips.length) {
+        setFreeTierChips(freeChips)
+        setPaidTierChips(paidChips)
+      } else {
+        setFreeTierChips(bmLines)
+        setPaidTierChips([])
+      }
+
       setLoading(false)
     }
     load()
