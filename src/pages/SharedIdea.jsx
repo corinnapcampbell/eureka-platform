@@ -44,11 +44,11 @@ function buildSnapshotHTML(form, idea) {
   const audienceTags = (form.target_audience || '').split(',').map(s => s.trim()).filter(Boolean)
     .filter(t => !cats.some(c => c.toLowerCase() === t.toLowerCase()))
   const marketNums = (form.market_size || '').match(/\$[\d.]+[BMKbmk]+\+?/g) || []
-  const bmLines = (form.business_model || '').split('\n')
-  const freeLine = bmLines.find(l => /^free:/i.test(l.trim()))
-  const paidLine = bmLines.find(l => /^paid:/i.test(l.trim()))
-  const freeText = freeLine ? freeLine.replace(/^free:\s*/i, '') : bmLines[0] || ''
-  const paidText = paidLine ? paidLine.replace(/^paid:\s*/i, '') : bmLines[1] || ''
+  const bmLines = (form.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
+  const freeItems = bmLines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
+  const paidItems = bmLines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
+  const freeHTML = freeItems.length ? freeItems.map(f => `· ${_esc(f)}`).join('<br>') : _esc(bmLines[0] || '')
+  const paidHTML = paidItems.length ? paidItems.map(f => `· ${_esc(f)}`).join('<br>') : _esc(bmLines[1] || '')
   const risks = (form.risks || '').split('\n').map(s => s.trim()).filter(Boolean)
   const nextSteps = (form.next_steps || '').split('\n').map(s => s.trim()).filter(Boolean)
   const dateStr = idea.created_at
@@ -144,7 +144,7 @@ function buildSnapshotHTML(form, idea) {
 
   const p2 = `<div class="page"><div class="abar"></div><div class="cpage">${ph(2)}<div class="pbody"><div class="shead"><div class="sicon">⚡</div><div class="slabel">THE PROBLEM</div></div><div class="stext">${_esc(form.problem)}</div><div class="divider"></div><div class="hlight"><div class="hlabel">💡 THE SOLUTION</div><div class="htext">${_esc(form.solution)}</div></div></div>${pf}</div><div class="abar"></div></div>`
   const p3 = `<div class="page"><div class="abar"></div><div class="cpage">${ph(3)}<div class="pbody"><div class="shead"><div class="sicon">⚙️</div><div class="slabel">HOW IT WORKS</div></div>${stepsHTML}<div class="divider"></div><div class="shead"><div class="sicon">📈</div><div class="slabel">MARKET SIZE</div></div><div class="bmet">${marketBoxes.map(b=>`<div class="bm"><div class="bmv">${_esc(b.v)}</div><div class="bml">${_esc(b.l)}</div></div>`).join('')}</div><div class="stext" style="font-size:11px;color:#888;margin-top:2px">${_esc(form.market_size)}</div></div>${pf}</div><div class="abar"></div></div>`
-  const p4 = `<div class="page"><div class="abar"></div><div class="cpage">${ph(4)}<div class="pbody"><div class="shead"><div class="sicon">🎯</div><div class="slabel">TARGET MARKET</div></div>${tagsHTML}<div class="divider"></div><div class="shead"><div class="sicon">💰</div><div class="slabel">BUSINESS MODEL</div></div><div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${_esc(freeText)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${_esc(paidText)}</div></div></div></div>${pf}</div><div class="abar"></div></div>`
+  const p4 = `<div class="page"><div class="abar"></div><div class="cpage">${ph(4)}<div class="pbody"><div class="shead"><div class="sicon">🎯</div><div class="slabel">TARGET MARKET</div></div>${tagsHTML}<div class="divider"></div><div class="shead"><div class="sicon">💰</div><div class="slabel">BUSINESS MODEL</div></div><div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${freeHTML}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${paidHTML}</div></div></div></div>${pf}</div><div class="abar"></div></div>`
   const p5 = `<div class="page"><div class="abar"></div><div class="cpage">${ph(5)}<div class="pbody"><div class="shead"><div class="sicon">🏆</div><div class="slabel">COMPETITIVE ADVANTAGE</div></div><div class="stext">${_esc(form.competitive_advantage)}</div><div class="divider"></div><div class="shead"><div class="sicon">⚠️</div><div class="slabel">RISKS &amp; CHALLENGES</div></div><div class="risks">${risks.map(r=>`<div class="risk"><div class="rdot"></div><div class="rtxt">${_esc(r)}</div></div>`).join('')}</div></div>${pf}</div><div class="abar"></div></div>`
   const pLast = `<div class="page"><div class="abar"></div><div class="cpage">${ph('Final')}<div class="pbody"><div class="shead"><div class="sicon">🚀</div><div class="slabel">NEXT STEPS</div></div><div class="tl">${nextSteps.map(s=>`<div class="tli"><div class="tldot"></div><div><div class="tltitle">${_esc(s)}</div></div></div>`).join('')}</div></div><div class="dfooter"><div class="logo">Eurek<b>AI</b>dea</div><div class="dfbadge">myeurekaidea.com</div></div></div><div class="abar"></div></div>`
 
@@ -206,8 +206,24 @@ export default function SharedIdea() {
     setAccepting(false)
   }
 
+  function snapshotForm() {
+    return {
+      tagline:               idea.tagline               || '',
+      problem:               idea.problem               || '',
+      solution:              idea.solution              || '',
+      how_it_works:          idea.how_it_works          || '',
+      market_size:           idea.market_size           || '',
+      target_audience:       idea.target_audience       || '',
+      business_model:        idea.business_model        || '',
+      competitive_advantage: idea.competitive_advantage || '',
+      risks:                 idea.risks                 || '',
+      next_steps:            idea.next_steps            || '',
+      ...(idea.pdf_snapshot || {}),
+    }
+  }
+
   function viewSnapshotPDF() {
-    const form = idea.pdf_snapshot || {}
+    const form = snapshotForm()
     const inner = buildSnapshotHTML(form, idea)
     const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${idea.title} — Pitch PDF</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f5f5f3;padding:20px 0;min-height:100vh"><div id="pdf-preview">${inner}</div></body></html>`
     const blob = new Blob([fullHTML], { type: 'text/html' })
@@ -216,7 +232,7 @@ export default function SharedIdea() {
 
   async function downloadSnapshotPDF() {
     setDownloadingSnapshotPDF(true)
-    const form = idea.pdf_snapshot || {}
+    const form = snapshotForm()
     const inner = buildSnapshotHTML(form, idea)
     const container = document.createElement('div')
     container.id = 'pdf-preview'

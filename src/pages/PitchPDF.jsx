@@ -593,9 +593,19 @@ export default function PitchPDF({ session }) {
 
   async function handlePublish() {
     setPublishing(true)
+    const snapshot = {
+      ...form,
+      how_it_works:    howItWorksChips.length   ? howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n')                                        : form.how_it_works,
+      target_audience: targetMarketChips.length  ? targetMarketChips.join(', ')                                                                     : form.target_audience,
+      risks:           risksChips.length         ? risksChips.join('\n')                                                                            : form.risks,
+      next_steps:      nextStepsChips.length     ? nextStepsChips.join('\n')                                                                        : form.next_steps,
+      business_model:  (freeTierChips.length || paidTierChips.length)
+        ? [...freeTierChips.map(f => `Free: ${f}`), ...paidTierChips.map(f => `Paid: ${f}`)].join('\n')
+        : form.business_model,
+    }
     await supabase.from('ideas').update({
       pdf_published: true,
-      pdf_snapshot: form,
+      pdf_snapshot:  snapshot,
     }).eq('id', ideaId)
     setPublishing(false)
     setPublishSuccess(true)
