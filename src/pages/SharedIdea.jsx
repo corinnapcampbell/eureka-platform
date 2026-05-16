@@ -532,11 +532,6 @@ export default function SharedIdea() {
                       <p style={{ fontSize: 11, color: '#16a34a', fontWeight: 500 }}>Published ✓</p>
                     </div>
                   </div>
-                  {/* Preview thumbnail */}
-                  <div style={{ background: 'linear-gradient(135deg, #0e0e1f, #1a1a32)', borderRadius: 8, height: 80, marginBottom: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', letterSpacing: 0.8, textTransform: 'uppercase' }}>Investor Pitch</span>
-                  </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={viewSnapshotPDF}
@@ -563,11 +558,6 @@ export default function SharedIdea() {
                       <p style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2a' }}>Pitch Deck</p>
                       <p style={{ fontSize: 11, color: '#16a34a', fontWeight: 500 }}>Published ✓</p>
                     </div>
-                  </div>
-                  {/* Preview thumbnail */}
-                  <div style={{ background: 'linear-gradient(135deg, #0e0e1f, #1a1a32)', borderRadius: 8, height: 80, marginBottom: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', letterSpacing: 0.8, textTransform: 'uppercase' }}>Pitch Deck</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <a
