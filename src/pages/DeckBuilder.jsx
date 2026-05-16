@@ -53,6 +53,9 @@ export default function DeckBuilder({ session }) {
       }
 
       setIsOwner(true)
+      const presenterName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Founder'
+      const ownerEmail = session?.user?.email || ''
+
       const { data: deckData } = await supabase
         .from('pitch_decks')
         .select('*')
@@ -62,11 +65,11 @@ export default function DeckBuilder({ session }) {
 
       if (deckData) {
         setDeckId(deckData.id)
-        setSlides(deckData.slides?.length ? deckData.slides : buildDefaultSlides(ideaData))
+        setSlides(deckData.slides?.length ? deckData.slides : buildDefaultSlides(ideaData, presenterName, ownerEmail))
         setShareToken(deckData.share_token)
         setIsPublic(deckData.is_public)
       } else {
-        const defaults = buildDefaultSlides(ideaData)
+        const defaults = buildDefaultSlides(ideaData, presenterName, ownerEmail)
         setSlides(defaults)
         const newToken = crypto.randomUUID()
         const { data: created } = await supabase.from('pitch_decks').insert({
@@ -292,10 +295,32 @@ export default function DeckBuilder({ session }) {
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Sidebar */}
-        <div style={{ width: 204, background: '#0a0a18', borderRight: '0.5px solid rgba(255,255,255,0.06)', overflowY: 'auto', padding: '12px 10px', flexShrink: 0 }}>
-          {slides.map((slide, i) => (
-            <Thumbnail key={i} slide={slide} slideNum={i + 1} selected={current === i} onClick={() => setCurrent(i)} />
-          ))}
+        <div style={{ width: 204, background: '#0a0a18', borderRight: '0.5px solid rgba(255,255,255,0.06)', overflowY: 'auto', padding: '12px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1 }}>
+            {slides.map((slide, i) => (
+              <Thumbnail key={i} slide={slide} slideNum={i + 1} selected={current === i} onClick={() => setCurrent(i)} />
+            ))}
+          </div>
+          {/* Free vs Paid info panel */}
+          <div style={{ marginTop: 14, padding: '14px 12px', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.14)', borderRadius: 10, flexShrink: 0 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'rgba(255,255,255,0.22)', marginBottom: 10 }}>Deck Builder</div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.42)', marginBottom: 5 }}>Free</div>
+              {['View & present slides', 'Basic PDF download', 'Share public link'].map((f, i) => (
+                <div key={i} style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', marginBottom: 3, display: 'flex', gap: 5, alignItems: 'center' }}>
+                  <span style={{ color: '#4caf78', fontSize: 9 }}>✓</span>{f}
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#7b9ff7', marginBottom: 5 }}>Pro ✦</div>
+              {['Inline slide editing', 'NDA-gated sharing', 'Viewer access log', 'Custom branding'].map((f, i) => (
+                <div key={i} style={{ fontSize: 10, color: 'rgba(123,159,247,0.55)', marginBottom: 3, display: 'flex', gap: 5, alignItems: 'center' }}>
+                  <span style={{ fontSize: 9 }}>✦</span>{f}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Main slide */}

@@ -7,95 +7,163 @@ const GRAD = 'linear-gradient(90deg, #7b9ff7, #9b7ff7)'
 
 export const SLIDE_NAMES = ['Cover', 'Problem', 'Solution', 'Market', 'Business Model', 'Advantage', 'Roadmap', 'Closing']
 
-export function buildDefaultSlides(idea) {
+// ─── Helpers for dynamic slide generation ────────────────────────────────────
+function fmtDate(str) {
+  try { return new Date(str).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) }
+  catch { return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) }
+}
+
+function firstSentence(text) {
+  if (!text) return ''
+  const m = text.match(/^[^.!?\n]+[.!?]/)
+  return m ? m[0].trim() : (text.split('\n')[0] || '').trim()
+}
+
+function toLines(text, max) {
+  if (!text) return []
+  let parts = text.split(/\n+/).map(l => l.replace(/^[-•*\d.)]+\s*/, '').trim()).filter(l => l.length > 4)
+  if (parts.length < 2) parts = text.split(/(?<=[.!?])\s+(?=[A-Z])/).map(s => s.trim()).filter(s => s.length > 8)
+  return parts.slice(0, max)
+}
+
+function bulletsFrom(text, fallback, max = 4) {
+  const lines = toLines(text, max)
+  if (!lines.length) return fallback.slice(0, max)
+  const out = [...lines]
+  let fi = 0
+  while (out.length < max && fi < fallback.length) { out.push(fallback[fi++]) }
+  return out.slice(0, max)
+}
+
+function featuresFrom(howItWorks) {
+  const ICONS = ['⚡', '🔒', '✨', '🚀']
+  const steps = toLines(howItWorks, 4)
+  if (steps.length >= 2) {
+    return steps.slice(0, 4).map((s, i) => ({ icon: ICONS[i] || '◆', label: s.length > 44 ? s.slice(0, 44) + '…' : s }))
+  }
+  return [
+    { icon: '💡', label: 'Core Innovation' },
+    { icon: '⚡', label: 'Built for Speed' },
+    { icon: '🔒', label: 'Secure by Default' },
+    { icon: '🚀', label: 'Ready to Scale' },
+  ]
+}
+
+function metricsFrom(text) {
+  const nums = text ? (text.match(/\$[\d.,]+[BMKbmk]?\+?/g) || []) : []
+  const LABELS = ['Total Addressable Market', 'Serviceable Market', 'Initial Target Market']
+  if (nums.length >= 3) return nums.slice(0, 3).map((v, i) => ({ value: v, label: LABELS[i] }))
+  if (nums.length > 0) return [{ value: nums[0], label: 'Market Opportunity' }, { value: '—', label: 'Serviceable Market' }, { value: '—', label: 'Initial Target' }]
+  return [{ value: '—', label: 'Total Addressable Market' }, { value: '—', label: 'Serviceable Market' }, { value: '—', label: 'Initial Target' }]
+}
+
+function roadmapFrom(lookingFor) {
+  const steps = toLines(lookingFor, 4)
+  if (steps.length >= 2) {
+    return steps.slice(0, 4).map((s, i) => ({
+      num: String(i + 1).padStart(2, '0'),
+      title: s.length > 38 ? s.slice(0, 38) + '…' : s,
+      description: '',
+    }))
+  }
+  return [
+    { num: '01', title: 'MVP Launch', description: 'Core product to early adopters' },
+    { num: '02', title: 'Market Validation', description: 'Feedback loops and rapid iteration' },
+    { num: '03', title: 'Scale & Grow', description: 'Expand users and geographies' },
+    { num: '04', title: 'Strategic Partnerships', description: 'Distribution and alliances' },
+  ]
+}
+
+export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
+  const t = idea?.title || 'Untitled Idea'
+  const tagline = idea?.tagline || firstSentence(idea?.description) || ''
+  const cats = idea?.category?.length ? idea.category : []
+
+  const prob = idea?.problem || ''
+  const soln = idea?.solution || idea?.description || ''
+  const how  = idea?.how_it_works || ''
+  const mkt  = idea?.market_size || ''
+  const biz  = idea?.business_model || ''
+  const adv  = idea?.competitive_advantage || ''
+  const lf   = idea?.looking_for || ''
+
+  const bizLines = toLines(biz, 4)
+  const mktNum   = (mkt.match(/\$[\d.,]+[BMKbmk]?\+?/) || [''])[0]
+
   return [
     {
       type: 'cover',
-      title: 'eurekAIdea — The Protected Idea Marketplace',
-      tagline: 'The protected vault where ideas become investable.',
-      presenter: 'Corinna Perini Gobbi',
-      date: 'May 2026',
-      stage: 'Seed',
-      marketSize: '$180B+',
-      categories: idea?.category?.length ? idea.category : ['AI/ML', 'Marketplace', 'SaaS', 'B2B'],
+      title: t,
+      tagline,
+      presenter: presenterName || 'Founder',
+      date: fmtDate(idea?.created_at),
+      stage: idea?.stage || 'Pre-Seed',
+      marketSize: mktNum,
+      categories: cats,
       hash: idea?.blockchain_hash || '',
     },
     {
       type: 'problem',
       sectionLabel: 'THE PROBLEM',
-      title: 'Ideas get stolen, forgotten, or never reach the right people.',
-      bullets: [
-        'Millions of brilliant ideas exist with no trusted way to protect or document them',
-        'Existing solutions are too informal or too complex',
-        'No standardized way to present ideas to investors',
-        'The gap between idea creators and executors is massive with no bridge',
-      ],
+      title: firstSentence(prob) || 'A critical gap in the market that needs solving.',
+      bullets: bulletsFrom(prob, [
+        'A critical problem with no reliable solution today',
+        'Existing options are too expensive, complex, or fragmented',
+        'Target users are underserved by current tools',
+        'The gap widens as demand grows',
+      ]),
     },
     {
       type: 'solution',
       sectionLabel: 'THE SOLUTION',
-      title: 'One platform to protect, present, and monetize your idea.',
-      description: 'eurekAIdea is a protected idea vault that blockchain-timestamps your idea, helps you build a professional pitch, and lets you share securely via NDA-gated links.',
-      features: [
-        { icon: '⬡', label: 'Blockchain Timestamp' },
-        { icon: '🔒', label: 'NDA-Gated Sharing' },
-        { icon: '✨', label: 'AI Pitch Builder' },
-        { icon: '🏪', label: 'Idea Marketplace' },
-      ],
+      title: firstSentence(soln) || `${t} solves this problem.`,
+      description: soln,
+      features: featuresFrom(how),
     },
     {
       type: 'market',
       sectionLabel: 'MARKET OPPORTUNITY',
-      headline: 'A $180B+ market with no dominant player.',
-      metrics: [
-        { value: '$180B+', label: 'Global IP Market' },
-        { value: '$100B+', label: 'Creator Economy' },
-        { value: '$1B+', label: 'TAM' },
-      ],
-      description: 'eurekAIdea sits at the intersection of the global IP market and the creator economy.',
-      tags: ['Entrepreneurs', 'Inventors', 'Founders', 'Companies', 'Investors'],
+      headline: mktNum ? `A ${mktNum} market opportunity.` : 'A large, fast-growing market with no dominant player.',
+      metrics: metricsFrom(mkt),
+      description: mkt || 'Rapidly growing market at the intersection of key technology trends.',
+      tags: cats.length ? cats : ['Founders', 'Investors', 'Enterprises'],
     },
     {
       type: 'business',
       sectionLabel: 'BUSINESS MODEL',
-      title: 'Freemium SaaS + Marketplace Transaction Fees',
-      freeTier: 'Idea submission, blockchain timestamp, basic PDF, limited sharing',
-      paidTier: 'AI pitch analysis, full presentation builder, unlimited sharing, marketplace access',
-      note: 'Future: marketplace transaction fees when companies license creator ideas',
+      title: firstSentence(biz) || 'Scalable revenue model designed for growth.',
+      freeTier: bizLines[0] || 'Core features, free to start',
+      paidTier: bizLines[1] || 'Advanced features and priority support',
+      note: bizLines.slice(2).join(' ') || 'Revenue scales with adoption and market growth.',
     },
     {
       type: 'advantage',
       sectionLabel: 'COMPETITIVE ADVANTAGE',
-      weHave: [
-        'Blockchain IP timestamping',
-        'NDA-gated sharing with access logs',
-        'AI pitch builder',
-        'Creator-to-company marketplace',
-      ],
+      weHave: bulletsFrom(adv, [
+        'Unique approach no competitor has tried',
+        'Proprietary technology or process',
+        'Network effects drive compounding growth',
+        'First-mover advantage in key segments',
+      ]),
       othersDont: [
-        'All-in-one platform',
-        'Idea monetization marketplace',
-        'Built-in NDA logging',
-        'AI-assisted pitch generation',
+        'Fully integrated end-to-end solution',
+        'Purpose-built for this specific market',
+        'Proprietary approach at scale',
+        'Seamless unified experience',
       ],
-      quote: 'No existing platform combines IP timestamping, NDA-gated sharing, AI pitch generation, and a marketplace in one place.',
+      quote: firstSentence(adv) || `${t} is uniquely positioned to lead this market.`,
     },
     {
       type: 'roadmap',
       sectionLabel: 'ROADMAP',
-      title: "What's next",
-      steps: [
-        { num: '01', title: 'Paid Tiers', description: 'AI analysis, advanced builder via Stripe' },
-        { num: '02', title: 'Idea Marketplace', description: 'Companies license creator ideas' },
-        { num: '03', title: 'Mobile App', description: 'iOS and Android' },
-        { num: '04', title: 'Partnerships', description: 'IP law firms and incubators' },
-      ],
+      title: "What's Next",
+      steps: roadmapFrom(lf),
     },
     {
       type: 'closing',
-      title: "Let's build the future of ideas together.",
-      subtitle: 'eurekAIdea is the only end-to-end platform for protecting, presenting, and monetizing ideas.',
-      email: 'corinnapcampbell@gmail.com',
+      title: `Let's build the future of ${cats[0] || 'innovation'} together.`,
+      subtitle: tagline || firstSentence(soln) || 'Ready to partner on the next big thing?',
+      email: ownerEmail,
       website: 'myeurekaidea.com',
     },
   ]
@@ -188,8 +256,7 @@ function SlideFooter({ slideNum, dark }) {
         <span style={{ background: GRAD, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>AI</span>
         <span style={{ color: logoText }}>dea</span>
       </span>
-      <span style={{ fontSize: 9, color: muted }}>Presented via EurekAIdea</span>
-      <span style={{ fontSize: 10, color: muted }}>{slideNum} / 8</span>
+      <span style={{ fontSize: 9, color: muted, letterSpacing: 0.3 }}>Confidential · {slideNum} / 8</span>
     </div>
   )
 }
@@ -218,7 +285,7 @@ function CoverSlide({ slide, slideNum, onUpdate }) {
         CONFIDENTIAL
       </div>
 
-      <div style={{ position: 'absolute', top: 58, left: 28, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ position: 'absolute', top: 58, left: 28, right: 28, display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
         {(slide.categories || []).map((cat, i) => (
           <span key={i} style={{ fontSize: 10, background: 'rgba(123,159,247,0.18)', color: '#7b9ff7', borderRadius: 20, padding: '3px 10px', border: '0.5px solid rgba(123,159,247,0.3)', display: 'inline-flex', alignItems: 'center' }}>
             <ET value={cat} onChange={u ? v => updateCat(i, v) : null} style={{ fontSize: 10 }} />
@@ -389,16 +456,22 @@ function BusinessSlide({ slide, slideNum, onUpdate }) {
           {u ? <ET value={slide.title} onChange={v => u('title', v)} multiline style={{ fontSize: 26, color: NAVY }} /> : slide.title}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 14, flex: 1 }}>
-          <div style={{ border: '1px solid rgba(0,0,0,0.09)', borderRadius: 12, padding: '22px 22px' }}>
-            <div style={{ fontSize: 9.5, fontWeight: 600, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Free Tier</div>
-            <div style={{ fontSize: 13, lineHeight: 1.7, color: '#444' }}>
-              {u ? <ET value={slide.freeTier} onChange={v => u('freeTier', v)} multiline style={{ fontSize: 13, color: '#444' }} /> : slide.freeTier}
+          <div style={{ border: '1px solid rgba(0,0,0,0.09)', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 3, background: GRAD, flexShrink: 0 }} />
+            <div style={{ padding: '18px 22px', flex: 1 }}>
+              <div style={{ fontSize: 9.5, fontWeight: 600, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Free Tier</div>
+              <div style={{ fontSize: 13, lineHeight: 1.7, color: '#444' }}>
+                {u ? <ET value={slide.freeTier} onChange={v => u('freeTier', v)} multiline style={{ fontSize: 13, color: '#444' }} /> : slide.freeTier}
+              </div>
             </div>
           </div>
-          <div style={{ background: NAVY, borderRadius: 12, padding: '22px 22px' }}>
-            <div style={{ fontSize: 9.5, fontWeight: 600, color: '#7b9ff7', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Paid Tier ✦</div>
-            <div style={{ fontSize: 13, lineHeight: 1.7, color: 'rgba(255,255,255,0.65)' }}>
-              {u ? <ET value={slide.paidTier} onChange={v => u('paidTier', v)} multiline style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }} /> : slide.paidTier}
+          <div style={{ background: NAVY, borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 3, background: GRAD, flexShrink: 0 }} />
+            <div style={{ padding: '18px 22px', flex: 1 }}>
+              <div style={{ fontSize: 9.5, fontWeight: 600, color: '#7b9ff7', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Paid Tier ✦</div>
+              <div style={{ fontSize: 13, lineHeight: 1.7, color: 'rgba(255,255,255,0.65)' }}>
+                {u ? <ET value={slide.paidTier} onChange={v => u('paidTier', v)} multiline style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }} /> : slide.paidTier}
+              </div>
             </div>
           </div>
         </div>
