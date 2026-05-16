@@ -8,13 +8,8 @@ const FIELDS = [
   { key: 'tagline',               label: 'Tagline',               hint: 'One punchy sentence capturing the essence of your idea', rows: 2 },
   { key: 'problem',               label: 'Problem',               hint: 'What pain point does this solve?',                        rows: 4 },
   { key: 'solution',              label: 'Solution',              hint: 'How does your idea solve the problem?',                   rows: 4 },
-  { key: 'how_it_works',          label: 'How It Works',          hint: 'Step-by-step breakdown of the product or process',        rows: 4 },
   { key: 'market_size',           label: 'Market Size',           hint: 'TAM / SAM / SOM with dollar figures',                    rows: 3 },
-  { key: 'target_audience',       label: 'Target Market',         hint: 'Who are your primary customers?',                        rows: 3 },
-  { key: 'business_model',        label: 'Business Model',        hint: 'Free tier, paid tier, pricing structure',                 rows: 4 },
   { key: 'competitive_advantage', label: 'Competitive Advantage', hint: 'What makes this uniquely positioned to win?',            rows: 4 },
-  { key: 'risks',                 label: 'Risks & Challenges',    hint: 'Key risks and how you plan to address them',             rows: 4 },
-  { key: 'next_steps',            label: 'Next Steps',            hint: 'Immediate action items to move forward',                 rows: 4 },
 ]
 
 function escH(s) {
@@ -320,6 +315,25 @@ export default function PitchPDF({ session }) {
   const [generating,  setGenerating]  = useState(false)
   const previewRef = useRef(null)
 
+  // Chip input state
+  const [howItWorksChips,   setHowItWorksChips]   = useState([])
+  const [howItWorksInput,   setHowItWorksInput]   = useState('')
+  const [targetMarketChips, setTargetMarketChips] = useState([])
+  const [targetMarketInput, setTargetMarketInput] = useState('')
+  const [freeTierChips,     setFreeTierChips]     = useState([])
+  const [freeTierInput,     setFreeTierInput]     = useState('')
+  const [paidTierChips,     setPaidTierChips]     = useState([])
+  const [paidTierInput,     setPaidTierInput]     = useState('')
+  const [risksChips,        setRisksChips]        = useState([])
+  const [risksInput,        setRisksInput]        = useState('')
+  const [nextStepsChips,    setNextStepsChips]    = useState([])
+  const [nextStepsInput,    setNextStepsInput]    = useState('')
+
+  const [suggestions, setSuggestions] = useState({
+    howItWorks: [], targetMarket: [], freeTier: [], paidTier: [], risks: [], nextSteps: [],
+  })
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+
   useEffect(() => {
     async function load() {
       const [{ data: { user } }, { data }] = await Promise.all([
@@ -349,6 +363,51 @@ export default function PitchPDF({ session }) {
   }, [ideaId, navigate])
 
   useEffect(() => {
+    if (!idea || !idea.title) return
+    const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
+    if (!apiKey) return
+    const loadSuggestions = async () => {
+      setLoadingSuggestions(true)
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            messages: [{
+              role: 'user',
+              content: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}, generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]}`,
+            }],
+          }),
+        })
+        const data = await res.json()
+        const text = data.content?.[0]?.text || '{}'
+        const clean = text.replace(/```json|```/g, '').trim()
+        const parsed = JSON.parse(clean)
+        setSuggestions({
+          howItWorks:   parsed.howItWorks   || [],
+          targetMarket: parsed.targetMarket || [],
+          freeTier:     parsed.freeTier     || [],
+          paidTier:     parsed.paidTier     || [],
+          risks:        parsed.risks        || [],
+          nextSteps:    parsed.nextSteps    || [],
+        })
+      } catch (e) {
+        console.error('Suggestion load failed', e)
+      } finally {
+        setLoadingSuggestions(false)
+      }
+    }
+    loadSuggestions()
+  }, [idea])
+
+  useEffect(() => {
     if (stage === 'preview') {
       setTimeout(() => previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
     }
@@ -356,6 +415,89 @@ export default function PitchPDF({ session }) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [stage])
+
+  const addChip = (chips, setChips, input, setInput) => {
+    const val = input.trim()
+    if (val && !chips.includes(val)) setChips([...chips, val])
+    setInput('')
+  }
+
+  const removeChip = (chips, setChips, index) => {
+    setChips(chips.filter((_, i) => i !== index))
+  }
+
+  const addSuggestion = (chips, setChips, val) => {
+    if (!chips.includes(val)) setChips([...chips, val])
+  }
+
+  const ChipInput = ({ chips, setChips, inputVal, setInputVal, placeholder, suggestionKey, color = '#7b9ff7' }) => (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={inputVal}
+          onChange={e => setInputVal(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addChip(chips, setChips, inputVal, setInputVal) } }}
+          placeholder={placeholder || 'Type a point and press Enter...'}
+          style={{
+            flex: 1, padding: '8px 12px', borderRadius: 8,
+            border: '0.5px solid rgba(44,44,42,0.2)', background: '#fafaf8', color: '#2c2c2a',
+            fontSize: 14, outline: 'none', fontFamily: 'inherit',
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => addChip(chips, setChips, inputVal, setInputVal)}
+          style={{
+            padding: '8px 14px', borderRadius: 8, border: 'none',
+            background: color, color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+          }}
+        >+ Add</button>
+      </div>
+      {chips.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+          {chips.map((chip, i) => (
+            <span key={i} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: color + '22', border: `1px solid ${color}`,
+              borderRadius: 20, padding: '4px 12px', fontSize: 13, color: '#2c2c2a',
+            }}>
+              {chip}
+              <span
+                onClick={() => removeChip(chips, setChips, i)}
+                style={{ cursor: 'pointer', color: '#aaa', fontWeight: 700, fontSize: 15, lineHeight: 1 }}
+              >×</span>
+            </span>
+          ))}
+        </div>
+      )}
+      {suggestions[suggestionKey]?.length > 0 && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 11, color: '#b0b0a8', marginBottom: 6 }}>
+            {loadingSuggestions ? '✨ Loading suggestions...' : '✨ AI suggestions — click to add:'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {suggestions[suggestionKey].map((s, i) => (
+              !chips.includes(s) && (
+                <span
+                  key={i}
+                  onClick={() => addSuggestion(chips, setChips, s)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    background: 'transparent', border: `1px dashed ${color}88`,
+                    borderRadius: 20, padding: '3px 10px', fontSize: 12,
+                    color: '#888', cursor: 'pointer', opacity: 0.75,
+                    transition: 'opacity 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '0.75'}
+                >{s}</span>
+              )
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 
   async function aiSuggest(fieldKey) {
     setSuggesting(fieldKey)
@@ -381,11 +523,20 @@ export default function PitchPDF({ session }) {
 
   async function handleGenerate() {
     setGenerating(true)
-    let bmSplit = null
+    const formWithChips = {
+      ...form,
+      how_it_works:  howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+      target_audience: targetMarketChips.join(', '),
+      risks:         risksChips.map(r => `• ${r}`).join('\n'),
+      next_steps:    nextStepsChips.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+    }
+    let bmSplit = (freeTierChips.length || paidTierChips.length)
+      ? { free: freeTierChips, paid: paidTierChips }
+      : null
 
     try {
       const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
-      if (apiKey && form.business_model?.trim()) {
+      if (!bmSplit && apiKey && form.business_model?.trim()) {
         const prompt =
           `You are a business model analyzer. Read this text and split it into exactly two lists: free tier features and paid tier features. Return ONLY a JSON object with no other text, no markdown, no explanation. Format: {"free": ["feature 1", "feature 2"], "paid": ["feature 1", "feature 2"]}. If you cannot find clear free/paid distinction, infer it intelligently — free tier typically includes basic features, paid tier includes advanced/premium features. Text to analyze: ` +
           form.business_model
@@ -434,7 +585,7 @@ export default function PitchPDF({ session }) {
       bmSplit = { free: sentences.slice(0, mid), paid: sentences.slice(mid) }
     }
 
-    const html = buildPreviewHTML(form, idea, session?.user?.email, bmSplit)
+    const html = buildPreviewHTML(formWithChips, idea, session?.user?.email, bmSplit)
     setPreviewHTML(html)
     setGenerating(false)
     setStage('preview')
@@ -558,6 +709,96 @@ export default function PitchPDF({ session }) {
               />
             </div>
           ))}
+
+          {/* How It Works — chip input */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.5rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>How It Works</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Step-by-step breakdown of the product or process</div>
+              </div>
+            </div>
+            <ChipInput
+              chips={howItWorksChips} setChips={setHowItWorksChips}
+              inputVal={howItWorksInput} setInputVal={setHowItWorksInput}
+              placeholder="Describe a step and press Enter..."
+              suggestionKey="howItWorks" color="#7b9ff7"
+            />
+          </div>
+
+          {/* Target Market — chip input */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.5rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Target Market</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Who are your primary customers?</div>
+              </div>
+            </div>
+            <ChipInput
+              chips={targetMarketChips} setChips={setTargetMarketChips}
+              inputVal={targetMarketInput} setInputVal={setTargetMarketInput}
+              placeholder="e.g. 🚀 Startup Founders — press Enter to add"
+              suggestionKey="targetMarket" color="#9b7ff7"
+            />
+          </div>
+
+          {/* Business Model — two side-by-side chip inputs */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Business Model</div>
+            <div style={{ fontSize: 12, color: '#b0b0a8', marginBottom: '0.75rem' }}>Free tier, paid tier, pricing structure</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div>
+                <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>🆓 Free Tier</div>
+                <ChipInput
+                  chips={freeTierChips} setChips={setFreeTierChips}
+                  inputVal={freeTierInput} setInputVal={setFreeTierInput}
+                  placeholder="Free feature, press Enter..."
+                  suggestionKey="freeTier" color="#4caf89"
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>⭐ Paid Tier</div>
+                <ChipInput
+                  chips={paidTierChips} setChips={setPaidTierChips}
+                  inputVal={paidTierInput} setInputVal={setPaidTierInput}
+                  placeholder="Paid feature, press Enter..."
+                  suggestionKey="paidTier" color="#f0a500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Risks & Challenges — chip input */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.5rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Risks &amp; Challenges</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Key risks and how you plan to address them</div>
+              </div>
+            </div>
+            <ChipInput
+              chips={risksChips} setChips={setRisksChips}
+              inputVal={risksInput} setInputVal={setRisksInput}
+              placeholder="Describe a risk and press Enter..."
+              suggestionKey="risks" color="#e05c7a"
+            />
+          </div>
+
+          {/* Next Steps — chip input */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.5rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Next Steps</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Immediate action items to move forward</div>
+              </div>
+            </div>
+            <ChipInput
+              chips={nextStepsChips} setChips={setNextStepsChips}
+              inputVal={nextStepsInput} setInputVal={setNextStepsInput}
+              placeholder="Describe a milestone and press Enter..."
+              suggestionKey="nextSteps" color="#7b9ff7"
+            />
+          </div>
 
           <button
             onClick={handleGenerate}
