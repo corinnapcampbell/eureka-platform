@@ -59,6 +59,16 @@ export default function IdeaDetail({ session }) {
         pricing_model: data.pricing_model || 'One-time buyout',
       })
       setLoading(false)
+
+      // Pre-load any existing share link so "Preview as Investor" works on reload
+      const { data: existingLink } = await supabase
+        .from('shared_links')
+        .select('token')
+        .eq('idea_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (existingLink?.token) setShareLink(`${window.location.origin}/share/${existingLink.token}`)
     }
     fetchIdea()
   }, [id])
@@ -439,10 +449,11 @@ export default function IdeaDetail({ session }) {
               </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <a
-                  href={`/pitch/${id}`}
+                  href={shareLink || (idea?.share_token ? `/share/${idea.share_token}` : undefined)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fontSize: 12, color: '#7b9ff7', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 6, padding: '5px 11px', textDecoration: 'none', fontWeight: 500, background: 'rgba(123,159,247,0.06)' }}
+                  onClick={!shareLink && !idea?.share_token ? (e) => { e.preventDefault(); generateShareLink() } : undefined}
+                  style={{ fontSize: 12, color: '#7b9ff7', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 6, padding: '5px 11px', textDecoration: 'none', fontWeight: 500, background: 'rgba(123,159,247,0.06)', cursor: 'pointer' }}
                 >
                   👁 Preview as Investor
                 </a>
