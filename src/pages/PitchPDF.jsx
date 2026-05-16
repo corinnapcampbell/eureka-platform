@@ -359,34 +359,37 @@ export default function PitchPDF({ session }) {
       })
 
       // Pre-populate chip arrays so handlePublish always has chip content
-      setHowItWorksChips(
-        (data.how_it_works || '').split('\n')
-          .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
-          .filter(Boolean)
-      )
-      setTargetMarketChips(
-        (data.target_audience || '').split(/,\s*/).map(s => s.trim()).filter(Boolean)
-      )
-      setRisksChips(
-        (data.risks || '').split('\n')
-          .map(s => s.replace(/^[•\-\*]\s*/, '').trim())
-          .filter(Boolean)
-      )
-      setNextStepsChips(
-        (data.next_steps || '').split('\n')
-          .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
-          .filter(Boolean)
-      )
+      const parsedHowItWorks = (data.how_it_works || '').split('\n')
+        .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
+        .filter(Boolean)
+      const parsedTargetMarket = (data.target_audience || '').split(/,\s*/).map(s => s.trim()).filter(Boolean)
+      const parsedRisks = (data.risks || '').split('\n')
+        .map(s => s.replace(/^[•\-\*]\s*/, '').trim())
+        .filter(Boolean)
+      const parsedNextSteps = (data.next_steps || '').split('\n')
+        .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
+        .filter(Boolean)
       const bmLines = (data.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
       const freeChips = bmLines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
       const paidChips = bmLines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
-      if (freeChips.length || paidChips.length) {
-        setFreeTierChips(freeChips)
-        setPaidTierChips(paidChips)
-      } else {
-        setFreeTierChips(bmLines)
-        setPaidTierChips([])
-      }
+      const parsedFreeTier = (freeChips.length || paidChips.length) ? freeChips : bmLines
+      const parsedPaidTier = (freeChips.length || paidChips.length) ? paidChips : []
+
+      setHowItWorksChips(parsedHowItWorks)
+      setTargetMarketChips(parsedTargetMarket)
+      setRisksChips(parsedRisks)
+      setNextStepsChips(parsedNextSteps)
+      setFreeTierChips(parsedFreeTier)
+      setPaidTierChips(parsedPaidTier)
+
+      console.log('CHIPS PRE-POPULATED:', {
+        howItWorks:   parsedHowItWorks,
+        targetMarket: parsedTargetMarket,
+        risks:        parsedRisks,
+        nextSteps:    parsedNextSteps,
+        freeTier:     parsedFreeTier,
+        paidTier:     parsedPaidTier,
+      })
 
       setLoading(false)
     }
@@ -623,6 +626,14 @@ export default function PitchPDF({ session }) {
   }
 
   async function handlePublish() {
+    console.log('CHIP STATE AT PUBLISH:', {
+      howItWorksChips,
+      targetMarketChips,
+      freeTierChips,
+      paidTierChips,
+      risksChips,
+      nextStepsChips,
+    })
     setPublishing(true)
     const snapshot = {
       ...form,
