@@ -33,7 +33,24 @@ function parseSteps(text) {
   return [t]
 }
 
-function buildPreviewHTML(form, idea, userEmail) {
+function fallbackSplitBM(text) {
+  const lines = (text || '').split('\n').map(s => s.trim()).filter(Boolean)
+  const freeIdx = lines.findIndex(l => /^free:/i.test(l))
+  const paidIdx = lines.findIndex(l => /paid:|premium|unlock/i.test(l))
+  if (freeIdx >= 0 || paidIdx >= 0) {
+    return {
+      free: freeIdx >= 0 ? [lines[freeIdx].replace(/^free:\s*/i, '')] : [],
+      paid: paidIdx >= 0 ? [lines[paidIdx].replace(/^paid:\s*/i, '')] : [],
+    }
+  }
+  if (lines.length >= 2) {
+    const mid = Math.ceil(lines.length / 2)
+    return { free: lines.slice(0, mid), paid: lines.slice(mid) }
+  }
+  return { free: lines, paid: [] }
+}
+
+function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
   const cats = Array.isArray(idea.categories)
     ? idea.categories
     : typeof idea.categories === 'string'
@@ -48,11 +65,8 @@ function buildPreviewHTML(form, idea, userEmail) {
 
   const marketNums = (form.market_size || '').match(/\$[\d.]+[BMKbmk]+\+?/g) || []
 
-  const bmLines = (form.business_model || '').split('\n')
-  const freeLine = bmLines.find(l => /^free:/i.test(l.trim()))
-  const paidLine = bmLines.find(l => /^paid:/i.test(l.trim()))
-  const freeText = freeLine ? freeLine.replace(/^free:\s*/i, '') : bmLines[0] || ''
-  const paidText = paidLine ? paidLine.replace(/^paid:\s*/i, '') : bmLines[1] || ''
+  const { free: freeBullets, paid: paidBullets } =
+    (bmSplit?.free?.length || bmSplit?.paid?.length) ? bmSplit : fallbackSplitBM(form.business_model)
 
   const risks = (form.risks || '').split('\n').map(s => s.trim()).filter(Boolean)
   const nextSteps = (form.next_steps || '').split('\n').map(s => s.trim()).filter(Boolean)
@@ -222,6 +236,10 @@ function buildPreviewHTML(form, idea, userEmail) {
       <div class="abar"></div>
     </div>`
 
+  const bmBullet = (items) => items.length
+    ? items.map(item => `· ${escH(item)}`).join('<br>')
+    : ''
+
   const page4 = `
     <div class="page">
       <div class="abar"></div>
@@ -233,8 +251,8 @@ function buildPreviewHTML(form, idea, userEmail) {
           <div class="divider"></div>
           <div class="shead"><div class="sicon">💰</div><div class="slabel">BUSINESS MODEL</div></div>
           <div class="twocards">
-            <div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${escH(freeText)}</div></div>
-            <div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${escH(paidText)}</div></div>
+            <div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeBullets)}</div></div>
+            <div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidBullets)}</div></div>
           </div>
         </div>
         ${pfooter}
@@ -287,6 +305,24 @@ function buildPreviewHTML(form, idea, userEmail) {
   return `<style>${CSS}</style><div class="pdf-wrap">${coverPage}${page2}${page3}${page4}${page5}${lastPage}</div>`
 }
 
+async function splitBusinessModel(text) {
+  if (!text?.trim()) return { free: [], paid: [] }
+  try {
+    const res = await fetch('/api/functions/split-business-model', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ businessModel: text }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.free?.length || data.paid?.length) return data
+    }
+  } catch (e) {
+    console.error('splitBusinessModel error:', e)
+  }
+  return fallbackSplitBM(text)
+}
+
 export default function PitchPDF({ session }) {
   const { ideaId } = useParams()
   const navigate   = useNavigate()
@@ -299,6 +335,7 @@ export default function PitchPDF({ session }) {
   const [publishing,  setPublishing]  = useState(false)
   const [publishSuccess, setPublishSuccess] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [generating,  setGenerating]  = useState(false)
   const previewRef = useRef(null)
 
   useEffect(() => {
@@ -360,9 +397,12 @@ export default function PitchPDF({ session }) {
     setSuggesting(null)
   }
 
-  function handleGenerate() {
-    const html = buildPreviewHTML(form, idea, session?.user?.email)
+  async function handleGenerate() {
+    setGenerating(true)
+    const bmSplit = await splitBusinessModel(form.business_model)
+    const html = buildPreviewHTML(form, idea, session?.user?.email, bmSplit)
     setPreviewHTML(html)
+    setGenerating(false)
     setStage('preview')
   }
 
@@ -487,14 +527,16 @@ export default function PitchPDF({ session }) {
 
           <button
             onClick={handleGenerate}
+            disabled={generating}
             style={{
               width: '100%', background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
               color: '#fff', border: 'none', borderRadius: 12, padding: '16px',
-              fontSize: 16, fontWeight: 600, cursor: 'pointer', marginTop: '0.5rem',
-              letterSpacing: '0.2px',
+              fontSize: 16, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer',
+              marginTop: '0.5rem', letterSpacing: '0.2px',
+              opacity: generating ? 0.75 : 1, transition: 'opacity 0.15s',
             }}
           >
-            ✨ Generate Preview
+            {generating ? '…Building Preview' : '✨ Generate Preview'}
           </button>
         </div>
       )}
