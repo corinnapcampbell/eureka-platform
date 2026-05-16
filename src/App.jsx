@@ -60,16 +60,8 @@ export default function App() {
       } />
       <Route path="/share/:token" element={<SharedIdea />} />
       <Route path="/deck/view/:shareToken" element={<DeckViewer />} />
-      <Route path="/pitch/:ideaId" element={
-        <ProtectedRoute session={session}>
-          <PitchBuilder session={session} />
-        </ProtectedRoute>
-      } />
-      <Route path="/deck/:ideaId" element={
-        <ProtectedRoute session={session}>
-          <DeckBuilder session={session} />
-        </ProtectedRoute>
-      } />
+      <Route path="/pitch/:ideaId" element={<PitchBuilder session={session} />} />
+      <Route path="/deck/:ideaId" element={<DeckBuilder session={session} />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" replace />} />

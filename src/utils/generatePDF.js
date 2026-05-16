@@ -25,45 +25,56 @@ export function hasMultipleSteps(text) {
 }
 
 // ── PDF export ───────────────────────────────────────────────────────────────
+// Template: 4-page A4 portrait
+//   Page 1 — Dark navy cover
+//   Page 2 — Problem + Solution (side-by-side) + How It Works
+//   Page 3 — Market Size + Metrics + Target Audience + Business Model
+//   Page 4 — Competitive Advantage (We Have / They Don't) + Risks + Next Steps + Closing
 
-export function generateIdeaPDF(idea, { userEmail = '' } = {}) {
-  const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
-  const W = 210, H = 297, ml = 18, mr = 18
-  const contentW = W - ml - mr
+export function generateIdeaPDF(idea, { userEmail = '', returnBlob = false } = {}) {
+  const doc  = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
+  const W    = 210, H = 297
+  const ml   = 16, mr = 16            // left/right margin
+  const cW   = W - ml - mr            // 178mm content width
+  const colW = (cW - 5) / 2           // ~86.5mm per side-by-side column
 
-  // Colors
-  const NAVY  = [14, 14, 31]
-  const ACC1  = [123, 159, 247]
-  const ACC2  = [155, 127, 247]
-  const DARK  = [44, 44, 42]
-  const GRAY  = [136, 135, 128]
-  const LGRAY = [150, 150, 160]
-  const WHITE = [255, 255, 255]
-  const MUTED = [160, 160, 185]  // approx rgba(255,255,255,0.45) on navy
+  // ── Palette ────────────────────────────────────────────────────────────────
+  const NAVY   = [14, 14, 31]
+  const ACC1   = [123, 159, 247]       // blue
+  const ACC2   = [155, 127, 247]       // purple
+  const GREEN  = [72, 180, 120]
+  const RED    = [200, 80, 80]
+  const PINK   = [224, 123, 159]
+  const DARK   = [32, 32, 30]
+  const GRAY   = [130, 128, 120]
+  const LGRAY  = [158, 155, 152]
+  const WHITE  = [255, 255, 255]
+  const MUTED  = [158, 158, 185]       // white text at ~45% on dark bg
+  const CARD   = [246, 246, 244]       // default card bg
+  const CARD_B = [242, 244, 252]       // blue-tinted card bg
 
-  // Deduplicate all array/split fields up front
+  // ── Preprocessed fields ────────────────────────────────────────────────────
   const categories = dedupeArray(idea?.category || [])
   const lookingFor = dedupeArray(
     (idea?.terms || '').split(/,\s*/).map(s => s.trim()).filter(Boolean)
   )
   const audTags = dedupeArray(
-    (idea?.target_audience || '').split(/,|;/).map(s => s.trim()).filter(Boolean)
+    (idea?.target_audience || '').split(/[,;]/).map(s => s.trim()).filter(Boolean)
   )
-
   const dateStr = idea?.created_at
     ? new Date(idea.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
-  const lh  = (fs, factor = 1.6) => fs * 0.352778 * factor
+  // ── Core draw helpers ──────────────────────────────────────────────────────
+  const lh   = (fs, fac = 1.65) => fs * 0.352778 * fac
   const fill   = c => doc.setFillColor(...c)
   const stroke = c => doc.setDrawColor(...c)
   const ink    = c => doc.setTextColor(...c)
-  const f      = (style, size) => { doc.setFont('helvetica', style); doc.setFontSize(size) }
+  const font   = (style, size) => { doc.setFont('helvetica', style); doc.setFontSize(size) }
+  const rlw    = () => doc.setLineWidth(0.25)
 
   function gradientBar(y, h = 4) {
-    const steps = 42
+    const steps = 44
     for (let i = 0; i < steps; i++) {
       const t = i / (steps - 1)
       doc.setFillColor(
@@ -73,12 +84,11 @@ export function generateIdeaPDF(idea, { userEmail = '' } = {}) {
       )
       doc.rect((W / steps) * i, y, W / steps + 0.5, h, 'F')
     }
-    doc.setLineWidth(0.25)
+    rlw()
   }
 
-  function gradientLine(x1, x2, y) {
-    const steps = 24
-    const lineW = x2 - x1
+  function gradientRule(x1, x2, y, lw = 0.5) {
+    const steps = 24, span = x2 - x1
     for (let i = 0; i < steps; i++) {
       const t = i / (steps - 1)
       doc.setDrawColor(
@@ -86,29 +96,15 @@ export function generateIdeaPDF(idea, { userEmail = '' } = {}) {
         Math.round(ACC1[1] + t * (ACC2[1] - ACC1[1])),
         Math.round(ACC1[2] + t * (ACC2[2] - ACC1[2]))
       )
-      doc.setLineWidth(0.5)
-      const sx = x1 + (lineW / steps) * i
-      doc.line(sx, y, sx + lineW / steps + 0.5, y)
+      doc.setLineWidth(lw)
+      const sx = x1 + (span / steps) * i
+      doc.line(sx, y, sx + span / steps + 0.5, y)
     }
-    doc.setLineWidth(0.25)
-  }
-
-  function pageBars() {
-    gradientBar(0, 4)
-    gradientBar(H - 4, 4)
-  }
-
-  function logoWhite(x, y, size = 14) {
-    f('bold', size)
-    ink(WHITE); doc.text('Eurek', x, y)
-    const ew = doc.getTextWidth('Eurek')
-    ink(ACC1); doc.text('AI', x + ew, y)
-    const aw = doc.getTextWidth('AI')
-    ink(WHITE); doc.text('dea', x + ew + aw, y)
+    rlw()
   }
 
   function logoDark(x, y, size = 10) {
-    f('bold', size)
+    font('bold', size)
     ink(DARK); doc.text('Eurek', x, y)
     const ew = doc.getTextWidth('Eurek')
     ink(ACC1); doc.text('AI', x + ew, y)
@@ -116,380 +112,453 @@ export function generateIdeaPDF(idea, { userEmail = '' } = {}) {
     ink(DARK); doc.text('dea', x + ew + aw, y)
   }
 
+  function logoWhite(x, y, size = 14) {
+    font('bold', size)
+    ink(WHITE); doc.text('Eurek', x, y)
+    const ew = doc.getTextWidth('Eurek')
+    ink(ACC1); doc.text('AI', x + ew, y)
+    const aw = doc.getTextWidth('AI')
+    ink(WHITE); doc.text('dea', x + ew + aw, y)
+  }
+
+  // Page header: logo left, page number centred, thin rule below
   function pageHeader(num) {
     logoDark(ml, 14)
-    f('normal', 8); ink(LGRAY)
-    doc.text(`${num} / 4`, W - mr, 14, { align: 'right' })
+    font('normal', 8.5); ink(LGRAY)
+    doc.text(`${num} / 4`, W / 2, 14, { align: 'center' })
+    stroke([218, 216, 212]); rlw()
+    doc.line(ml, 17.5, W - mr, 17.5)
   }
 
-  function pageFooter() {
-    f('normal', 7.5); ink(LGRAY)
-    doc.text('Protected & Presented by eurekAIdea · myeurekaidea.com', ml, H - 8)
-    doc.text('Confidential', W - mr, H - 8, { align: 'right' })
+  // Footer: left tagline + right "Confidential"
+  function pageFooter(y = H - 7) {
+    font('normal', 7.5); ink(LGRAY)
+    doc.text('Protected & Presented by eurekAIdea · myeurekaidea.com', ml, y)
+    doc.text('Confidential', W - mr, y, { align: 'right' })
   }
 
-  function sectionLabel(y, text) {
-    f('bold', 8); ink(ACC2)
-    doc.text(text.toUpperCase(), ml, y)
-    return y + 5.5
+  // ── Card system ────────────────────────────────────────────────────────────
+  // Cards: light bg, 2mm rounded corners, 2.5mm coloured left border,
+  //        8pt bold uppercase label, 11pt body text.
+
+  const CARD_PAD_V  = 8    // top/bottom padding inside card
+  const CARD_PAD_H  = 8    // left padding (after left border)
+  const CARD_LABEL  = 9    // height reserved for label row
+  const BODY_FS     = 11   // body font size (pt)  ≈ 14.7px
+  const BODY_LH     = () => lh(BODY_FS)
+
+  // Calculate card height for a given body line array
+  function cardH(lines) {
+    return CARD_PAD_V + CARD_LABEL + lines.length * BODY_LH() + CARD_PAD_V
   }
 
-  function dividerLine(y) {
-    stroke([210, 210, 220]); doc.setLineWidth(0.25)
-    doc.line(ml, y, W - mr, y)
-    return y + 8
+  // Draw a card (card bg + left border + label + body lines)
+  function drawCard(x, y, w, h, label, color, lines, bg = CARD) {
+    fill(bg);   doc.roundedRect(x, y, w, h, 2, 2, 'F')
+    fill(color); doc.roundedRect(x, y, 2.5, h, 1, 1, 'F')
+    font('bold', 8); ink(color)
+    doc.text(label.toUpperCase(), x + CARD_PAD_H, y + CARD_PAD_V + 1)
+    font('normal', BODY_FS); ink(DARK)
+    const bodyY = y + CARD_PAD_V + CARD_LABEL
+    lines.forEach((ln, i) => doc.text(ln, x + CARD_PAD_H, bodyY + i * BODY_LH()))
   }
 
-  function gradientCircle(cx, cy, r, num, idx) {
+  // Draw a matched-height card pair side by side; returns the common height
+  function cardPair(y, lLabel, lColor, lLines, lBg, rLabel, rColor, rLines, rBg) {
+    const lH   = cardH(lLines)
+    const rH   = cardH(rLines)
+    const maxH = Math.max(lH, rH)
+    drawCard(ml,           y, colW, maxH, lLabel, lColor, lLines, lBg)
+    drawCard(ml + colW + 5, y, colW, maxH, rLabel, rColor, rLines, rBg)
+    return maxH
+  }
+
+  // Numbered-step circle (gradient fill, white number)
+  function stepCircle(cx, cy, r, num, idx) {
     fill(idx % 2 === 0 ? ACC1 : ACC2)
     doc.ellipse(cx, cy, r, r, 'F')
-    f('bold', 7.5); ink(WHITE)
-    doc.text(String(num), cx, cy + 1.1, { align: 'center' })
+    font('bold', r > 3.5 ? 8 : 7); ink(WHITE)
+    doc.text(String(num), cx, cy + r * 0.32, { align: 'center' })
+  }
+
+  // Bullet dot (coloured small circle)
+  function dot(cx, cy, color) {
+    fill(color)
+    doc.ellipse(cx, cy, 1.6, 1.6, 'F')
+  }
+
+  // Split text to fit a width, strip leading markers, cap at maxLines
+  function wrap(text, w, maxLines = 999) {
+    return doc.splitTextToSize(
+      text.replace(/^\d+[\.\)]\s*|^[-•*]\s*/, '').trim(), w
+    ).slice(0, maxLines)
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PAGE 1 — COVER
   // ═══════════════════════════════════════════════════════════════════════════
   fill(NAVY); doc.rect(0, 0, W, H, 'F')
-  pageBars()
+  gradientBar(0, 4)
+  gradientBar(H - 4, 4)
 
-  // Logo — white, top left
-  logoWhite(ml, 15.5)
-
-  // CONFIDENTIAL badge — top right
-  f('normal', 7)
-  const cbText = 'CONFIDENTIAL'
-  const cbTW = doc.getTextWidth(cbText)
-  const cbW = cbTW + 7, cbH = 5.5, cbX = W - mr - cbW, cbY = 11
-  doc.setFillColor(22, 26, 52); stroke(ACC1); doc.setLineWidth(0.3)
+  // Logo (white) + CONFIDENTIAL badge
+  logoWhite(ml, 16)
+  font('normal', 7)
+  const cbT  = 'CONFIDENTIAL'
+  const cbTW = doc.getTextWidth(cbT)
+  const cbW  = cbTW + 7, cbH = 5.5
+  const cbX  = W - mr - cbW, cbY = 11.5
+  doc.setFillColor(20, 24, 50); stroke(ACC1); doc.setLineWidth(0.3)
   doc.roundedRect(cbX, cbY, cbW, cbH, 1.5, 1.5, 'FD')
-  ink(ACC1); doc.text(cbText, cbX + 3.5, cbY + 3.9)
+  ink(ACC1); doc.text(cbT, cbX + 3.5, cbY + 3.9)
+  rlw()
 
   // Category chips
-  f('normal', 7.5)
-  let cx = ml
+  font('normal', 7.5)
+  let chipX = ml
   categories.forEach(cat => {
-    const tw = doc.getTextWidth(cat)
-    const cw = tw + 8
-    if (cx + cw > W - mr) return
-    doc.setFillColor(22, 26, 52); stroke(ACC1); doc.setLineWidth(0.2)
-    doc.roundedRect(cx, 24, cw, 6, 1.5, 1.5, 'FD')
-    ink(ACC1); doc.text(cat, cx + 4, 28.2)
-    cx += cw + 3
+    const tw = doc.getTextWidth(cat), cw = tw + 8
+    if (chipX + cw > W - mr) return
+    doc.setFillColor(20, 24, 50); stroke(ACC1); doc.setLineWidth(0.2)
+    doc.roundedRect(chipX, 25, cw, 6, 1.5, 1.5, 'FD')
+    ink(ACC1); doc.text(cat, chipX + 4, 29.2)
+    chipX += cw + 3
   })
+  rlw()
 
-  // Title — large, bold, white, centered
-  f('bold', 22); ink(WHITE)
-  const titleText  = (idea?.title || 'Untitled Idea').trim()
-  const titleLines = doc.splitTextToSize(titleText, contentW - 8)
-  const titleY     = 100
-  const titleLH    = lh(22, 1.25)
-  titleLines.slice(0, 3).forEach((line, i) => {
-    doc.text(line, W / 2, titleY + i * titleLH, { align: 'center' })
-  })
+  // Large title, centred
+  font('bold', 22); ink(WHITE)
+  const titleT  = (idea?.title || 'Untitled Idea').trim()
+  const titleLs = doc.splitTextToSize(titleT, cW - 8)
+  const titleY  = 100, titleLH = lh(22, 1.25)
+  titleLs.slice(0, 3).forEach((ln, i) =>
+    doc.text(ln, W / 2, titleY + i * titleLH, { align: 'center' })
+  )
 
-  // Tagline — muted, size 13
+  // Tagline
   const tagline = (idea?.tagline || '').trim()
-  let afterTitleY = titleY + Math.min(titleLines.length, 3) * titleLH
+  let afterTitle = titleY + Math.min(titleLs.length, 3) * titleLH
   if (tagline) {
-    afterTitleY += 8
-    f('normal', 13); ink(MUTED)
-    const tLines = doc.splitTextToSize(tagline, contentW - 30)
-    tLines.slice(0, 2).forEach((line, i) => {
-      doc.text(line, W / 2, afterTitleY + i * lh(13, 1.35), { align: 'center' })
-    })
-    afterTitleY += tLines.slice(0, 2).length * lh(13, 1.35)
+    afterTitle += 8
+    font('normal', 13); ink(MUTED)
+    const tLs = doc.splitTextToSize(tagline, cW - 28)
+    tLs.slice(0, 2).forEach((ln, i) =>
+      doc.text(ln, W / 2, afterTitle + i * lh(13, 1.4), { align: 'center' })
+    )
+    afterTitle += tLs.slice(0, 2).length * lh(13, 1.4)
   }
 
-  // Gradient divider line
-  const divY = Math.max(afterTitleY + 12, 155)
-  gradientLine(ml + 25, W - mr - 25, divY)
+  // Gradient rule
+  const ruleY = Math.max(afterTitle + 13, 155)
+  gradientRule(ml + 22, W - mr - 22, ruleY)
 
   // 2×2 metadata grid
-  const metaY = divY + 12
-  const mcW = (contentW - 8) / 2
-  const metaItems = [
+  const metaY = ruleY + 13
+  const metaW = (cW - 8) / 2
+  ;[
     { label: 'Submitted by', value: userEmail || '—' },
     { label: 'Date',         value: dateStr },
-    { label: 'Market Size',  value: (idea?.market_size || '—') },
+    { label: 'Market Size',  value: idea?.market_size || '—' },
     { label: 'Looking For',  value: lookingFor.join(', ') || '—' },
-  ]
-  metaItems.forEach((item, i) => {
+  ].forEach((m, i) => {
     const col = i % 2, row = Math.floor(i / 2)
-    const mx = ml + col * (mcW + 8)
-    const my = metaY + row * 22
-    f('normal', 7.5); ink([70, 70, 108])
-    doc.text(item.label.toUpperCase(), mx, my)
-    f('bold', 10.5); ink(WHITE)
-    const vLines = doc.splitTextToSize(String(item.value).slice(0, 80), mcW - 4)
-    vLines.slice(0, 2).forEach((line, li) => {
-      doc.text(line, mx, my + 6 + li * lh(10.5, 1.3))
-    })
+    const mx = ml + col * (metaW + 8), my = metaY + row * 23
+    font('normal', 7.5); ink([68, 68, 108])
+    doc.text(m.label.toUpperCase(), mx, my)
+    font('bold', 10.5); ink(WHITE)
+    doc.splitTextToSize(String(m.value).slice(0, 80), metaW - 4)
+      .slice(0, 2)
+      .forEach((ln, li) => doc.text(ln, mx, my + 6.5 + li * lh(10.5, 1.3)))
   })
 
-  // Blockchain hash — bottom, dark monospace
+  // Blockchain hash footer (very small, very dark)
   if (idea?.blockchain_hash) {
-    f('normal', 6); ink([28, 28, 50])
-    const hashLines = doc.splitTextToSize(`Hash: ${idea.blockchain_hash}`, contentW)
-    hashLines.slice(0, 2).forEach((line, i) => {
-      doc.text(line, ml, 258 + i * 4.5)
-    })
+    font('normal', 6); ink([26, 26, 52])
+    doc.splitTextToSize(`Hash: ${idea.blockchain_hash}`, cW)
+      .slice(0, 2)
+      .forEach((ln, i) => doc.text(ln, ml, 257 + i * 4.5))
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PAGE 2 — Problem · Solution · How It Works
   // ═══════════════════════════════════════════════════════════════════════════
   doc.addPage()
-  pageBars()
+  gradientBar(0, 4)
   pageHeader(2)
 
-  let y2 = 24
+  let y2 = 21
 
-  // THE PROBLEM
-  y2 = sectionLabel(y2, 'The Problem')
-  f('normal', 11); ink(DARK)
-  const probText  = (idea?.problem || '—').trim()
-  const probLines = doc.splitTextToSize(probText, contentW)
-  probLines.slice(0, 7).forEach(line => { doc.text(line, ml, y2); y2 += lh(11) })
-  y2 += 5
+  // Problem / Solution — side-by-side cards
+  const probT = (idea?.problem || 'The specific pain point or gap this idea addresses.').trim()
+  const solT  = (idea?.solution || 'The innovative approach that resolves the problem.').trim()
+  const probL = wrap(probT, colW - CARD_PAD_H - 3, 9)
+  const solL  = wrap(solT,  colW - CARD_PAD_H - 3, 9)
+  const psH   = cardPair(y2,
+    'Problem',  ACC2, probL, CARD,
+    'Solution', ACC1, solL,  CARD_B
+  )
+  y2 += psH + 6
 
-  // THE SOLUTION — highlight box
-  const solText  = (idea?.solution || '—').trim()
-  const solLines = doc.splitTextToSize(solText, contentW - 12).slice(0, 6)
-  const solBoxH  = solLines.length * lh(11) + 19
-  doc.setFillColor(240, 242, 255); doc.rect(ml, y2, contentW, solBoxH, 'F')
-  fill(ACC1); doc.rect(ml, y2, 3, solBoxH, 'F')
-  f('bold', 7.5); ink(ACC1); doc.text('THE SOLUTION', ml + 7, y2 + 7)
-  f('normal', 11); ink(DARK)
-  solLines.forEach((line, i) => { doc.text(line, ml + 7, y2 + 13.5 + i * lh(11)) })
-  y2 += solBoxH + 9
-
-  // HOW IT WORKS
-  y2 = dividerLine(y2)
-  y2 = sectionLabel(y2, 'How It Works')
-  y2 += 3
-
-  const hiwText = (idea?.how_it_works || '').trim()
+  // How It Works — custom card (numbered circles)
+  const hiwT       = (idea?.how_it_works || '').trim()
   const defaultHIW = [
     'Submit your idea to the EurekAIdea vault',
-    'A blockchain timestamp is created instantly and permanently',
+    'Blockchain timestamp is created instantly and permanently',
     'Build your investor pitch using the AI Pitch Builder',
-    'Share securely via NDA-gated link — all access is logged',
+    'Share via NDA-gated link — all access is logged automatically',
   ]
+  const isMulti  = hiwT && hasMultipleSteps(hiwT)
+  const hiwSteps = isMulti
+    ? hiwT.split('\n').filter(s => s.trim()).slice(0, 5)
+    : hiwT ? null : defaultHIW
 
-  const hiwSteps = (hiwText && hasMultipleSteps(hiwText))
-    ? hiwText.split('\n').filter(s => s.trim()).slice(0, 4)
-    : hiwText
-      ? null
-      : defaultHIW
+  // Compute card height
+  const CR = 3.8                       // circle radius
+  const CD = CR * 2                    // circle diameter
+  const stepRowH = CD + 4.5           // height per step row
 
+  let hiwCardH
+  if (hiwSteps) {
+    hiwCardH = CARD_PAD_V + CARD_LABEL + hiwSteps.length * stepRowH + CARD_PAD_V
+  } else {
+    const pLines = wrap(hiwT, cW - CARD_PAD_H - 3, 8)
+    hiwCardH = cardH(pLines)
+  }
+
+  // Draw card shell
+  fill(CARD); doc.roundedRect(ml, y2, cW, hiwCardH, 2, 2, 'F')
+  fill(ACC1); doc.roundedRect(ml, y2, 2.5, hiwCardH, 1, 1, 'F')
+  font('bold', 8); ink(ACC1)
+  doc.text('HOW IT WORKS', ml + CARD_PAD_H, y2 + CARD_PAD_V + 1)
+
+  let stepY = y2 + CARD_PAD_V + CARD_LABEL + CR
   if (hiwSteps) {
     hiwSteps.forEach((step, i) => {
-      const clean = step.replace(/^\d+[\.\)]\s*|^[-•*]\s*/, '').trim()
-      gradientCircle(ml + 3.5, y2 - 1.2, 3.5, i + 1, i)
-      f('normal', 10.5); ink(DARK)
-      const sLines = doc.splitTextToSize(clean, contentW - 13).slice(0, 2)
-      sLines.forEach((line, li) => { doc.text(line, ml + 10.5, y2 - 1 + li * lh(10.5)) })
-      y2 += Math.max(sLines.length * lh(10.5), 9) + 4.5
+      const clean = wrap(step, cW - CARD_PAD_H - CD - 6, 2)
+      stepCircle(ml + CARD_PAD_H + CR, stepY, CR, i + 1, i)
+      font('normal', BODY_FS); ink(DARK)
+      const textX = ml + CARD_PAD_H + CD + 5
+      const textY = stepY - (clean.length > 1 ? lh(BODY_FS) * 0.4 : 0)
+      clean.forEach((ln, li) => doc.text(ln, textX, textY + li * BODY_LH()))
+      stepY += stepRowH
     })
-  } else if (hiwText) {
-    f('normal', 11); ink(DARK)
-    doc.splitTextToSize(hiwText, contentW).slice(0, 6).forEach(line => {
-      doc.text(line, ml, y2); y2 += lh(11)
+  } else if (hiwT) {
+    font('normal', BODY_FS); ink(DARK)
+    wrap(hiwT, cW - CARD_PAD_H - 3, 8).forEach(ln => {
+      doc.text(ln, ml + CARD_PAD_H, stepY - CR)
+      stepY += BODY_LH()
     })
   }
+
+  y2 += hiwCardH + 6  // unused but keeps tracking consistent
 
   pageFooter()
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PAGE 3 — Market · Business Model · Competitive Advantage
+  // PAGE 3 — Market Size · Target Audience · Business Model
   // ═══════════════════════════════════════════════════════════════════════════
   doc.addPage()
-  pageBars()
+  gradientBar(0, 4)
   pageHeader(3)
 
-  let y3 = 24
+  let y3 = 21
 
-  // MARKET SIZE
-  y3 = sectionLabel(y3, 'Market Size')
-  const msText = (idea?.market_size || '').trim()
-  if (msText) {
-    f('normal', 11); ink(DARK)
-    doc.splitTextToSize(msText, contentW).slice(0, 2).forEach(line => {
-      doc.text(line, ml, y3); y3 += lh(11)
-    })
-    y3 += 3
+  // Market Size card (full width, optional)
+  const msT = (idea?.market_size || '').trim()
+  if (msT) {
+    const msL = wrap(msT, cW - CARD_PAD_H - 3, 3)
+    const msH = cardH(msL)
+    drawCard(ml, y3, cW, msH, 'Market Size', ACC2, msL, CARD_B)
+    y3 += msH + 5
   }
 
   // 3 metric boxes
-  const mbW = (contentW - 8) / 3
-  const metrics = [
-    { value: '$180B+', label: 'Global IP Market' },
-    { value: '$100B+', label: 'Creator Economy' },
-    { value: '$1B+',   label: 'Estimated TAM' },
-  ]
-  metrics.forEach((m, i) => {
+  const mbW = (cW - 8) / 3
+  ;[
+    { val: '$180B+', lbl: 'Global IP Market' },
+    { val: '$100B+', lbl: 'Creator Economy'  },
+    { val: '$1B+',   lbl: 'Estimated TAM'    },
+  ].forEach((m, i) => {
     const bx = ml + i * (mbW + 4)
-    doc.setFillColor(243, 246, 252); stroke([220, 226, 242]); doc.setLineWidth(0.2)
+    doc.setFillColor(243, 246, 252); stroke([218, 225, 244]); doc.setLineWidth(0.2)
     doc.roundedRect(bx, y3, mbW, 22, 2, 2, 'FD')
-    f('bold', 14); ink(ACC1); doc.text(m.value, bx + mbW / 2, y3 + 12, { align: 'center' })
-    f('normal', 7.5); ink(GRAY); doc.text(m.label, bx + mbW / 2, y3 + 18.5, { align: 'center' })
+    font('bold', 15); ink(ACC1)
+    doc.text(m.val, bx + mbW / 2, y3 + 12.5, { align: 'center' })
+    font('normal', 7.5); ink(GRAY)
+    doc.text(m.lbl, bx + mbW / 2, y3 + 19, { align: 'center' })
   })
-  y3 += 26
+  y3 += 26; rlw()
 
   // Target audience tags
   if (audTags.length > 0) {
-    f('normal', 7.5)
+    font('normal', 7.5)
     let tx = ml
-    audTags.slice(0, 6).forEach(tag => {
+    audTags.slice(0, 7).forEach(tag => {
       const tw = doc.getTextWidth(tag) + 10
       if (tx + tw > W - mr) { tx = ml; y3 += 9 }
-      doc.setFillColor(235, 240, 247); stroke([200, 215, 235]); doc.setLineWidth(0.2)
+      doc.setFillColor(234, 240, 248); stroke([198, 215, 238]); doc.setLineWidth(0.2)
       doc.roundedRect(tx, y3, tw, 6.5, 1.5, 1.5, 'FD')
-      ink([59, 82, 115]); doc.text(tag, tx + 5, y3 + 4.5)
+      ink([55, 80, 118]); doc.text(tag, tx + 5, y3 + 4.6)
       tx += tw + 3
     })
-    y3 += 11
+    y3 += 11; rlw()
   }
 
-  y3 = dividerLine(y3)
-
-  // BUSINESS MODEL — two boxes
-  y3 = sectionLabel(y3, 'Business Model')
-  y3 += 2
-
-  const bmText = (idea?.business_model || '').trim()
-  const hbW = (contentW - 5) / 2
-  let bm1Text, bm2Text
-
-  if (bmText) {
-    const bmLines = bmText.split('\n').filter(s => s.trim())
-    if (bmLines.length >= 2) {
-      const mid = Math.ceil(bmLines.length / 2)
-      bm1Text = bmLines.slice(0, mid).join(' ')
-      bm2Text = bmLines.slice(mid).join(' ')
+  // Business Model — Free / Paid side-by-side
+  const bmT = (idea?.business_model || '').trim()
+  let bm1T, bm2T
+  if (bmT) {
+    const bmLs = bmT.split('\n').filter(s => s.trim())
+    if (bmLs.length >= 2) {
+      const mid = Math.ceil(bmLs.length / 2)
+      bm1T = bmLs.slice(0, mid).join(' ')
+      bm2T = bmLs.slice(mid).join(' ')
     } else {
-      const words = bmText.split(' ')
-      const half = Math.ceil(words.length / 2)
-      bm1Text = words.slice(0, half).join(' ')
-      bm2Text = words.slice(half).join(' ') || bmText
+      const words = bmT.split(' '), half = Math.ceil(words.length / 2)
+      bm1T = words.slice(0, half).join(' ')
+      bm2T = words.slice(half).join(' ') || bmT
     }
   } else {
-    bm1Text = 'Free tier: submit and protect up to 3 ideas with blockchain timestamping.'
-    bm2Text = 'Pro plan at $19/mo: unlimited ideas, AI pitch builder, NDA-gated sharing, and deck export.'
+    bm1T = 'Free tier: protect up to 3 ideas with blockchain timestamping and NDA-gated sharing.'
+    bm2T = 'Pro at $19/mo: unlimited ideas, AI pitch builder, deck export, and priority support.'
   }
 
-  const bm1L   = doc.splitTextToSize(bm1Text, hbW - 8).slice(0, 4)
-  const bm2L   = doc.splitTextToSize(bm2Text, hbW - 8).slice(0, 4)
-  const bmBoxH = Math.max(bm1L.length, bm2L.length) * lh(9.5) + 17
-
-  // Free tier box
-  doc.setFillColor(248, 248, 255); stroke(ACC1); doc.setLineWidth(0.5)
-  doc.roundedRect(ml, y3, hbW, bmBoxH, 2, 2, 'FD')
-  f('bold', 7.5); ink(ACC1); doc.text('FREE TIER', ml + 5, y3 + 6.5)
-  f('normal', 9.5); ink(DARK)
-  bm1L.forEach((line, i) => { doc.text(line, ml + 5, y3 + 13 + i * lh(9.5)) })
-
-  // Paid tier box
-  const bx2 = ml + hbW + 5
-  doc.setFillColor(244, 242, 255); stroke(ACC2); doc.setLineWidth(0.5)
-  doc.roundedRect(bx2, y3, hbW, bmBoxH, 2, 2, 'FD')
-  f('bold', 7.5); ink(ACC2); doc.text('PAID TIER', bx2 + 5, y3 + 6.5)
-  f('normal', 9.5); ink(DARK)
-  bm2L.forEach((line, i) => { doc.text(line, bx2 + 5, y3 + 13 + i * lh(9.5)) })
-
-  y3 += bmBoxH + 8
-  y3 = dividerLine(y3)
-
-  // COMPETITIVE ADVANTAGE
-  y3 = sectionLabel(y3, 'Competitive Advantage')
-  const advText = (idea?.competitive_advantage || '').trim() ||
-    'eurekAIdea is the only end-to-end platform combining blockchain IP timestamping, AI-powered pitch generation, NDA-gated sharing, and professional pitch deck export — in one seamless workflow for founders and creators.'
-  f('normal', 11); ink(DARK)
-  doc.splitTextToSize(advText, contentW).slice(0, 6).forEach(line => {
-    if (y3 < H - 20) { doc.text(line, ml, y3); y3 += lh(11) }
-  })
+  const bm1L = wrap(bm1T, colW - CARD_PAD_H - 3, 6)
+  const bm2L = wrap(bm2T, colW - CARD_PAD_H - 3, 6)
+  const bmH  = cardPair(y3,
+    'Free Tier',  ACC1, bm1L, [248, 249, 255],
+    'Paid Tier',  ACC2, bm2L, [246, 244, 255]
+  )
+  y3 += bmH + 6
 
   pageFooter()
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PAGE 4 — Risks · Next Steps · Dark closing
+  // PAGE 4 — Competitive Advantage · Risks · Next Steps · Dark closing
   // ═══════════════════════════════════════════════════════════════════════════
   doc.addPage()
-  pageBars()
+  gradientBar(0, 4)
   pageHeader(4)
 
-  let y4 = 24
+  const closingH = 54
+  const closingY = H - closingH        // dark section starts here
+  const maxY4    = closingY - 12       // content must stay above this
 
-  // RISKS & CHALLENGES
-  y4 = sectionLabel(y4, 'Risks & Challenges')
-  y4 += 2
+  let y4 = 21
 
-  const riskText  = (idea?.risks || '').trim()
-  const riskItems = riskText
-    ? riskText.split('\n').filter(s => s.trim()).slice(0, 5)
+  // Competitive Advantage — "We Have" / "They Don't" side-by-side
+  const advT = (idea?.competitive_advantage || '').trim()
+  const advBullets = advT
+    ? advT.split('\n').filter(s => s.trim()).slice(0, 6).map(s =>
+        wrap(s, colW - CARD_PAD_H - 3, 2)
+      ).flat()
+    : [
+        'Blockchain IP timestamping built in',
+        'AI-powered investor pitch generation',
+        'NDA-gated sharing with full access log',
+        'Professional pitch deck export',
+        'End-to-end founder workflow in one place',
+      ]
+  const theyDont = [
+    'No blockchain proof-of-existence',
+    'No AI pitch builder or generator',
+    'No NDA-gated link access control',
+    'No integrated pitch deck creation',
+    'No unified founder-to-investor workflow',
+  ]
+  const weL  = advBullets.slice(0, 6)
+  const tdL  = theyDont.map(s => wrap(s, colW - CARD_PAD_H - 3, 1)).flat().slice(0, 5)
+  const advH = cardPair(y4,
+    'We Have',    GREEN, weL, [245, 252, 248],
+    "They Don't", RED,   tdL, [253, 246, 246]
+  )
+  y4 += advH + 6
+
+  // Risks & Challenges — full-width card with bullet dots
+  const riskT = (idea?.risks || '').trim()
+  const riskItems = riskT
+    ? riskT.split('\n').filter(s => s.trim()).slice(0, 5)
     : [
         'Market adoption may be slower than expected among early-stage founders',
         'IP law varies significantly across jurisdictions — consult local counsel',
-        'Competition from existing idea management and pitch tools',
-        'User trust around blockchain data permanence and data privacy',
+        'Competition from existing idea management and pitch creation tools',
+        'User trust around data privacy, permanence, and platform longevity',
       ]
 
-  riskItems.forEach((risk, i) => {
-    const clean = risk.replace(/^[-•*]\s*|\d+[\.\)]\s*/, '').trim()
-    fill(i % 2 === 0 ? [224, 123, 159] : ACC2)
-    doc.ellipse(ml + 1.8, y4 - 1.2, 1.8, 1.8, 'F')
-    f('normal', 10.5); ink(DARK)
-    const rLines = doc.splitTextToSize(clean, contentW - 9).slice(0, 3)
-    rLines.forEach((line, li) => { doc.text(line, ml + 7, y4 - 1 + li * lh(10.5)) })
-    y4 += Math.max(rLines.length * lh(10.5), 8) + 3.5
-  })
+  const dotR   = 1.6
+  const dotGap = dotR * 2 + 3         // space from card left to text
+  const dotCol  = ml + CARD_PAD_H + dotR
+  const riskRowH = BODY_LH() + 2.5
 
-  y4 += 4
-  y4 = dividerLine(y4)
+  // Pre-compute wrapped risk lines
+  const riskWrapped = riskItems.map(r => wrap(r, cW - CARD_PAD_H - dotGap - 2, 2))
+  const riskBodyH   = riskWrapped.reduce((sum, ls) => sum + Math.max(ls.length, 1) * BODY_LH() + 2.5, 0)
+  const riskCardH   = CARD_PAD_V + CARD_LABEL + riskBodyH + CARD_PAD_V
 
-  // NEXT STEPS
-  y4 = sectionLabel(y4, 'Next Steps')
-  y4 += 3
+  if (y4 + riskCardH < maxY4) {
+    fill(CARD); doc.roundedRect(ml, y4, cW, riskCardH, 2, 2, 'F')
+    fill(PINK); doc.roundedRect(ml, y4, 2.5, riskCardH, 1, 1, 'F')
+    font('bold', 8); ink(PINK)
+    doc.text('RISKS & CHALLENGES', ml + CARD_PAD_H, y4 + CARD_PAD_V + 1)
+    let ry = y4 + CARD_PAD_V + CARD_LABEL + dotR
+    riskWrapped.forEach((lines, i) => {
+      dot(dotCol, ry - 0.5, i % 2 === 0 ? PINK : ACC2)
+      font('normal', BODY_FS); ink(DARK)
+      lines.forEach((ln, li) =>
+        doc.text(ln, ml + CARD_PAD_H + dotGap, ry - 1 + li * BODY_LH())
+      )
+      ry += Math.max(lines.length, 1) * BODY_LH() + 2.5
+    })
+    y4 += riskCardH + 6
+  }
 
-  const nsText  = (idea?.next_steps || '').trim()
-  const nsItems = nsText
-    ? nsText.split('\n').filter(s => s.trim()).slice(0, 4).map((s, i) => ({
+  // Next Steps — full-width card with numbered timeline circles
+  const nsT = (idea?.next_steps || '').trim()
+  const nsItems = nsT
+    ? nsT.split('\n').filter(s => s.trim()).slice(0, 4).map((s, i) => ({
         title: `Step ${i + 1}`,
         desc:  s.replace(/^\d+[\.\)]\s*|^[-•*]\s*/, '').trim(),
       }))
     : [
-        { title: 'Validate',    desc: 'Conduct customer discovery and validate the core problem with real users' },
+        { title: 'Validate',    desc: 'Customer discovery to validate the core problem with real users' },
         { title: 'Build MVP',   desc: 'Develop a minimum viable product within 3 months' },
         { title: 'Beta Launch', desc: 'Onboard first 50 beta users and gather structured feedback' },
-        { title: 'Scale',       desc: 'Launch publicly and iterate based on real user data and insights' },
+        { title: 'Scale',       desc: 'Launch publicly and iterate based on real user data' },
       ]
 
-  const closingH = 55
-  const closingY = H - 4 - closingH  // 238
-  const maxY4    = closingY - 14
+  const NSR      = 4.5                 // next-steps circle radius
+  const NSD      = NSR * 2
+  const nsRowH   = NSD + 6
+  const nsCardH  = CARD_PAD_V + CARD_LABEL + nsItems.length * nsRowH + CARD_PAD_V
 
-  nsItems.forEach((item, i) => {
-    if (y4 >= maxY4) return
-    gradientCircle(ml + 4.5, y4, 4.5, i + 1, i)
-    f('bold', 10.5); ink(DARK); doc.text(item.title, ml + 13, y4 - 1.5)
-    f('normal', 9.5); ink(GRAY)
-    const dLines = doc.splitTextToSize(item.desc, contentW - 15).slice(0, 2)
-    dLines.forEach((line, li) => { doc.text(line, ml + 13, y4 + 4.5 + li * lh(9.5)) })
-    y4 += Math.max(dLines.length * lh(9.5) + 4.5, 12) + 8
-  })
+  if (y4 + nsCardH < maxY4) {
+    fill(CARD); doc.roundedRect(ml, y4, cW, nsCardH, 2, 2, 'F')
+    fill(ACC1); doc.roundedRect(ml, y4, 2.5, nsCardH, 1, 1, 'F')
+    font('bold', 8); ink(ACC1)
+    doc.text('NEXT STEPS', ml + CARD_PAD_H, y4 + CARD_PAD_V + 1)
+    let ny = y4 + CARD_PAD_V + CARD_LABEL + NSR
+    nsItems.forEach((item, i) => {
+      stepCircle(ml + CARD_PAD_H + NSR, ny, NSR, i + 1, i)
+      const textX = ml + CARD_PAD_H + NSD + 5
+      font('bold', 10.5); ink(DARK)
+      doc.text(item.title, textX, ny - 2)
+      font('normal', 9.5); ink(GRAY)
+      wrap(item.desc, cW - CARD_PAD_H - NSD - 8, 2).forEach((ln, li) =>
+        doc.text(ln, textX, ny + 4 + li * lh(9.5))
+      )
+      ny += nsRowH
+    })
+    y4 += nsCardH + 6
+  }
 
-  // Footer — drawn above closing section
-  f('normal', 7.5); ink(LGRAY)
-  doc.text('Protected & Presented by eurekAIdea · myeurekaidea.com', ml, closingY - 5)
-  doc.text('Confidential', W - mr, closingY - 5, { align: 'right' })
+  // Footer sits just above closing section
+  pageFooter(closingY - 5)
 
-  // Dark navy closing section
+  // ── Dark navy closing section ──────────────────────────────────────────────
   fill(NAVY); doc.rect(0, closingY, W, closingH, 'F')
 
-  const cly = closingY + 17
-  // Centered logo — white version
-  f('bold', 17)
+  const cly = closingY + 16
+  font('bold', 17)
   const ew2 = doc.getTextWidth('Eurek')
   const aw2 = doc.getTextWidth('AI')
   const dw2 = doc.getTextWidth('dea')
@@ -498,18 +567,20 @@ export function generateIdeaPDF(idea, { userEmail = '' } = {}) {
   ink(ACC1);  doc.text('AI', lx + ew2, cly)
   ink(WHITE); doc.text('dea', lx + ew2 + aw2, cly)
 
-  f('normal', 8.5); ink([140, 140, 178])
-  doc.text('Protected & Presented by eurekAIdea', W / 2, cly + 9, { align: 'center' })
-  f('normal', 8); ink(ACC1)
-  doc.text('myeurekaidea.com', W / 2, cly + 16.5, { align: 'center' })
+  font('normal', 8.5); ink([138, 138, 178])
+  doc.text('Protected & Presented by eurekAIdea', W / 2, cly + 10, { align: 'center' })
+  font('normal', 8); ink(ACC1)
+  doc.text('myeurekaidea.com', W / 2, cly + 17.5, { align: 'center' })
+  gradientRule(ml + 42, W - mr - 42, cly + 27)
 
-  // Gradient accent line inside closing
-  gradientLine(ml + 40, W - mr - 40, cly + 26)
+  // Gradient bar at very bottom of page 4
+  gradientBar(H - 4, 4)
 
-  // Save
+  // ── Save / return ──────────────────────────────────────────────────────────
   const slug = (idea?.title || 'idea')
     .replace(/[^a-z0-9]+/gi, '-')
     .toLowerCase()
     .replace(/^-+|-+$/g, '') || 'idea'
+  if (returnBlob) return doc.output('blob')
   doc.save(`${slug}-eurekAIdea-pitch.pdf`)
 }

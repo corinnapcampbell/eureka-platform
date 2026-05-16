@@ -34,6 +34,7 @@ export default function PitchBuilder({ session }) {
   const [loadingSuggestion, setLoadingSuggestion] = useState({})
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null)
   const saveTimers = useRef({})
 
   useEffect(() => {
@@ -45,6 +46,17 @@ export default function PitchBuilder({ session }) {
         .single()
       if (data) {
         setIdea(data)
+        const isOwner = session?.user?.id === data.user_id
+        if (!isOwner) {
+          try {
+            const blob = generateIdeaPDF(data, { returnBlob: true })
+            if (blob) setPdfBlobUrl(URL.createObjectURL(blob))
+          } catch (e) {
+            console.error('PDF blob error:', e)
+          }
+          setLoading(false)
+          return
+        }
         const loaded = {
           tagline:              data.tagline              || '',
           problem:              data.problem              || '',
@@ -131,6 +143,43 @@ export default function PitchBuilder({ session }) {
       <div className="spinner" style={{ width: 28, height: 28 }} />
     </div>
   )
+
+  // Non-owner: inline PDF viewer
+  const isOwner = session?.user?.id === idea?.user_id
+  if (!isOwner) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0e0e1f' }}>
+        <div style={{ background: '#0e0e1f', borderBottom: '0.5px solid rgba(255,255,255,0.08)', padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <Logo size={18} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            {pdfBlobUrl && (
+              <a
+                href={pdfBlobUrl}
+                download={`${(idea?.title || 'pitch').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-eurekAIdea-pitch.pdf`}
+                style={{ background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
+              >
+                ↓ Download PDF
+              </a>
+            )}
+          </div>
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          {pdfBlobUrl ? (
+            <iframe
+              src={pdfBlobUrl}
+              title="Pitch PDF"
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 12 }}>
+              <div className="spinner" style={{ width: 28, height: 28, borderTopColor: '#7b9ff7' }} />
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>Generating PDF preview…</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>

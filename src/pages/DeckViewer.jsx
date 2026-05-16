@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { ScaledSlide } from '../components/DeckSlides'
+import jsPDF from 'jspdf'
 
 const SLIDES_COUNT = 8
 
@@ -11,13 +12,15 @@ export default function DeckViewer() {
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [generatingPDF, setGeneratingPDF] = useState(false)
+  const [ideaTitle, setIdeaTitle] = useState('')
   const touchStart = useRef(null)
 
   useEffect(() => {
     async function load() {
       const { data } = await supabase
         .from('pitch_decks')
-        .select('slides, is_public')
+        .select('slides, is_public, ideas(title)')
         .eq('share_token', shareToken)
         .single()
 
@@ -25,6 +28,7 @@ export default function DeckViewer() {
         setNotFound(true)
       } else {
         setSlides(data.slides)
+        setIdeaTitle(data.ideas?.title || data.slides[0]?.title || 'deck')
       }
       setLoading(false)
     }
@@ -39,6 +43,60 @@ export default function DeckViewer() {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
+
+  function downloadDeckPDF() {
+    if (!slides) return
+    setGeneratingPDF(true)
+    try {
+      const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: [297, 167] })
+      const W = 297, H = 167, ml = 16
+      const navy = [14, 14, 31], accent = [123, 159, 247]
+      slides.forEach((slide, idx) => {
+        if (idx > 0) doc.addPage()
+        const dark = slide.type === 'cover' || slide.type === 'roadmap' || slide.type === 'closing'
+        if (dark) { doc.setFillColor(...navy); doc.rect(0, 0, W, H, 'F') }
+        doc.setDrawColor(...accent); doc.setLineWidth(0.8)
+        doc.line(0, 1.5, W, 1.5); doc.line(0, H - 1.5, W, H - 1.5)
+        const tc = dark ? [255, 255, 255] : navy
+        const mc = dark ? [120, 120, 150] : [100, 100, 110]
+        let y = 24
+        if (slide.type === 'cover') {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(...tc)
+          doc.text(slide.title || '', W / 2, 72, { align: 'center', maxWidth: W - 60 })
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(...mc)
+          doc.text(slide.tagline || '', W / 2, 88, { align: 'center', maxWidth: W - 80 })
+        } else {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...accent)
+          doc.text(slide.sectionLabel || '', ml, y); y += 8
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(...tc)
+          const tLines = doc.splitTextToSize(slide.headline || slide.title || '', W - ml * 2)
+          doc.text(tLines, ml, y); y += tLines.length * 6 + 6
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...mc)
+          if (slide.bullets?.length) slide.bullets.forEach((b, i) => {
+            const ls = doc.splitTextToSize(`${i + 1}. ${b}`, W - ml * 2)
+            doc.text(ls, ml, y); y += ls.length * 5 + 3
+          })
+          if (slide.description) {
+            const ls = doc.splitTextToSize(slide.description, W - ml * 2)
+            doc.text(ls, ml, y); y += ls.length * 5 + 4
+          }
+          if (slide.type === 'closing') {
+            doc.setTextColor(...accent)
+            if (slide.email) { doc.text(slide.email, W / 2, y, { align: 'center' }); y += 8 }
+            if (slide.website) doc.text(slide.website, W / 2, y, { align: 'center' })
+          }
+        }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(120, 120, 130)
+        doc.text('Presented via EurekAIdea', W / 2, H - 6, { align: 'center' })
+        doc.text(`${idx + 1} / ${slides.length}`, W - ml, H - 6, { align: 'right' })
+      })
+      const slug = ideaTitle.replace(/[^a-z0-9]+/gi, '-').toLowerCase().replace(/^-+|-+$/g, '') || 'deck'
+      doc.save(`${slug}-deck.pdf`)
+    } catch (e) {
+      console.error('PDF error:', e)
+    }
+    setGeneratingPDF(false)
+  }
 
   if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>

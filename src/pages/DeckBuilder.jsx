@@ -15,6 +15,8 @@ export default function DeckBuilder({ session }) {
   const [deckId, setDeckId] = useState(null)
   const [shareToken, setShareToken] = useState(null)
   const [isPublic, setIsPublic] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
+  const [noDeck, setNoDeck] = useState(false)
   const [current, setCurrent] = useState(0)
   const [presenting, setPresenting] = useState(false)
   const [shareModal, setShareModal] = useState(false)
@@ -30,11 +32,32 @@ export default function DeckBuilder({ session }) {
       const { data: ideaData } = await supabase.from('ideas').select('*').eq('id', ideaId).single()
       setIdea(ideaData)
 
+      const userId = session?.user?.id
+      const ownerCheck = userId && ideaData?.user_id === userId
+
+      if (!ownerCheck) {
+        // Non-owner: look for a public deck and redirect to DeckViewer
+        const { data: publicDeck } = await supabase
+          .from('pitch_decks')
+          .select('share_token, is_public')
+          .eq('idea_id', ideaId)
+          .eq('is_public', true)
+          .single()
+        if (publicDeck?.share_token) {
+          navigate(`/deck/view/${publicDeck.share_token}`, { replace: true })
+        } else {
+          setNoDeck(true)
+          setLoading(false)
+        }
+        return
+      }
+
+      setIsOwner(true)
       const { data: deckData } = await supabase
         .from('pitch_decks')
         .select('*')
         .eq('idea_id', ideaId)
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .single()
 
       if (deckData) {
@@ -48,7 +71,7 @@ export default function DeckBuilder({ session }) {
         const newToken = crypto.randomUUID()
         const { data: created } = await supabase.from('pitch_decks').insert({
           idea_id: ideaId,
-          user_id: session.user.id,
+          user_id: userId,
           slides: defaults,
           is_public: false,
           share_token: newToken,
@@ -63,7 +86,7 @@ export default function DeckBuilder({ session }) {
       setLoading(false)
     }
     load()
-  }, [ideaId, session.user.id])
+  }, [ideaId, session?.user?.id])
 
   function updateSlide(index, updates) {
     setSlides(prev => {
@@ -214,11 +237,21 @@ export default function DeckBuilder({ session }) {
     setGeneratingPDF(false)
   }
 
-  if (loading || !slides) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  if (loading) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f' }}>
       <div className="spinner" style={{ width: 28, height: 28 }} />
     </div>
   )
+
+  if (noDeck) return (
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f', gap: 16 }}>
+      <div style={{ fontSize: 40 }}>🔒</div>
+      <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', fontFamily: "'DM Sans', sans-serif" }}>This deck hasn't been published yet.</p>
+      <a href="/" style={{ fontSize: 13, color: '#7b9ff7', fontFamily: "'DM Sans', sans-serif" }}>← Go to eurekAIdea</a>
+    </div>
+  )
+
+  if (!slides) return null
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#12121f', overflow: 'hidden' }}>

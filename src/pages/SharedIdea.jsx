@@ -322,23 +322,24 @@ export default function SharedIdea() {
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.85rem', paddingLeft: 2 }}>Pitch Documents</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
 
-            {/* PDF: download directly, no login */}
-            <button
-              onClick={handleDownloadPDF}
-              disabled={downloadingPDF}
-              style={{ display: 'block', background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', textAlign: 'left', cursor: 'pointer', opacity: downloadingPDF ? 0.7 : 1 }}
+            {/* PDF: open inline viewer in new tab */}
+            <a
+              href={`/pitch/${idea.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'block', background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}
             >
               <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📄</div>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>
-                {downloadingPDF ? 'Generating...' : 'Pitch PDF'}
-              </p>
-              <p style={{ fontSize: 13, color: '#888780' }}>Download full investor pitch document</p>
-            </button>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>Pitch PDF</p>
+              <p style={{ fontSize: 13, color: '#888780' }}>View &amp; download full investor pitch</p>
+            </a>
 
-            {/* Deck: link to public view if available, otherwise show placeholder */}
+            {/* Deck: open deck viewer in new tab */}
             {deckInfo ? (
               <a
-                href={`/deck/view/${deckInfo.share_token}`}
+                href={`/deck/${idea.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{ display: 'block', background: 'linear-gradient(135deg, rgba(123,159,247,0.07), rgba(155,127,247,0.07))', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}
               >
                 <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📊</div>
