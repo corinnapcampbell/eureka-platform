@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
- 
+
 export default function IdeaDetail({ session }) {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -15,6 +15,7 @@ export default function IdeaDetail({ session }) {
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState(null)
   const [editSaving, setEditSaving] = useState(false)
+  const [summaryExpanded, setSummaryExpanded] = useState(false)
 
   useEffect(() => {
     async function fetchIdea() {
@@ -39,7 +40,7 @@ export default function IdeaDetail({ session }) {
     }
     fetchIdea()
   }, [id])
- 
+
   async function generateShareLink() {
     setGeneratingLink(true)
     const token = crypto.randomUUID()
@@ -54,13 +55,13 @@ export default function IdeaDetail({ session }) {
     }
     setGeneratingLink(false)
   }
- 
+
   function copyLink() {
     navigator.clipboard.writeText(shareLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
- 
+
   async function saveEdit() {
     setEditSaving(true)
     const { data } = await supabase.from('ideas').update({
@@ -101,152 +102,234 @@ export default function IdeaDetail({ session }) {
     await supabase.from('ideas').delete().eq('id', id)
     navigate('/dashboard')
   }
- 
+
   if (loading) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="spinner" style={{ width: 28, height: 28 }} />
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f' }}>
+      <div className="spinner" />
     </div>
   )
- 
+
   if (!idea) return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-      <p style={{ fontSize: 16, color: 'var(--muted)' }}>Idea not found.</p>
-      <button onClick={() => navigate('/dashboard')} style={btnSecondary}>← Back to vault</button>
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, background: '#0e0e1f' }}>
+      <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }}>Idea not found.</p>
+      <button onClick={() => navigate('/dashboard')} style={btnGhost}>← Back to vault</button>
     </div>
   )
- 
+
   const date = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
- 
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
- 
-      {/* Nav */}
-      <nav style={{
-        maxWidth: 800, margin: '0 auto', padding: '1.25rem 2rem',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderBottom: '0.5px solid var(--border)'
-      }}>
-        <Logo size={20} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setEditing(true)} style={btnSecondary}>Edit idea</button>
-          <button onClick={() => navigate('/dashboard')} style={btnSecondary}>← Back to vault</button>
-        </div>
-      </nav>
- 
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '3rem 2rem' }}>
- 
-        {/* Categories + protection badge */}
-        <div className="animate-fadeUp" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 6 }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
+      {/* Gradient accent bar */}
+      <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
+
+      {/* Dark header */}
+      <div style={{ background: '#0e0e1f', paddingBottom: '2.5rem' }}>
+        <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.25rem 0' }}>
+
+          {/* Nav row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: 8 }}>
+            <Logo size={20} />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button onClick={() => setEditing(true)} style={btnPrimary}>Edit idea</button>
+              <button onClick={() => navigate('/dashboard')} style={btnGhost}>← Back to vault</button>
+            </div>
+          </div>
+
+          {/* Categories + protection badge */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '1rem' }}>
             {(idea.category || []).map(c => (
-              <span key={c} style={{ fontSize: 11, background: 'var(--gold-light)', color: 'var(--gold)', borderRadius: 4, padding: '4px 10px', fontWeight: 500 }}>{c}</span>
+              <span key={c} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(123,159,247,0.18)' }}>{c}</span>
+            ))}
+            <span style={{
+              fontSize: 11, borderRadius: 20, padding: '4px 12px', fontWeight: 500,
+              background: idea.blockchain_hash ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.05)',
+              color: idea.blockchain_hash ? '#4ade80' : 'rgba(255,255,255,0.3)',
+              border: `0.5px solid ${idea.blockchain_hash ? 'rgba(74,222,128,0.18)' : 'rgba(255,255,255,0.08)'}`,
+            }}>
+              {idea.blockchain_hash ? '⬡ Timestamped & protected' : '◌ Pending protection'}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(28px, 5vw, 40px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px' }}>
+            {idea.title}
+          </h1>
+          {idea.target_audience && (
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', marginBottom: '0.5rem' }}>
+              Built for {idea.target_audience}
+            </p>
+          )}
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.22)', marginBottom: '1.75rem' }}>Submitted {date}</p>
+
+          {/* Build action buttons */}
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate(`/pitch/${id}`)}
+              style={{
+                background: '#fff', color: '#0e0e1f', border: 'none',
+                borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              📄 Build Pitch PDF
+            </button>
+            <button
+              onClick={() => navigate(`/deck/${id}`)}
+              style={{
+                background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', color: '#fff', border: 'none',
+                borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              📊 Build Pitch Deck
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* White content area */}
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
+
+        {/* Card 1: Problem & Solution */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+          {idea.problem && (
+            <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>
+                <span style={{ fontSize: 16 }}>⚡</span>
+                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>The Problem</span>
+              </div>
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: 'rgba(255,255,255,0.78)' }}>{idea.problem}</p>
+            </div>
+          )}
+
+          {idea.solution && (
+            <div style={{ background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', borderRadius: 15, padding: 1.5 }}>
+              <div style={{ background: '#fff', borderRadius: 13, padding: '1.5rem', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>
+                  <span style={{ fontSize: 16 }}>💡</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#9b7ff7' }}>The Solution</span>
+                </div>
+                <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.solution}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Card 2: Key Details */}
+        {(idea.market_size || idea.terms || (idea.category || []).length > 0 || idea.asking_price) && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Key Details</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {idea.market_size && (
+                <div style={{ background: '#f5f5f3', borderRadius: 8, padding: '8px 14px' }}>
+                  <span style={{ fontSize: 11, color: '#888780' }}>Market · </span>
+                  <span style={{ fontSize: 13, color: '#2c2c2a', fontWeight: 500 }}>{idea.market_size}</span>
+                </div>
+              )}
+              {(idea.category || []).map(c => (
+                <div key={c} style={{ background: '#EBF0F7', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#3B5273', fontWeight: 500 }}>{c}</div>
+              ))}
+              {idea.terms && idea.terms.split(', ').filter(Boolean).map(t => (
+                <div key={t} style={{ background: '#f0fdf4', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#16a34a', fontWeight: 500 }}>Looking for: {t}</div>
+              ))}
+              {idea.asking_price && (
+                <div style={{ background: '#fdf8f0', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#92400e', fontWeight: 500 }}>{idea.asking_price} · {idea.pricing_model}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Card 3: How It Works (conditional) */}
+        {idea.how_it_works && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>How It Works</p>
+            {idea.how_it_works.split('\n').filter(Boolean).map((step, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 2 }}>{step}</p>
+              </div>
             ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: idea.blockchain_hash ? '#3B6D11' : 'var(--muted)', background: idea.blockchain_hash ? '#EAF3DE' : 'var(--gold-light)', borderRadius: 20, padding: '4px 12px' }}>
-            <span>{idea.blockchain_hash ? '⬡' : '◌'}</span>
-            <span style={{ fontWeight: 500 }}>{idea.blockchain_hash ? 'Timestamped & protected' : 'Pending protection'}</span>
+        )}
+
+        {/* Card 4: Business Model (conditional) */}
+        {idea.business_model && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Business Model</p>
+            <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.business_model}</p>
           </div>
-        </div>
- 
-        {/* Title */}
-        <h1 className="serif animate-fadeUp" style={{ fontSize: 40, lineHeight: 1.15, marginBottom: '0.5rem', animationDelay: '0.05s' }}>
-          {idea.title}
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: '2.5rem' }}>Submitted {date}</p>
- 
-        {/* AI Profile */}
+        )}
+
+        {/* Card 5: AI Executive Summary (collapsed) */}
         {idea.ai_profile && (
-          <div className="animate-fadeUp" style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '1.75rem', marginBottom: '2rem', animationDelay: '0.1s' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold-mid)' }} />
-              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--gold)' }}>AI executive summary</span>
-            </div>
-            <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--ink)', fontStyle: 'italic' }}>{idea.ai_profile}</p>
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, marginBottom: '1.25rem', overflow: 'hidden' }}>
+            <button
+              onClick={() => setSummaryExpanded(x => !x)}
+              style={{ width: '100%', background: 'none', border: 'none', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888780' }}>AI Executive Summary</span>
+              </div>
+              <span style={{ fontSize: 12, color: '#7b9ff7', fontWeight: 500, whiteSpace: 'nowrap', marginLeft: 12 }}>
+                {summaryExpanded ? 'Collapse ▲' : 'Read full summary ▼'}
+              </span>
+            </button>
+            {summaryExpanded && (
+              <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                <p style={{ fontSize: 14, lineHeight: 1.85, color: '#2c2c2a', fontStyle: 'italic' }}>{idea.ai_profile}</p>
+              </div>
+            )}
           </div>
         )}
- 
-        {/* Content sections */}
-        <div style={{ display: 'grid', gap: '1.25rem', marginBottom: '2rem' }}>
-          {idea.problem && <Section title="The problem" content={idea.problem} />}
-          {idea.solution && <Section title="The solution" content={idea.solution} />}
-          {idea.target_audience && <Section title="Target audience" content={idea.target_audience} />}
-          {idea.market_size && <Section title="Market size" content={idea.market_size} />}
-          {idea.terms && <Section title="Looking for" content={idea.terms} />}
-          {idea.asking_price && <Section title="Asking price" content={`${idea.asking_price} · ${idea.pricing_model}`} />}
-        </div>
- 
-        {/* Blockchain hash */}
-        {idea.blockchain_hash && (
-          <div className="animate-fadeUp" style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '1.25rem', marginBottom: '2rem' }}>
-            <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--muted)', marginBottom: 6 }}>Cryptographic fingerprint</p>
-            <code style={{ fontSize: 12, color: 'var(--ink)', wordBreak: 'break-all', fontFamily: 'monospace' }}>{idea.blockchain_hash}</code>
-            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>This hash proves your idea existed in its current form at the time of submission.</p>
-          </div>
-        )}
- 
-        {/* Build Pitch CTA */}
-        <div style={{ background: 'var(--gold-light)', border: '0.5px solid var(--gold)', borderRadius: 14, padding: '1.5rem 2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold)', marginBottom: '0.25rem' }}>Turn this into an investor pitch</p>
-            <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>Build a branded presentation and export it as a PDF — ready to share with investors or co-founders.</p>
-          </div>
-          <button onClick={() => navigate(`/pitch/${id}`)} style={{
-            background: 'var(--gold)', color: '#fff', border: 'none',
-            borderRadius: 8, padding: '10px 22px', fontSize: 13, fontWeight: 500, flexShrink: 0, cursor: 'pointer',
-          }}>
-            Build Pitch →
-          </button>
-        </div>
 
-        {/* Pitch Deck CTA */}
-        <div style={{ background: '#0e0e1f', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 14, padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#7b9ff7', marginBottom: '0.25rem' }}>Build a visual pitch deck</p>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>8-slide deck with cover, problem, solution, market, business model, advantage, roadmap, and closing. Share publicly or present live.</p>
-          </div>
-          <button onClick={() => navigate(`/deck/${id}`)} style={{
-            background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', color: '#fff', border: 'none',
-            borderRadius: 8, padding: '10px 22px', fontSize: 13, fontWeight: 500, flexShrink: 0, cursor: 'pointer',
-          }}>
-            Build Pitch Deck →
-          </button>
-        </div>
-
-        {/* Share section */}
-        <div style={{ background: 'var(--ink)', borderRadius: 14, padding: '2rem', marginBottom: '1.5rem' }}>
-          <h3 className="serif" style={{ fontSize: 22, color: '#fff', marginBottom: '0.5rem' }}>Share this idea</h3>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-            Generate a protected link to share with a company or investor. Anyone who opens it must agree to NDA terms before seeing your idea — and their access is logged automatically.
+        {/* Card 6: Share link */}
+        <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.75rem', marginBottom: '1.25rem' }}>
+          <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: '#fff', marginBottom: '0.4rem' }}>Share this idea</h3>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: '1.25rem', lineHeight: 1.65 }}>
+            Generate a protected link. Anyone who opens it must agree to NDA terms before viewing — their access is logged automatically.
           </p>
- 
+
           {!shareLink ? (
             <button onClick={generateShareLink} disabled={generatingLink} style={{
-              background: 'var(--gold)', color: '#fff', border: 'none',
-              borderRadius: 8, padding: '11px 24px', fontSize: 14, fontWeight: 500,
-              opacity: generatingLink ? 0.7 : 1
+              background: 'rgba(123,159,247,0.15)', color: '#7b9ff7',
+              border: '0.5px solid rgba(123,159,247,0.3)',
+              borderRadius: 8, padding: '11px 22px', fontSize: 13, fontWeight: 500,
+              opacity: generatingLink ? 0.6 : 1, cursor: generatingLink ? 'not-allowed' : 'pointer',
             }}>
               {generatingLink ? 'Generating...' : '⬡ Generate protected link'}
             </button>
           ) : (
             <div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '10px 14px', marginBottom: 12 }}>
-                <code style={{ flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.8)', wordBreak: 'break-all' }}>{shareLink}</code>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px', marginBottom: 10, flexWrap: 'wrap' }}>
+                <code style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.7)', wordBreak: 'break-all', minWidth: 0 }}>{shareLink}</code>
                 <button onClick={copyLink} style={{
-                  background: copied ? '#EAF3DE' : 'var(--gold)', color: copied ? '#3B6D11' : '#fff',
-                  border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 500, flexShrink: 0
+                  background: copied ? '#EAF3DE' : 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
+                  color: copied ? '#3B6D11' : '#fff',
+                  border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 13, fontWeight: 500, flexShrink: 0, cursor: 'pointer',
                 }}>{copied ? '✓ Copied' : 'Copy'}</button>
               </div>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>This link requires NDA acceptance before viewing. You can generate a new link at any time.</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)' }}>Requires NDA acceptance before viewing. Generate a new link any time.</p>
             </div>
           )}
         </div>
- 
+
+        {/* Blockchain fingerprint */}
+        {idea.blockchain_hash && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: 6 }}>Cryptographic fingerprint</p>
+            <code style={{ fontSize: 12, color: '#2c2c2a', wordBreak: 'break-all', fontFamily: 'monospace', display: 'block' }}>{idea.blockchain_hash}</code>
+            <p style={{ fontSize: 11, color: '#888780', marginTop: 6 }}>This hash proves your idea existed in its current form at the time of submission.</p>
+          </div>
+        )}
+
         {/* Danger zone */}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button onClick={deleteIdea} disabled={deleting} style={{
-            background: 'none', border: '0.5px solid #F09595', borderRadius: 8,
-            padding: '8px 16px', fontSize: 13, color: '#A32D2D',
-            opacity: deleting ? 0.5 : 1
+            background: 'none', border: '0.5px solid rgba(224,75,74,0.4)', borderRadius: 8,
+            padding: '8px 16px', fontSize: 13, color: '#E04B4A',
+            opacity: deleting ? 0.5 : 1, cursor: deleting ? 'not-allowed' : 'pointer',
           }}>
             {deleting ? 'Deleting...' : 'Delete idea'}
           </button>
@@ -255,11 +338,11 @@ export default function IdeaDetail({ session }) {
 
       {/* Edit Idea modal */}
       {editing && editForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '2rem 1rem' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '2rem 1rem' }}>
           <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 680, padding: '2rem', margin: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 className="serif" style={{ fontSize: 24 }}>Edit idea</h2>
-              <button onClick={() => setEditing(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: 'var(--muted)', cursor: 'pointer' }}>✕</button>
+              <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24 }}>Edit idea</h2>
+              <button onClick={() => setEditing(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#888780', cursor: 'pointer' }}>✕</button>
             </div>
 
             <EditField label="Title">
@@ -279,7 +362,7 @@ export default function IdeaDetail({ session }) {
               </div>
             </EditField>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <EditField label="Target audience">
                 <input value={editForm.target_audience} onChange={e => setEditForm(f => ({ ...f, target_audience: e.target.value }))} style={editInputStyle} />
               </EditField>
@@ -316,7 +399,7 @@ export default function IdeaDetail({ session }) {
               </div>
             </EditField>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <EditField label="Asking price">
                 <input value={editForm.asking_price} onChange={e => setEditForm(f => ({ ...f, asking_price: e.target.value }))} placeholder="e.g. $5,000 or negotiable" style={editInputStyle} />
               </EditField>
@@ -335,7 +418,7 @@ export default function IdeaDetail({ session }) {
               <button onClick={() => setEditing(false)} style={{ background: 'none', border: '0.5px solid var(--border)', borderRadius: 8, padding: '10px 20px', fontSize: 14, color: 'var(--muted)', cursor: 'pointer' }}>
                 Cancel
               </button>
-              <button onClick={saveEdit} disabled={editSaving} style={{ background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 500, opacity: editSaving ? 0.6 : 1, cursor: 'pointer' }}>
+              <button onClick={saveEdit} disabled={editSaving} style={{ background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 500, opacity: editSaving ? 0.6 : 1, cursor: editSaving ? 'not-allowed' : 'pointer' }}>
                 {editSaving ? 'Saving...' : 'Save changes'}
               </button>
             </div>
@@ -362,17 +445,12 @@ const editInputStyle = {
   boxSizing: 'border-box', fontFamily: 'inherit',
 }
 
-function Section({ title, content }) {
-  return (
-    <div style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '1.25rem 1.5rem' }}>
-      <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--muted)', marginBottom: 8 }}>{title}</p>
-      <p style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--ink)' }}>{content}</p>
-    </div>
-  )
+const btnPrimary = {
+  background: 'rgba(255,255,255,0.12)', border: '0.5px solid rgba(255,255,255,0.18)',
+  borderRadius: 7, padding: '7px 14px', fontSize: 13, color: '#fff', cursor: 'pointer', fontWeight: 500,
 }
- 
-const btnSecondary = {
-  background: 'none', border: '0.5px solid var(--border)',
-  borderRadius: 6, padding: '7px 14px', fontSize: 13, color: 'var(--muted)'
+
+const btnGhost = {
+  background: 'none', border: '0.5px solid rgba(255,255,255,0.12)',
+  borderRadius: 7, padding: '7px 14px', fontSize: 13, color: 'rgba(255,255,255,0.45)', cursor: 'pointer',
 }
- 

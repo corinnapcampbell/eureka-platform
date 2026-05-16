@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
- 
+
 export default function SharedIdea() {
   const { token } = useParams()
-  const [stage, setStage] = useState('loading') // loading | nda | idea | error
+  const [stage, setStage] = useState('loading')
   const [idea, setIdea] = useState(null)
   const [email, setEmail] = useState('')
   const [accepting, setAccepting] = useState(false)
- 
+  const [summaryExpanded, setSummaryExpanded] = useState(false)
+
   useEffect(() => {
     async function fetchLink() {
       const { data: link, error } = await supabase
@@ -28,12 +29,11 @@ export default function SharedIdea() {
     }
     fetchLink()
   }, [token])
- 
+
   async function acceptNDA() {
     if (!email) return
     setAccepting(true)
- 
-    // Log access
+
     const { error: logError } = await supabase.from('idea_access_log').insert({
       idea_id: idea.id,
       viewer_email: email,
@@ -41,126 +41,309 @@ export default function SharedIdea() {
       nda_accepted: true,
     })
     if (logError) console.error('idea_access_log insert error:', logError.message, logError.code)
- 
+
     setStage('idea')
     setAccepting(false)
   }
- 
+
   if (stage === 'loading') return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="spinner" style={{ width: 28, height: 28 }} />
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f' }}>
+      <div className="spinner" />
     </div>
   )
- 
+
   if (stage === 'error') return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-      <span style={{ fontSize: 32 }}>⬡</span>
-      <h2 className="serif" style={{ fontSize: 24 }}>Link not found</h2>
-      <p style={{ fontSize: 14, color: 'var(--muted)' }}>This link may have expired or been revoked.</p>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#0e0e1f', padding: '2rem' }}>
+      <Logo size={22} />
+      <span style={{ fontSize: 40, opacity: 0.25 }}>⬡</span>
+      <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#fff' }}>Link not found</h2>
+      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>This link may have expired or been revoked.</p>
+      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', marginTop: 8 }}>Presented via eurekAIdea · myeurekaidea.com</p>
     </div>
   )
- 
+
+  // ─── PHASE 1: TEASER / NDA ───────────────────────────────────────────────
   if (stage === 'nda') return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
- 
-      <div className="animate-fadeUp" style={{ maxWidth: 480, width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <Logo size={22} />
+    <div style={{ minHeight: '100vh', background: '#0e0e1f', position: 'relative', overflow: 'hidden' }}>
+      {/* Gradient accent bar */}
+      <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
+
+      {/* Geometric decorations */}
+      <div style={{ position: 'absolute', top: -140, right: -140, width: 420, height: 420, borderRadius: '50%', border: '1px solid rgba(123,159,247,0.07)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: -70, right: -70, width: 260, height: 260, borderRadius: '50%', border: '1px solid rgba(123,159,247,0.05)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: -100, left: -100, width: 320, height: 320, borderRadius: '50%', border: '1px solid rgba(155,127,247,0.06)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: -40, left: -40, width: 180, height: 180, borderRadius: '50%', border: '1px solid rgba(155,127,247,0.05)', pointerEvents: 'none' }} />
+
+      <div style={{ maxWidth: 540, margin: '0 auto', padding: '3.5rem 1.25rem 3rem', position: 'relative' }}>
+
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <Logo size={24} />
         </div>
- 
-        <div style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 16, padding: '2.5rem' }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--gold-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: '1.25rem' }}>⬡</div>
- 
-          <h2 className="serif" style={{ fontSize: 26, marginBottom: '0.5rem' }}>You've been invited to view a protected idea</h2>
-          <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.7, marginBottom: '2rem' }}>
-            Before you can access this idea, you must confirm that you are viewing confidential material under the following NDA terms. Your identity and access time will be logged.
-          </p>
- 
-          <div style={{ background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 10, padding: '1rem 1.25rem', marginBottom: '1.5rem', fontSize: 12, lineHeight: 1.8, color: 'var(--muted)' }}>
-            By proceeding, you agree that: (1) the idea you are about to view is confidential and proprietary; (2) you will not disclose, reproduce, or use the idea without written permission from the creator; (3) your access is being logged including your email address and timestamp; (4) unauthorized use may constitute misappropriation under the Defend Trade Secrets Act.
-          </div>
- 
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Your email address</label>
-            <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontSize: 14, background: 'var(--surface)', outline: 'none', color: 'var(--ink)' }}
-            />
-            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 5 }}>This will be logged and shared with the idea creator.</p>
-          </div>
- 
-          <button onClick={acceptNDA} disabled={!email || accepting} style={{
-            width: '100%', background: 'var(--ink)', color: '#fff',
-            border: 'none', borderRadius: 8, padding: '12px',
-            fontSize: 14, fontWeight: 500, opacity: (!email || accepting) ? 0.5 : 1
-          }}>
-            {accepting ? 'Logging access...' : 'I agree — view the idea'}
-          </button>
+
+        {/* Title */}
+        <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(28px, 6vw, 40px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.75rem', letterSpacing: '-0.5px' }}>
+            {idea.title}
+          </h1>
+          {idea.target_audience && (
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', lineHeight: 1.6 }}>
+              Built for {idea.target_audience}
+            </p>
+          )}
         </div>
-      </div>
-    </div>
-  )
- 
-  // Stage: idea
-  const date = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
- 
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
-      <nav style={{ maxWidth: 800, margin: '0 auto', padding: '1.5rem 2rem', borderBottom: '0.5px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Logo size={20} />
-        <div style={{ fontSize: 12, color: 'var(--muted)', background: 'var(--gold-light)', borderRadius: 20, padding: '4px 12px' }}>
-          🔒 NDA accepted · access logged
-        </div>
-      </nav>
- 
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '3rem 2rem' }}>
- 
-        <div className="animate-fadeUp" style={{ display: 'flex', gap: 6, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-          {(idea.category || []).map(c => (
-            <span key={c} style={{ fontSize: 11, background: 'var(--gold-light)', color: 'var(--gold)', borderRadius: 4, padding: '4px 10px', fontWeight: 500 }}>{c}</span>
-          ))}
-        </div>
- 
-        <h1 className="serif animate-fadeUp" style={{ fontSize: 40, lineHeight: 1.15, marginBottom: '0.5rem', animationDelay: '0.05s' }}>{idea.title}</h1>
-        <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: '2.5rem' }}>Protected idea · submitted {date}</p>
- 
-        {idea.ai_profile && (
-          <div className="animate-fadeUp" style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '1.75rem', marginBottom: '2rem', animationDelay: '0.1s' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem' }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold-mid)' }} />
-              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--gold)' }}>Executive summary</span>
-            </div>
-            <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--ink)', fontStyle: 'italic' }}>{idea.ai_profile}</p>
+
+        {/* Category chips */}
+        {(idea.category || []).length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginBottom: '2rem' }}>
+            {(idea.category || []).map(c => (
+              <span key={c} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(123,159,247,0.18)' }}>{c}</span>
+            ))}
           </div>
         )}
- 
-        <div style={{ display: 'grid', gap: '1.25rem', marginBottom: '3rem' }}>
-          {idea.problem && <SharedSection title="The problem" content={idea.problem} />}
-          {idea.solution && <SharedSection title="The solution" content={idea.solution} />}
-          {idea.target_audience && <SharedSection title="Target audience" content={idea.target_audience} />}
-          {idea.market_size && <SharedSection title="Market size" content={idea.market_size} />}
-          {idea.terms && <SharedSection title="Creator is looking for" content={idea.terms} />}
-          {idea.asking_price && <SharedSection title="Asking price" content={`${idea.asking_price} · ${idea.pricing_model}`} />}
+
+        {/* Blurred preview card */}
+        <div style={{ position: 'relative', marginBottom: '1.75rem', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1.5rem', filter: 'blur(5px)', userSelect: 'none', pointerEvents: 'none', minHeight: 90 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(123,159,247,0.5)', marginBottom: 8 }}>The Problem</p>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', lineHeight: 1.7 }}>
+              {idea.problem ? idea.problem.slice(0, 110) + '...' : 'Protected content · Accept NDA to view the full idea details and pitch documents.'}
+            </p>
+          </div>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(14,14,31,0.2) 0%, rgba(14,14,31,0.88) 100%)', borderRadius: 14 }} />
+          <div style={{ position: 'absolute', bottom: 14, left: 0, right: 0, textAlign: 'center' }}>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.3px' }}>Content protected · accept NDA to reveal</span>
+          </div>
         </div>
- 
-        <div style={{ background: 'var(--ink)', borderRadius: 14, padding: '1.5rem 2rem', textAlign: 'center' }}>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
-            Interested in this idea? Contact the creator through eurekAIdea.<br />
-            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>This idea is protected. Your access has been logged.</span>
+
+        {/* Protection badge */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.75rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.18)', borderRadius: 20, padding: '6px 16px' }}>
+            <span style={{ fontSize: 12 }}>🔒</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>This idea is protected by eurekAIdea</span>
+          </div>
+        </div>
+
+        {/* NDA form card */}
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.09)', borderRadius: 16, padding: '1.75rem' }}>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Your email address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              onKeyDown={e => e.key === 'Enter' && email && !accepting && acceptNDA()}
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)',
+                borderRadius: 10, padding: '12px 14px', fontSize: 14, color: '#fff', outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <button
+            onClick={acceptNDA}
+            disabled={!email || accepting}
+            style={{
+              width: '100%',
+              background: (!email || accepting) ? 'rgba(123,159,247,0.3)' : 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
+              color: '#fff', border: 'none', borderRadius: 10, padding: '14px',
+              fontSize: 15, fontWeight: 600,
+              cursor: (!email || accepting) ? 'not-allowed' : 'pointer',
+              letterSpacing: '0.2px',
+            }}
+          >
+            {accepting ? 'Logging access...' : 'View Protected Idea — Accept NDA'}
+          </button>
+
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginTop: 12, lineHeight: 1.65 }}>
+            By proceeding you agree this content is confidential and proprietary.<br />
+            Your identity and access time will be logged.
           </p>
+        </div>
+
+        {/* Footer */}
+        <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.18)' }}>Presented via eurekAIdea · myeurekaidea.com</p>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ─── PHASE 2: FULL CONTENT ───────────────────────────────────────────────
+  const date = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
+      {/* Gradient accent bar */}
+      <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
+
+      {/* Dark header */}
+      <div style={{ background: '#0e0e1f', paddingBottom: '2.5rem' }}>
+        <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.25rem 0' }}>
+
+          {/* Nav row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: 8 }}>
+            <Logo size={20} />
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(123,159,247,0.09)', border: '0.5px solid rgba(123,159,247,0.18)', borderRadius: 20, padding: '5px 13px' }}>
+              <span style={{ fontSize: 11 }}>🔒</span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>NDA accepted · access logged</span>
+            </div>
+          </div>
+
+          {/* Categories + hash badge */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '1rem' }}>
+            {(idea.category || []).map(c => (
+              <span key={c} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(123,159,247,0.18)' }}>{c}</span>
+            ))}
+            {idea.blockchain_hash && (
+              <span style={{ fontSize: 11, background: 'rgba(74,222,128,0.08)', color: '#4ade80', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(74,222,128,0.18)' }}>⬡ Timestamped</span>
+            )}
+          </div>
+
+          {/* Title */}
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(28px, 5vw, 40px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px' }}>
+            {idea.title}
+          </h1>
+          {idea.target_audience && (
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', marginBottom: '0.5rem' }}>
+              Built for {idea.target_audience}
+            </p>
+          )}
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.22)' }}>Protected idea · submitted {date}</p>
+        </div>
+      </div>
+
+      {/* White content area */}
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
+
+        {/* Card 1: Problem & Solution */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+          {/* Problem — dark card */}
+          {idea.problem && (
+            <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>
+                <span style={{ fontSize: 16 }}>⚡</span>
+                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>The Problem</span>
+              </div>
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: 'rgba(255,255,255,0.78)' }}>{idea.problem}</p>
+            </div>
+          )}
+
+          {/* Solution — gradient border card */}
+          {idea.solution && (
+            <div style={{ background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', borderRadius: 15, padding: 1.5 }}>
+              <div style={{ background: '#fff', borderRadius: 13, padding: '1.5rem', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>
+                  <span style={{ fontSize: 16 }}>💡</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#9b7ff7' }}>The Solution</span>
+                </div>
+                <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.solution}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Card 2: Key Details */}
+        {(idea.market_size || idea.terms || (idea.category || []).length > 0) && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Key Details</p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {idea.market_size && (
+                <div style={{ background: '#f5f5f3', borderRadius: 8, padding: '8px 14px' }}>
+                  <span style={{ fontSize: 11, color: '#888780' }}>Market · </span>
+                  <span style={{ fontSize: 13, color: '#2c2c2a', fontWeight: 500 }}>{idea.market_size}</span>
+                </div>
+              )}
+              {(idea.category || []).map(c => (
+                <div key={c} style={{ background: '#EBF0F7', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#3B5273', fontWeight: 500 }}>{c}</div>
+              ))}
+              {idea.terms && idea.terms.split(', ').filter(Boolean).map(t => (
+                <div key={t} style={{ background: '#f0fdf4', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#16a34a', fontWeight: 500 }}>Looking for: {t}</div>
+              ))}
+              {idea.asking_price && (
+                <div style={{ background: '#fdf8f0', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#92400e', fontWeight: 500 }}>{idea.asking_price} · {idea.pricing_model}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Card 3: How It Works (conditional) */}
+        {idea.how_it_works && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>How It Works</p>
+            {idea.how_it_works.split('\n').filter(Boolean).map((step, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 2 }}>{step}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Card 4: Business Model (conditional) */}
+        {idea.business_model && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Business Model</p>
+            <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.business_model}</p>
+          </div>
+        )}
+
+        {/* Card 5: Pitch Documents */}
+        <div style={{ marginBottom: '1.25rem' }}>
+          <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.85rem', paddingLeft: 2 }}>Pitch Documents</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            <a href={`/pitch/${idea.id}`} style={{ display: 'block', background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
+              <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📄</div>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>Pitch PDF</p>
+              <p style={{ fontSize: 13, color: '#888780' }}>Full investor pitch document</p>
+            </a>
+            <a href={`/deck/${idea.id}`} style={{ display: 'block', background: 'linear-gradient(135deg, rgba(123,159,247,0.07), rgba(155,127,247,0.07))', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
+              <div style={{ fontSize: 28, marginBottom: '0.5rem' }}>📊</div>
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.25rem' }}>Pitch Deck</p>
+              <p style={{ fontSize: 13, color: '#888780' }}>8-slide visual presentation</p>
+            </a>
+          </div>
+        </div>
+
+        {/* Card 6: AI Executive Summary (collapsed) */}
+        {idea.ai_profile && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, marginBottom: '1.25rem', overflow: 'hidden' }}>
+            <button
+              onClick={() => setSummaryExpanded(x => !x)}
+              style={{ width: '100%', background: 'none', border: 'none', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888780' }}>AI Executive Summary</span>
+              </div>
+              <span style={{ fontSize: 12, color: '#7b9ff7', fontWeight: 500, whiteSpace: 'nowrap', marginLeft: 12 }}>
+                {summaryExpanded ? 'Collapse ▲' : 'Read full summary ▼'}
+              </span>
+            </button>
+            {summaryExpanded && (
+              <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                <p style={{ fontSize: 14, lineHeight: 1.85, color: '#2c2c2a', fontStyle: 'italic' }}>{idea.ai_profile}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem 1.75rem', textAlign: 'center' }}>
+          {idea.blockchain_hash && (
+            <div style={{ marginBottom: '0.85rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.2)', marginBottom: 5 }}>Cryptographic fingerprint</p>
+              <code style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', wordBreak: 'break-all', fontFamily: 'monospace' }}>{idea.blockchain_hash}</code>
+            </div>
+          )}
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>🔒 Access logged · Confidential under NDA</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', marginTop: 6 }}>Presented via eurekAIdea · myeurekaidea.com</p>
         </div>
       </div>
     </div>
   )
 }
- 
-function SharedSection({ title, content }) {
-  return (
-    <div style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '1.25rem 1.5rem' }}>
-      <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--muted)', marginBottom: 8 }}>{title}</p>
-      <p style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--ink)' }}>{content}</p>
-    </div>
-  )
-}
- 
