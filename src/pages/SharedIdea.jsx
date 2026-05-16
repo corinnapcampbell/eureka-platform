@@ -161,6 +161,7 @@ export default function SharedIdea() {
   const [deckInfo, setDeckInfo] = useState(null)   // { share_token } if public deck exists
   const [downloadingPDF, setDownloadingPDF] = useState(false)
   const [downloadingSnapshotPDF, setDownloadingSnapshotPDF] = useState(false)
+  const [viewingSnapshotPDF, setViewingSnapshotPDF] = useState(false)
 
   useEffect(() => {
     async function fetchLink() {
@@ -206,34 +207,48 @@ export default function SharedIdea() {
     setAccepting(false)
   }
 
-  function snapshotForm() {
+  function buildSnapshotForm(ideaData) {
     return {
-      tagline:               idea.tagline               || '',
-      problem:               idea.problem               || '',
-      solution:              idea.solution              || '',
-      how_it_works:          idea.how_it_works          || '',
-      market_size:           idea.market_size           || '',
-      target_audience:       idea.target_audience       || '',
-      business_model:        idea.business_model        || '',
-      competitive_advantage: idea.competitive_advantage || '',
-      risks:                 idea.risks                 || '',
-      next_steps:            idea.next_steps            || '',
-      ...(idea.pdf_snapshot || {}),
+      tagline:               ideaData.tagline               || '',
+      problem:               ideaData.problem               || '',
+      solution:              ideaData.solution              || '',
+      how_it_works:          ideaData.how_it_works          || '',
+      market_size:           ideaData.market_size           || '',
+      target_audience:       ideaData.target_audience       || '',
+      business_model:        ideaData.business_model        || '',
+      competitive_advantage: ideaData.competitive_advantage || '',
+      risks:                 ideaData.risks                 || '',
+      next_steps:            ideaData.next_steps            || '',
+      ...(ideaData.pdf_snapshot || {}),
     }
   }
 
-  function viewSnapshotPDF() {
-    const form = snapshotForm()
-    const inner = buildSnapshotHTML(form, idea)
-    const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${idea.title} — Pitch PDF</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f5f5f3;padding:20px 0;min-height:100vh"><div id="pdf-preview">${inner}</div></body></html>`
+  async function fetchFreshIdea() {
+    const { data } = await supabase
+      .from('ideas')
+      .select('*')
+      .eq('id', idea.id)
+      .single()
+    if (data) setIdea(data)
+    return data || idea
+  }
+
+  async function viewSnapshotPDF() {
+    setViewingSnapshotPDF(true)
+    const fresh = await fetchFreshIdea()
+    const form = buildSnapshotForm(fresh)
+    const inner = buildSnapshotHTML(form, fresh)
+    const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fresh.title} — Pitch PDF</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f5f5f3;padding:20px 0;min-height:100vh"><div id="pdf-preview">${inner}</div></body></html>`
     const blob = new Blob([fullHTML], { type: 'text/html' })
     window.open(URL.createObjectURL(blob), '_blank')
+    setViewingSnapshotPDF(false)
   }
 
   async function downloadSnapshotPDF() {
     setDownloadingSnapshotPDF(true)
-    const form = snapshotForm()
-    const inner = buildSnapshotHTML(form, idea)
+    const fresh = await fetchFreshIdea()
+    const form = buildSnapshotForm(fresh)
+    const inner = buildSnapshotHTML(form, fresh)
     const container = document.createElement('div')
     container.id = 'pdf-preview'
     container.style.cssText = 'position:fixed;left:-9999px;top:0;width:375px;z-index:-9999'
@@ -535,9 +550,10 @@ export default function SharedIdea() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={viewSnapshotPDF}
-                      style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500 }}
+                      disabled={viewingSnapshotPDF}
+                      style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', cursor: viewingSnapshotPDF ? 'not-allowed' : 'pointer', fontWeight: 500, opacity: viewingSnapshotPDF ? 0.6 : 1 }}
                     >
-                      View
+                      {viewingSnapshotPDF ? '…' : 'View'}
                     </button>
                     <button
                       onClick={downloadSnapshotPDF}
