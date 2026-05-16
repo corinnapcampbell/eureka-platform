@@ -9,6 +9,7 @@ import IdeaDetail from './pages/IdeaDetail'
 import SharedIdea from './pages/SharedIdea'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import Terms from './pages/Terms'
+import PitchPDF from './pages/PitchPDF'
 import PitchBuilder from './pages/PitchBuilder'
 import DeckBuilder from './pages/DeckBuilder'
 import DeckViewer from './pages/DeckViewer'
@@ -60,7 +61,8 @@ export default function App() {
       } />
       <Route path="/share/:token" element={<SharedIdea />} />
       <Route path="/deck/view/:shareToken" element={<DeckViewer />} />
-      <Route path="/pitch/:ideaId" element={<PitchBuilder session={session} />} />
+      <Route path="/pitch/:ideaId" element={<PitchPDF session={session} />} />
+      <Route path="/pitch-builder/:ideaId" element={<PitchBuilder session={session} />} />
       <Route path="/deck/:ideaId" element={<DeckBuilder session={session} />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />

@@ -212,7 +212,7 @@ export default function IdeaDetail({ session }) {
           {/* Build action buttons */}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button
-              onClick={() => navigate(`/pitch/${id}`)}
+              onClick={() => navigate(`/pitch-builder/${id}`)}
               style={{
                 background: '#fff', color: '#0e0e1f', border: 'none',
                 borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 600,
