@@ -229,6 +229,7 @@ export default function SharedIdea() {
       .select('*')
       .eq('id', idea.id)
       .single()
+    console.log('FRESH IDEA DATA:', JSON.stringify(data, null, 2))
     if (data) setIdea(data)
     return data || idea
   }

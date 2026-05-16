@@ -607,6 +607,7 @@ export default function PitchPDF({ session }) {
       pdf_published: true,
       pdf_snapshot:  snapshot,
     }).eq('id', ideaId)
+    console.log('SNAPSHOT SAVED:', JSON.stringify(snapshot, null, 2))
     setPublishing(false)
     setPublishSuccess(true)
   }
