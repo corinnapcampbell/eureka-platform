@@ -359,17 +359,25 @@ export default function PitchPDF({ session }) {
       })
 
       // Pre-populate chip arrays so handlePublish always has chip content
-      const parsedHowItWorks = (data.how_it_works || '').split('\n')
-        .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
-        .filter(Boolean)
+      const splitLines = (text) => text.replace(/\\n/g, '\n').split('\n')
+
+      const hiwRaw = data.how_it_works || ''
+      const hiwLines = splitLines(hiwRaw).map(s => s.replace(/^\d+[\.\)]\s*/, '').trim()).filter(Boolean)
+      const parsedHowItWorks = hiwLines.length === 1 && hiwRaw.length > 100
+        ? hiwRaw.split('. ').map(s => s.trim()).filter(Boolean)
+        : hiwLines
+
       const parsedTargetMarket = (data.target_audience || '').split(/,\s*/).map(s => s.trim()).filter(Boolean)
-      const parsedRisks = (data.risks || '').split('\n')
+
+      const parsedRisks = splitLines(data.risks || '')
         .map(s => s.replace(/^[•\-\*]\s*/, '').trim())
         .filter(Boolean)
-      const parsedNextSteps = (data.next_steps || '').split('\n')
+
+      const parsedNextSteps = splitLines(data.next_steps || '')
         .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
         .filter(Boolean)
-      const bmLines = (data.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
+
+      const bmLines = splitLines(data.business_model || '').map(s => s.trim()).filter(Boolean)
       const freeChips = bmLines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
       const paidChips = bmLines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
       const parsedFreeTier = (freeChips.length || paidChips.length) ? freeChips : bmLines
