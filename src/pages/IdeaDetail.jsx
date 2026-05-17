@@ -219,6 +219,9 @@ export default function IdeaDetail({ session }) {
   const [viewingPDF, setViewingPDF] = useState(false)
   const [showMobilePDF, setShowMobilePDF] = useState(false)
   const [mobilePDFContent, setMobilePDFContent] = useState('')
+  const [inlineEdit, setInlineEdit] = useState({})
+  const [inlineSaving, setInlineSaving] = useState(null)
+  const [savedField, setSavedField] = useState(null)
 
   useEffect(() => {
     async function fetchIdea() {
@@ -424,6 +427,23 @@ export default function IdeaDetail({ session }) {
     setViewingPDF(false)
   }
 
+  function startEdit(field) {
+    setInlineEdit(v => ({ ...v, [field]: idea[field] || '' }))
+  }
+  function cancelEdit(field) {
+    setInlineEdit(v => { const n = { ...v }; delete n[field]; return n })
+  }
+  async function saveInlineField(field) {
+    setInlineSaving(field)
+    const val = inlineEdit[field]
+    const { data } = await supabase.from('ideas').update({ [field]: val }).eq('id', id).select().single()
+    if (data) setIdea(data)
+    setInlineSaving(null)
+    cancelEdit(field)
+    setSavedField(field)
+    setTimeout(() => setSavedField(prev => prev === field ? null : prev), 2000)
+  }
+
   async function unpublishDoc(type) {
     setPublishing(type)
     const { data: updated } = await supabase
@@ -454,6 +474,7 @@ export default function IdeaDetail({ session }) {
   )
 
   const date = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  const isOwner = !!session?.user?.id && session.user.id === idea.user_id
 
   return (
     <>
@@ -495,9 +516,30 @@ export default function IdeaDetail({ session }) {
           </div>
 
           {/* Title */}
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(28px, 5vw, 40px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px' }}>
-            {idea.title}
-          </h1>
+          <div style={{ marginBottom: '0.5rem' }}>
+            {inlineEdit.title !== undefined ? (
+              <>
+                <input
+                  value={inlineEdit.title}
+                  onChange={e => setInlineEdit(v => ({ ...v, title: e.target.value }))}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 8, padding: '10px 14px', fontSize: 'clamp(22px, 4vw, 32px)', fontFamily: "'DM Serif Display', serif", color: '#fff', outline: 'none', boxSizing: 'border-box', letterSpacing: '-0.5px', lineHeight: 1.2 }}
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button onClick={() => saveInlineField('title')} disabled={inlineSaving === 'title'} style={inlineSaveBtnStyle}>{inlineSaving === 'title' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('title')} style={inlineCancelBtnDarkStyle}>Cancel</button>
+                </div>
+                {savedField === 'title' && <span style={savedConfirmDarkStyle}>Saved ✓</span>}
+              </>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(28px, 5vw, 40px)', color: '#fff', lineHeight: 1.15, letterSpacing: '-0.5px' }}>
+                  {idea.title}
+                </h1>
+                {isOwner && <button onClick={() => startEdit('title')} style={pencilBtnDarkStyle} title="Edit title">✏️</button>}
+                {savedField === 'title' && <span style={savedConfirmDarkStyle}>Saved ✓</span>}
+              </div>
+            )}
+          </div>
           {idea.target_audience && (
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', marginBottom: '0.5rem' }}>
               Built for {idea.target_audience}
@@ -536,24 +578,56 @@ export default function IdeaDetail({ session }) {
 
         {/* Card 1: Problem & Solution */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-          {idea.problem && (
+          {(idea.problem || isOwner) && (
             <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>
-                <span style={{ fontSize: 16 }}>⚡</span>
-                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>The Problem</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>⚡</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>The Problem</span>
+                </div>
+                {isOwner && inlineEdit.problem === undefined && <button onClick={() => startEdit('problem')} style={pencilBtnDarkStyle} title="Edit problem">✏️</button>}
               </div>
-              <p style={{ fontSize: 14, lineHeight: 1.8, color: 'rgba(255,255,255,0.78)' }}>{idea.problem}</p>
+              {inlineEdit.problem !== undefined ? (
+                <>
+                  <textarea value={inlineEdit.problem} onChange={e => setInlineEdit(v => ({ ...v, problem: e.target.value }))} rows={5} style={{ ...inlineTextareaDarkStyle }} />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button onClick={() => saveInlineField('problem')} disabled={inlineSaving === 'problem'} style={inlineSaveBtnStyle}>{inlineSaving === 'problem' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('problem')} style={inlineCancelBtnDarkStyle}>Cancel</button>
+                  </div>
+                </>
+              ) : (
+                <p style={{ fontSize: 14, lineHeight: 1.8, color: 'rgba(255,255,255,0.78)' }}>
+                  {idea.problem || <em style={{ opacity: 0.35, fontStyle: 'normal' }}>No problem statement yet — click ✏️ to add</em>}
+                </p>
+              )}
+              {savedField === 'problem' && <span style={savedConfirmDarkStyle}>Saved ✓</span>}
             </div>
           )}
 
-          {idea.solution && (
+          {(idea.solution || isOwner) && (
             <div style={{ background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', borderRadius: 15, padding: 1.5 }}>
               <div style={{ background: '#fff', borderRadius: 13, padding: '1.5rem', height: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>
-                  <span style={{ fontSize: 16 }}>💡</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#9b7ff7' }}>The Solution</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>💡</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#9b7ff7' }}>The Solution</span>
+                  </div>
+                  {isOwner && inlineEdit.solution === undefined && <button onClick={() => startEdit('solution')} style={pencilBtnLightStyle} title="Edit solution">✏️</button>}
                 </div>
-                <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.solution}</p>
+                {inlineEdit.solution !== undefined ? (
+                  <>
+                    <textarea value={inlineEdit.solution} onChange={e => setInlineEdit(v => ({ ...v, solution: e.target.value }))} rows={5} style={inlineTextareaStyle} />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button onClick={() => saveInlineField('solution')} disabled={inlineSaving === 'solution'} style={inlineSaveBtnStyle}>{inlineSaving === 'solution' ? 'Saving…' : 'Save'}</button>
+                      <button onClick={() => cancelEdit('solution')} style={inlineCancelBtnStyle}>Cancel</button>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>
+                    {idea.solution || <em style={{ opacity: 0.35, fontStyle: 'normal' }}>No solution statement yet — click ✏️ to add</em>}
+                  </p>
+                )}
+                {savedField === 'solution' && <span style={savedConfirmStyle}>Saved ✓</span>}
               </div>
             </div>
           )}
@@ -562,7 +636,10 @@ export default function IdeaDetail({ session }) {
         {/* Card 2: Key Details */}
         {(idea.market_size || idea.terms || (idea.category || []).length > 0 || idea.asking_price) && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Key Details</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Key Details</p>
+              {isOwner && <button onClick={() => setEditing(true)} style={pencilBtnLightStyle} title="Edit key details">✏️</button>}
+            </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {idea.market_size && (
                 <div style={{ background: '#f5f5f3', borderRadius: 8, padding: '8px 14px' }}>
@@ -584,58 +661,92 @@ export default function IdeaDetail({ session }) {
         )}
 
         {/* Card 3: How It Works (conditional) */}
-        {idea.how_it_works && (
+        {(idea.how_it_works || isOwner) && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>How It Works</p>
-            {(() => {
-              const steps = splitHowItWorks(idea.how_it_works)
-              if (steps.length <= 1) {
-                return <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.how_it_works}</p>
-              }
-              return steps.map((step, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
-                  <div style={{ width: 26, height: 26, minWidth: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
-                  <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 4 }}>{step}</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>How It Works</p>
+              {isOwner && inlineEdit.how_it_works === undefined && <button onClick={() => startEdit('how_it_works')} style={pencilBtnLightStyle} title="Edit how it works">✏️</button>}
+            </div>
+            {inlineEdit.how_it_works !== undefined ? (
+              <>
+                <textarea value={inlineEdit.how_it_works} onChange={e => setInlineEdit(v => ({ ...v, how_it_works: e.target.value }))} rows={6} style={inlineTextareaStyle} placeholder="Describe how your idea works, step by step…" />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveInlineField('how_it_works')} disabled={inlineSaving === 'how_it_works'} style={inlineSaveBtnStyle}>{inlineSaving === 'how_it_works' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('how_it_works')} style={inlineCancelBtnStyle}>Cancel</button>
                 </div>
-              ))
-            })()}
+                {savedField === 'how_it_works' && <span style={savedConfirmStyle}>Saved ✓</span>}
+              </>
+            ) : idea.how_it_works ? (
+              (() => {
+                const steps = splitHowItWorks(idea.how_it_works)
+                if (steps.length <= 1) {
+                  return <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.how_it_works}</p>
+                }
+                return steps.map((step, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, marginBottom: '0.85rem', alignItems: 'flex-start' }}>
+                    <div style={{ width: 26, height: 26, minWidth: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                    <p style={{ fontSize: 14, lineHeight: 1.75, color: '#2c2c2a', paddingTop: 4 }}>{step}</p>
+                  </div>
+                ))
+              })()
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe how your idea works</p>
+            )}
+            {savedField === 'how_it_works' && inlineEdit.how_it_works === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
           </div>
         )}
 
         {/* Card 4: Business Model (conditional) */}
-        {idea.business_model && (
+        {(idea.business_model || isOwner) && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Business Model</p>
-            {(() => {
-              const lines = (idea.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
-              const freeItems = lines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
-              const paidItems = lines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
-              if (freeItems.length === 0 && paidItems.length === 0) {
-                return <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.business_model}</p>
-              }
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div style={{ borderRadius: 10, border: '0.5px solid rgba(20,184,166,0.25)', borderTop: '3px solid #14b8a6', padding: '0.85rem 1rem' }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#14b8a6', marginBottom: '0.6rem' }}>🆓 Free Tier</p>
-                    {freeItems.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
-                        <span style={{ color: '#14b8a6', fontWeight: 700, flexShrink: 0 }}>·</span>
-                        <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ borderRadius: 10, border: '0.5px solid rgba(139,92,246,0.25)', borderTop: '3px solid #8b5cf6', padding: '0.85rem 1rem' }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '0.6rem' }}>⭐ Paid Tier</p>
-                    {paidItems.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
-                        <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>·</span>
-                        <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
-                      </div>
-                    ))}
-                  </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Business Model</p>
+              {isOwner && inlineEdit.business_model === undefined && <button onClick={() => startEdit('business_model')} style={pencilBtnLightStyle} title="Edit business model">✏️</button>}
+            </div>
+            {inlineEdit.business_model !== undefined ? (
+              <>
+                <textarea value={inlineEdit.business_model} onChange={e => setInlineEdit(v => ({ ...v, business_model: e.target.value }))} rows={6} style={inlineTextareaStyle} placeholder={'Use "Free: ..." and "Paid: ..." lines for tiered display, or write freely'} />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveInlineField('business_model')} disabled={inlineSaving === 'business_model'} style={inlineSaveBtnStyle}>{inlineSaving === 'business_model' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('business_model')} style={inlineCancelBtnStyle}>Cancel</button>
                 </div>
-              )
-            })()}
+                {savedField === 'business_model' && <span style={savedConfirmStyle}>Saved ✓</span>}
+              </>
+            ) : idea.business_model ? (
+              (() => {
+                const lines = (idea.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
+                const freeItems = lines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
+                const paidItems = lines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
+                if (freeItems.length === 0 && paidItems.length === 0) {
+                  return <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.business_model}</p>
+                }
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ borderRadius: 10, border: '0.5px solid rgba(20,184,166,0.25)', borderTop: '3px solid #14b8a6', padding: '0.85rem 1rem' }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#14b8a6', marginBottom: '0.6rem' }}>🆓 Free Tier</p>
+                      {freeItems.map((item, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+                          <span style={{ color: '#14b8a6', fontWeight: 700, flexShrink: 0 }}>·</span>
+                          <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ borderRadius: 10, border: '0.5px solid rgba(139,92,246,0.25)', borderTop: '3px solid #8b5cf6', padding: '0.85rem 1rem' }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '0.6rem' }}>⭐ Paid Tier</p>
+                      {paidItems.map((item, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+                          <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>·</span>
+                          <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe your business model</p>
+            )}
+            {savedField === 'business_model' && inlineEdit.business_model === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
           </div>
         )}
 
@@ -1143,4 +1254,55 @@ const btnPrimary = {
 const btnGhost = {
   background: 'none', border: '0.5px solid rgba(255,255,255,0.12)',
   borderRadius: 7, padding: '7px 14px', fontSize: 13, color: 'rgba(255,255,255,0.45)', cursor: 'pointer',
+}
+
+const pencilBtnDarkStyle = {
+  background: 'none', border: 'none', cursor: 'pointer',
+  fontSize: 14, opacity: 0.5, padding: '2px 4px', lineHeight: 1, flexShrink: 0,
+}
+
+const pencilBtnLightStyle = {
+  background: 'none', border: 'none', cursor: 'pointer',
+  fontSize: 14, opacity: 0.5, padding: '2px 4px', lineHeight: 1, flexShrink: 0,
+}
+
+const inlineTextareaStyle = {
+  width: '100%', border: '0.5px solid var(--border)', borderRadius: 8,
+  padding: '10px 14px', fontSize: 14, lineHeight: 1.7, color: 'var(--ink)',
+  background: '#fafaf8', outline: 'none', resize: 'vertical',
+  boxSizing: 'border-box', fontFamily: 'inherit', minHeight: 44,
+}
+
+const inlineTextareaDarkStyle = {
+  width: '100%', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8,
+  padding: '10px 14px', fontSize: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.85)',
+  background: 'rgba(255,255,255,0.06)', outline: 'none', resize: 'vertical',
+  boxSizing: 'border-box', fontFamily: 'inherit', minHeight: 44,
+}
+
+const inlineSaveBtnStyle = {
+  minHeight: 44, padding: '0 20px', background: '#3B5273', color: '#fff',
+  border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+}
+
+const inlineCancelBtnStyle = {
+  minHeight: 44, padding: '0 16px', background: 'none',
+  border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8,
+  fontSize: 13, color: '#888780', cursor: 'pointer',
+}
+
+const inlineCancelBtnDarkStyle = {
+  minHeight: 44, padding: '0 16px', background: 'none',
+  border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8,
+  fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+}
+
+const savedConfirmStyle = {
+  display: 'inline-block', marginTop: 8, fontSize: 12, color: '#3B6D11',
+  background: '#EAF3DE', borderRadius: 4, padding: '3px 8px', fontWeight: 500,
+}
+
+const savedConfirmDarkStyle = {
+  display: 'inline-block', marginTop: 8, fontSize: 12, color: '#4ade80',
+  background: 'rgba(74,222,128,0.1)', borderRadius: 4, padding: '3px 8px', fontWeight: 500,
 }
