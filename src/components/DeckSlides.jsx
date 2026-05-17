@@ -141,18 +141,19 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
     {
       type: 'advantage',
       sectionLabel: 'COMPETITIVE ADVANTAGE',
-      weHave: bulletsFrom(adv, [
-        'Unique approach no competitor has tried',
-        'Proprietary technology or process',
-        'Network effects drive compounding growth',
-        'First-mover advantage in key segments',
-      ]),
-      othersDont: [
-        'Fully integrated end-to-end solution',
-        'Purpose-built for this specific market',
-        'Proprietary approach at scale',
-        'Seamless unified experience',
-      ],
+      weHaveChips: (() => {
+        const we = adv.split('\n').map(l => l.trim()).filter(l => /^we:/i.test(l)).map(l => l.replace(/^we:\s*/i, '').trim()).filter(Boolean)
+        return we.length ? we : bulletsFrom(adv, [
+          'Unique approach no competitor has tried',
+          'Proprietary technology or process',
+          'Network effects drive compounding growth',
+          'First-mover advantage in key segments',
+        ])
+      })(),
+      othersDontChips: (() => {
+        const they = adv.split('\n').map(l => l.trim()).filter(l => /^they:/i.test(l)).map(l => l.replace(/^they:\s*/i, '').trim()).filter(Boolean)
+        return they.length ? they : []
+      })(),
       quote: firstSentence(adv) || `${t} is uniquely positioned to lead this market.`,
     },
     {
@@ -560,41 +561,65 @@ function BusinessSlide({ slide, slideNum, onUpdate }) {
 }
 
 function AdvantageSlide({ slide, slideNum, onUpdate }) {
-  const updateList = (field, i, v) => {
-    if (!onUpdate) return
-    const list = [...slide[field]]; list[i] = v; onUpdate({ [field]: list })
-  }
+  const weHaveChips = slide.weHaveChips || slide.weHave || []
+  const othersDontChips = slide.othersDontChips || slide.othersDont || []
+  const [weInput, setWeInput] = useState('')
+  const [theyInput, setTheyInput] = useState('')
   return (
     <div style={{ width: SLIDE_W, height: SLIDE_H, background: '#fff', position: 'relative', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif" }}>
       <AccentBars />
       <div style={{ padding: '36px 52px 38px', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
         <div style={{ fontSize: 8.5, color: '#7b9ff7', letterSpacing: 1.5, fontWeight: 600, textTransform: 'uppercase', marginBottom: 14 }}>{slide.sectionLabel}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22, flex: 1, minHeight: 0 }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#3B6D11', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12, background: '#EAF3DE', borderRadius: 6, padding: '4px 10px', display: 'inline-block' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#3B6D11', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12, background: '#EAF3DE', borderRadius: 6, padding: '4px 10px', display: 'inline-block', alignSelf: 'flex-start' }}>
               ✓ We Have
             </div>
-            {(slide.weHave || []).map((item, i) => (
-              <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 11, alignItems: 'flex-start' }}>
-                <span style={{ color: '#7b9ff7', fontSize: 13, marginTop: 1, flexShrink: 0 }}>◆</span>
-                <div style={{ fontSize: 13, color: '#333', flex: 1, lineHeight: 1.45 }}>
-                  {onUpdate ? <ET value={item} onChange={v => updateList('weHave', i, v)} multiline style={{ fontSize: 13, color: '#333' }} /> : item}
+            {onUpdate ? (
+              <DeckChipInput
+                chips={weHaveChips}
+                onChipsChange={v => onUpdate({ weHaveChips: v })}
+                inputVal={weInput}
+                setInputVal={setWeInput}
+                placeholder="Add an advantage, press Enter…"
+                chipBg="rgba(20,184,166,0.08)"
+                chipBorder="rgba(20,184,166,0.35)"
+                chipText="#0d9488"
+                inputColor="#555"
+              />
+            ) : (
+              weHaveChips.map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 11, alignItems: 'flex-start' }}>
+                  <span style={{ color: '#7b9ff7', fontSize: 13, marginTop: 1, flexShrink: 0 }}>◆</span>
+                  <div style={{ fontSize: 13, color: '#333', lineHeight: 1.45 }}>{item}</div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#A32D2D', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12, background: '#FDECEA', borderRadius: 6, padding: '4px 10px', display: 'inline-block' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#A32D2D', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12, background: '#FDECEA', borderRadius: 6, padding: '4px 10px', display: 'inline-block', alignSelf: 'flex-start' }}>
               ✗ Others Don't
             </div>
-            {(slide.othersDont || []).map((item, i) => (
-              <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 11, alignItems: 'flex-start' }}>
-                <span style={{ color: '#ddd', fontSize: 13, marginTop: 1, flexShrink: 0 }}>◆</span>
-                <div style={{ fontSize: 13, color: '#888', flex: 1, lineHeight: 1.45 }}>
-                  {onUpdate ? <ET value={item} onChange={v => updateList('othersDont', i, v)} multiline style={{ fontSize: 13, color: '#888' }} /> : item}
+            {onUpdate ? (
+              <DeckChipInput
+                chips={othersDontChips}
+                onChipsChange={v => onUpdate({ othersDontChips: v })}
+                inputVal={theyInput}
+                setInputVal={setTheyInput}
+                placeholder="What competitors lack, press Enter…"
+                chipBg="rgba(220,38,38,0.07)"
+                chipBorder="rgba(220,38,38,0.3)"
+                chipText="#dc2626"
+                inputColor="#888"
+              />
+            ) : (
+              othersDontChips.map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 11, alignItems: 'flex-start' }}>
+                  <span style={{ color: '#ddd', fontSize: 13, marginTop: 1, flexShrink: 0 }}>◆</span>
+                  <div style={{ fontSize: 13, color: '#888', lineHeight: 1.45 }}>{item}</div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
         <div style={{ background: 'linear-gradient(135deg, rgba(123,159,247,0.07), rgba(155,127,247,0.07))', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 10, padding: '12px 18px', marginTop: 12 }}>

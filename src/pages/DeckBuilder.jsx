@@ -133,8 +133,18 @@ export default function DeckBuilder({ session }) {
       ...deckFreeTierChips.map(f => `Free: ${f}`),
       ...deckPaidTierChips.map(p => `Paid: ${p}`),
     ].join('\n')
+    const advSlide = slides.find(s => s.type === 'advantage')
+    const deckWeHaveChips = advSlide?.weHaveChips || []
+    const deckOthersDontChips = advSlide?.othersDontChips || []
+    const competitiveAdvantage = [
+      ...deckWeHaveChips.map(f => `We: ${f}`),
+      ...deckOthersDontChips.map(f => `They: ${f}`),
+    ].join('\n')
     await supabase.from('pitch_decks').update({ slides }).eq('id', deckId)
-    if (businessModel) await supabase.from('ideas').update({ business_model: businessModel }).eq('id', ideaId)
+    const ideaUpdates = {}
+    if (businessModel) ideaUpdates.business_model = businessModel
+    if (competitiveAdvantage) ideaUpdates.competitive_advantage = competitiveAdvantage
+    if (Object.keys(ideaUpdates).length) await supabase.from('ideas').update(ideaUpdates).eq('id', ideaId)
     setSavingProgress(false)
   }
 
@@ -231,8 +241,10 @@ export default function DeckBuilder({ session }) {
             doc.text(`Paid: ${pChips.join(', ')}`, ml, y); y += 12
             doc.setFontSize(8); doc.text(slide.note || '', ml, y)
           } else if (slide.type === 'advantage') {
-            ;(slide.weHave || []).forEach(w => { doc.text(`✓ ${w}`, ml, y); y += 6 }); y += 4
-            ;(slide.othersDont || []).forEach(o => { doc.text(`✗ ${o}`, ml + 90, y - (slide.weHave?.length || 0) * 6 - 4 + (slide.othersDont.indexOf(o)) * 6 + 6); })
+            const wChips = slide.weHaveChips || slide.weHave || []
+            const oChips = slide.othersDontChips || slide.othersDont || []
+            wChips.forEach(w => { doc.text(`✓ ${w}`, ml, y); y += 6 }); y += 4
+            ;oChips.forEach((o, i) => { doc.text(`✗ ${o}`, ml + 90, y - wChips.length * 6 - 4 + i * 6 + 6) })
             y += 4
             const qLines = doc.splitTextToSize(`"${slide.quote || ''}"`, W - ml * 2)
             doc.setFontSize(9); doc.text(qLines, ml, y)
