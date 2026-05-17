@@ -75,10 +75,17 @@ export default function SharedIdea() {
   }, [token])
 
   useEffect(() => {
-    const mq = window.matchMedia('(orientation: landscape)')
-    const handler = (e) => setIsLandscape(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
+    const update = () => {
+      const landscape = window.innerWidth > window.innerHeight
+      setIsLandscape(landscape)
+    }
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('orientationchange', update)
+    }
   }, [])
 
   async function openMobileDeck() {
@@ -610,25 +617,18 @@ export default function SharedIdea() {
 
     {showMobileDeck && mobileDeckSlides && (
       <>
-        <style>{`
-          @media (orientation: landscape) and (max-width: 1024px) {
-            .deck-mobile-viewer {
-              position: fixed !important;
-              top: 0 !important;
-              left: 0 !important;
-              width: 100vw !important;
-              height: 100vh !important;
-              z-index: 9999 !important;
-              background: #0e0e1f !important;
-            }
-            .deck-mobile-slide {
-              width: min(100vw, calc(100vh * 1.7778)) !important;
-            }
-          }
-        `}</style>
         <div
           className="deck-mobile-viewer"
-          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#0e0e1f', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
+          style={{
+            position: isLandscape ? 'fixed' : 'relative',
+            top: isLandscape ? 0 : 'auto',
+            left: isLandscape ? 0 : 'auto',
+            width: isLandscape ? '100vw' : '100%',
+            height: isLandscape ? '100vh' : 'auto',
+            zIndex: isLandscape ? 9999 : 'auto',
+            background: '#0e0e1f',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+          }}
           onTouchStart={e => { mobileDeckTouchStart.current = e.touches[0].clientX }}
           onTouchEnd={e => {
             if (mobileDeckTouchStart.current === null) return
@@ -642,7 +642,7 @@ export default function SharedIdea() {
             style={{ position: 'absolute', top: 12, right: 12, zIndex: 10002, background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 6, width: 32, height: 32, color: 'rgba(255,255,255,0.8)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
           >✕</button>
 
-          <div className="deck-mobile-slide" style={{ width: '100vw' }}>
+          <div className="deck-mobile-slide" style={{ width: isLandscape ? `min(100vw, calc(100vh * 1.7778))` : '100vw' }}>
             <ScaledSlide
               slide={mobileDeckSlides[mobileDeckCurrent]}
               slideNum={mobileDeckCurrent + 1}
