@@ -7,6 +7,26 @@ import jsPDF from 'jspdf'
 const SLIDES_COUNT = 8
 const NAVY = '#0e0e1f'
 
+const DECK_CSS = `
+  @media (max-width: 767px) {
+    .pb-desktop-only { display: none !important; }
+    .pb-view-list .pb-editor-only { display: none !important; }
+    .pb-view-editor .pb-list-only { display: none !important; }
+  }
+  @media (min-width: 768px) {
+    .pb-mobile-only { display: none !important; }
+  }
+`
+
+function getSlideExcerpt(slide) {
+  const raw = slide.tagline || slide.headline || slide.description
+    || slide.bullets?.[0]
+    || slide.steps?.[0]?.title
+    || (slide.metrics?.[0] ? `${slide.metrics[0].value} ${slide.metrics[0].label}` : '')
+    || slide.subtitle || ''
+  return raw ? raw.slice(0, 64) + (raw.length > 64 ? '…' : '') : ''
+}
+
 export default function DeckBuilder({ session }) {
   const { ideaId } = useParams()
   const navigate = useNavigate()
@@ -25,6 +45,7 @@ export default function DeckBuilder({ session }) {
   const [saving, setSaving] = useState(false)
   const [savingProgress, setSavingProgress] = useState(false)
   const [generatingPDF, setGeneratingPDF] = useState(false)
+  const [mobileView, setMobileView] = useState('list')
   const saveTimer = useRef(null)
   const touchStart = useRef(null)
 
@@ -37,7 +58,6 @@ export default function DeckBuilder({ session }) {
       const ownerCheck = userId && ideaData?.user_id === userId
 
       if (!ownerCheck) {
-        // Non-owner: look for a public deck and redirect to DeckViewer
         const { data: publicDeck } = await supabase
           .from('pitch_decks')
           .select('share_token, is_public')
@@ -291,101 +311,175 @@ export default function DeckBuilder({ session }) {
 
   if (!slides) return null
 
+  const isFirst = current === 0
+  const isLast = current === slides.length - 1
+
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#12121f', overflow: 'hidden' }}>
+    <div className={`pb-view-${mobileView}`} style={{ background: '#12121f' }}>
+      <style>{DECK_CSS}</style>
 
-      {/* Top bar */}
-      <div style={{ background: NAVY, borderBottom: '0.5px solid rgba(255,255,255,0.07)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, zIndex: 10 }}>
-        <button onClick={() => navigate(`/idea/${ideaId}`)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer', padding: '4px 0', flexShrink: 0 }}>
-          ← Back
-        </button>
-        <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontWeight: 400 }}>
-            Deck Builder — {SLIDE_NAMES[current]}
-          </span>
-          {saving && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginLeft: 10 }}>Saving…</span>}
-        </div>
-        <button
-          onClick={handlePDF}
-          disabled={generatingPDF}
-          style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: 'rgba(255,255,255,0.65)', cursor: 'pointer', flexShrink: 0, opacity: generatingPDF ? 0.5 : 1 }}
-        >
-          {generatingPDF ? '…' : '↓ PDF'}
-        </button>
-        <button
-          onClick={() => setPresenting(true)}
-          style={{ background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#fff', cursor: 'pointer', flexShrink: 0 }}
-        >
-          ▶ Present
-        </button>
-        <button
-          onClick={saveProgress}
-          disabled={savingProgress}
-          style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: 'rgba(255,255,255,0.55)', cursor: savingProgress ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: savingProgress ? 0.6 : 1 }}
-        >
-          {savingProgress ? 'Saving...' : '💾 Save Progress'}
-        </button>
-        <button
-          onClick={handleShare}
-          style={{ background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#7b9ff7', cursor: 'pointer', flexShrink: 0 }}
-        >
-          Share Deck
-        </button>
-        <button
-          onClick={() => navigate('/dashboard')}
-          title="My Dashboard"
-          style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-        >
-          {(session?.user?.user_metadata?.full_name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)) || (session?.user?.email?.[0]?.toUpperCase() || '?')}
-        </button>
-      </div>
+      {/* ── DESKTOP FULL LAYOUT (hidden on mobile) ─────────────────────────── */}
+      <div className="pb-desktop-only" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {/* Body */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        {/* Sidebar */}
-        <div style={{ width: 204, background: '#0a0a18', borderRight: '0.5px solid rgba(255,255,255,0.06)', overflowY: 'auto', padding: '12px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ flex: 1 }}>
-            {slides.map((slide, i) => (
-              <Thumbnail key={i} slide={slide} slideNum={i + 1} selected={current === i} onClick={() => setCurrent(i)} />
-            ))}
+        {/* Top bar */}
+        <div style={{ background: NAVY, borderBottom: '0.5px solid rgba(255,255,255,0.07)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, zIndex: 10 }}>
+          <button onClick={() => navigate(`/idea/${ideaId}`)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer', padding: '4px 0', flexShrink: 0 }}>
+            ← Back
+          </button>
+          <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontWeight: 400 }}>
+              Deck Builder — {SLIDE_NAMES[current]}
+            </span>
+            {saving && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginLeft: 10 }}>Saving…</span>}
           </div>
-          {/* Free vs Paid info panel */}
-          <div style={{ marginTop: 14, padding: '14px 12px', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.14)', borderRadius: 10, flexShrink: 0 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'rgba(255,255,255,0.22)', marginBottom: 10 }}>Deck Builder</div>
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.42)', marginBottom: 5 }}>Free</div>
-              {['View & present slides', 'Basic PDF download', 'Share public link'].map((f, i) => (
-                <div key={i} style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', marginBottom: 3, display: 'flex', gap: 5, alignItems: 'center' }}>
-                  <span style={{ color: '#4caf78', fontSize: 9 }}>✓</span>{f}
-                </div>
-              ))}
-            </div>
-            <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#7b9ff7', marginBottom: 5 }}>Pro ✦</div>
-              {['Inline slide editing', 'NDA-gated sharing', 'Viewer access log', 'Custom branding'].map((f, i) => (
-                <div key={i} style={{ fontSize: 10, color: 'rgba(123,159,247,0.55)', marginBottom: 3, display: 'flex', gap: 5, alignItems: 'center' }}>
-                  <span style={{ fontSize: 9 }}>✦</span>{f}
-                </div>
-              ))}
-            </div>
-          </div>
+          <button onClick={handlePDF} disabled={generatingPDF} style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: 'rgba(255,255,255,0.65)', cursor: 'pointer', flexShrink: 0, opacity: generatingPDF ? 0.5 : 1 }}>
+            {generatingPDF ? '…' : '↓ PDF'}
+          </button>
+          <button onClick={() => setPresenting(true)} style={{ background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
+            ▶ Present
+          </button>
+          <button onClick={saveProgress} disabled={savingProgress} style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: 'rgba(255,255,255,0.55)', cursor: savingProgress ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: savingProgress ? 0.6 : 1 }}>
+            {savingProgress ? 'Saving...' : '💾 Save Progress'}
+          </button>
+          <button onClick={handleShare} style={{ background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#7b9ff7', cursor: 'pointer', flexShrink: 0 }}>
+            Share Deck
+          </button>
+          <button onClick={() => navigate('/dashboard')} title="My Dashboard" style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {(session?.user?.user_metadata?.full_name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)) || (session?.user?.email?.[0]?.toUpperCase() || '?')}
+          </button>
         </div>
 
-        {/* Main slide */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px 36px', background: '#1a1a2e', overflow: 'hidden' }}>
-          <div style={{ width: '100%', maxWidth: 900 }}>
-            <ScaledSlide
-              slide={slides[current]}
-              slideNum={current + 1}
-              onUpdate={updates => updateSlide(current, updates)}
-              containerStyle={{ boxShadow: '0 8px 50px rgba(0,0,0,0.55)', borderRadius: 8 }}
-            />
+        {/* Body: sidebar + slide */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* Sidebar */}
+          <div style={{ width: 204, background: '#0a0a18', borderRight: '0.5px solid rgba(255,255,255,0.06)', overflowY: 'auto', padding: '12px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1 }}>
+              {slides.map((slide, i) => (
+                <Thumbnail key={i} slide={slide} slideNum={i + 1} selected={current === i} onClick={() => setCurrent(i)} />
+              ))}
+            </div>
+            <div style={{ marginTop: 14, padding: '14px 12px', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.14)', borderRadius: 10, flexShrink: 0 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'rgba(255,255,255,0.22)', marginBottom: 10 }}>Deck Builder</div>
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.42)', marginBottom: 5 }}>Free</div>
+                {['View & present slides', 'Basic PDF download', 'Share public link'].map((f, i) => (
+                  <div key={i} style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', marginBottom: 3, display: 'flex', gap: 5, alignItems: 'center' }}>
+                    <span style={{ color: '#4caf78', fontSize: 9 }}>✓</span>{f}
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: '#7b9ff7', marginBottom: 5 }}>Pro ✦</div>
+                {['Inline slide editing', 'NDA-gated sharing', 'Viewer access log', 'Custom branding'].map((f, i) => (
+                  <div key={i} style={{ fontSize: 10, color: 'rgba(123,159,247,0.55)', marginBottom: 3, display: 'flex', gap: 5, alignItems: 'center' }}>
+                    <span style={{ fontSize: 9 }}>✦</span>{f}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Main slide */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px 36px', background: '#1a1a2e', overflow: 'hidden' }}>
+            <div style={{ width: '100%', maxWidth: 900 }}>
+              <ScaledSlide
+                slide={slides[current]}
+                slideNum={current + 1}
+                onUpdate={updates => updateSlide(current, updates)}
+                containerStyle={{ boxShadow: '0 8px 50px rgba(0,0,0,0.55)', borderRadius: 8 }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Present mode */}
+      {/* ── MOBILE LIST HEADER (list view only) ─────────────────────────────── */}
+      <div className="pb-mobile-only pb-list-only" style={{ background: NAVY, padding: '1rem 1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>Build Pitch Deck</span>
+          <button
+            onClick={() => navigate(`/idea/${ideaId}`)}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center', padding: '0 4px' }}
+          >← Back</button>
+        </div>
+        {saving && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem' }}>Saving…</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={handlePDF} disabled={generatingPDF} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', cursor: 'pointer', fontWeight: 500, opacity: generatingPDF ? 0.5 : 1 }}>
+            {generatingPDF ? '…' : '↓ Download PDF'}
+          </button>
+          <button onClick={() => setPresenting(true)} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: 14, color: '#fff', cursor: 'pointer', fontWeight: 500 }}>
+            ▶ Present
+          </button>
+          <button onClick={saveProgress} disabled={savingProgress} style={{ width: '100%', minHeight: 44, background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 8, fontSize: 14, color: 'rgba(255,255,255,0.55)', cursor: savingProgress ? 'not-allowed' : 'pointer', opacity: savingProgress ? 0.6 : 1 }}>
+            {savingProgress ? 'Saving...' : '💾 Save Progress'}
+          </button>
+          <button onClick={handleShare} style={{ width: '100%', minHeight: 44, background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 8, fontSize: 14, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500 }}>
+            Share Deck
+          </button>
+        </div>
+      </div>
+
+      {/* ── MOBILE SLIDE LIST (list view only) ──────────────────────────────── */}
+      <div className="pb-mobile-only pb-list-only" style={{ padding: '1rem 1.25rem 2rem', minHeight: '50vh' }}>
+        {slides.map((slide, i) => {
+          const excerpt = getSlideExcerpt(slide)
+          return (
+            <div
+              key={i}
+              onClick={() => { setCurrent(i); setMobileView('editor') }}
+              style={{ background: '#1a1a2e', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '0.75rem', cursor: 'pointer', minHeight: 64, display: 'flex', alignItems: 'center', gap: 12 }}
+            >
+              <div style={{ width: 30, height: 30, borderRadius: 6, background: 'rgba(123,159,247,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#7b9ff7', flexShrink: 0 }}>
+                {i + 1}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: excerpt ? 3 : 0 }}>{SLIDE_NAMES[i]}</div>
+                {excerpt && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{excerpt}</div>}
+              </div>
+              <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>›</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── MOBILE EDITOR HEADER (editor view only) ─────────────────────────── */}
+      <div className="pb-mobile-only pb-editor-only" style={{ background: NAVY, padding: '0 1.25rem', display: 'flex', alignItems: 'center', gap: 8, minHeight: 56, position: 'sticky', top: 0, zIndex: 10 }}>
+        <button
+          onClick={() => setMobileView('list')}
+          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 14, cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center', flexShrink: 0, padding: '0 4px' }}
+        >← Back</button>
+        <span style={{ flex: 1, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff' }}>
+          {SLIDE_NAMES[current]} — {current + 1} of {slides.length}
+        </span>
+        <div style={{ width: 56, flexShrink: 0 }} />
+      </div>
+
+      {/* ── MOBILE EDITOR SLIDE (editor view only) ──────────────────────────── */}
+      <div className="pb-mobile-only pb-editor-only" style={{ padding: '1.25rem 1rem 96px', background: '#1a1a2e', minHeight: 'calc(100vh - 56px)' }}>
+        <ScaledSlide
+          slide={slides[current]}
+          slideNum={current + 1}
+          onUpdate={updates => updateSlide(current, updates)}
+          containerStyle={{ boxShadow: '0 8px 50px rgba(0,0,0,0.55)', borderRadius: 8 }}
+        />
+      </div>
+
+      {/* ── MOBILE BOTTOM NAV (editor view only, fixed) ─────────────────────── */}
+      <div className="pb-mobile-only pb-editor-only" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#0e0e1f', borderTop: '0.5px solid rgba(255,255,255,0.1)', padding: '0.75rem 1.25rem', display: 'flex', gap: 12 }}>
+        <button
+          onClick={() => setCurrent(c => c - 1)}
+          disabled={isFirst}
+          style={{ flex: 1, minHeight: 44, background: isFirst ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.1)', color: isFirst ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.8)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 14, cursor: isFirst ? 'default' : 'pointer' }}
+        >← Previous</button>
+        <button
+          onClick={() => setCurrent(c => c + 1)}
+          disabled={isLast}
+          style={{ flex: 1, minHeight: 44, background: isLast ? 'rgba(255,255,255,0.04)' : 'rgba(123,159,247,0.2)', color: isLast ? 'rgba(255,255,255,0.25)' : '#7b9ff7', border: `0.5px solid ${isLast ? 'rgba(255,255,255,0.1)' : 'rgba(123,159,247,0.3)'}`, borderRadius: 8, fontSize: 14, cursor: isLast ? 'default' : 'pointer' }}
+        >Next →</button>
+      </div>
+
+      {/* ── PRESENT MODE (shared, position fixed) ───────────────────────────── */}
       {presenting && (
         <div
           style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -418,7 +512,7 @@ export default function DeckBuilder({ session }) {
         </div>
       )}
 
-      {/* Share modal */}
+      {/* ── SHARE MODAL (shared, position fixed) ────────────────────────────── */}
       {shareModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 480 }}>
@@ -433,10 +527,7 @@ export default function DeckBuilder({ session }) {
               <code style={{ flex: 1, fontSize: 12, color: '#444', wordBreak: 'break-all', lineHeight: 1.5 }}>
                 {window.location.origin}/deck/view/{shareToken}
               </code>
-              <button
-                onClick={copyShareLink}
-                style={{ background: shareCopied ? '#EAF3DE' : NAVY, color: shareCopied ? '#3B6D11' : '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 12, fontWeight: 500, flexShrink: 0, cursor: 'pointer' }}
-              >
+              <button onClick={copyShareLink} style={{ background: shareCopied ? '#EAF3DE' : NAVY, color: shareCopied ? '#3B6D11' : '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 12, fontWeight: 500, flexShrink: 0, cursor: 'pointer' }}>
                 {shareCopied ? '✓ Copied' : 'Copy'}
               </button>
             </div>
