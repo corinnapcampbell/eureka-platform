@@ -346,7 +346,7 @@ export default function SharedIdea() {
 
   return (
     <>
-    <div style={{ minHeight: '100vh', background: '#f5f5f3', width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f3', width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box', position: 'relative', fontSize: '16px' }}>
       {authSession && (
         <a href="/dashboard" style={{ position: 'fixed', top: 14, right: 16, zIndex: 999, background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
       )}
