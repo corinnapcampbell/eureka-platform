@@ -83,7 +83,7 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
     * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
     ${q} .pdf-wrap { display:flex; flex-direction:column; gap:12px; width:375px; margin:0 auto; }
-    ${q} .page { width:375px; border-radius:8px; overflow:hidden; border:1px solid #e0e0e0; display:flex; flex-direction:column; box-sizing:border-box; }
+    ${q} .page { width:375px; height:667px; border-radius:8px; overflow:hidden; border:1px solid #e0e0e0; display:flex; flex-direction:column; box-sizing:border-box; }
     ${q} .abar { height:4px; background:linear-gradient(90deg,#7b9ff7,#9b7ff7); flex-shrink:0; }
     ${q} .cover { background:#0e0e1f; flex:1; padding:28px 22px 22px; display:flex; flex-direction:column; justify-content:space-between; }
     ${q} .logo { font-family:'Outfit',sans-serif; font-size:14px; font-weight:300; color:#fff; }
@@ -105,7 +105,7 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
     ${q} .logod { font-family:'Outfit',sans-serif; font-size:12px; font-weight:300; color:#0e0e1f; }
     ${q} .logod b { background:linear-gradient(90deg,#7b9ff7,#9b7ff7); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:700; }
     ${q} .pnum { font-size:9px; color:#ccc; }
-    ${q} .pbody { padding:14px 18px; display:flex; flex-direction:column; gap:13px; }
+    ${q} .pbody { padding:14px 18px; display:flex; flex-direction:column; gap:13px; flex:1; overflow:hidden; }
     ${q} .shead { display:flex; align-items:center; gap:9px; flex-shrink:0; }
     ${q} .sicon { width:32px; height:32px; border-radius:8px; background:rgba(123,159,247,0.1); border:1px solid rgba(123,159,247,0.15); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
     ${q} .slabel { font-size:9px; letter-spacing:2px; color:#9b7ff7; text-transform:uppercase; font-weight:600; }
@@ -217,7 +217,7 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
       html: `${sH('🚀', 'NEXT STEPS')}<div class="tl">${nextSteps.map(s => `<div class="tli"><div class="tldot"></div><div><div class="tltitle">${escH(s)}</div></div></div>`).join('')}</div>` },
   ].filter(s => s.html)
 
-  const PAGE_H = 900
+  const PAGE_H = 560
   const buckets = []
   let cur = [], curH = 0
   for (const { h, html } of sections) {
