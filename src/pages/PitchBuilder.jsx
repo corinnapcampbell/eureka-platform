@@ -35,6 +35,9 @@ export default function PitchBuilder({ session }) {
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
   const saveTimers = useRef({})
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  const [mobileView, setMobileView] = useState('list')
+  const [mobileActiveIdx, setMobileActiveIdx] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -71,6 +74,12 @@ export default function PitchBuilder({ session }) {
   }, [ideaId])
 
   useEffect(() => { pitchRef.current = pitch }, [pitch])
+
+  useEffect(() => {
+    function onResize() { setIsMobile(window.innerWidth < 768) }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   function updateField(key, value) {
     setPitch(p => ({ ...p, [key]: value }))
@@ -137,6 +146,153 @@ export default function PitchBuilder({ session }) {
     </div>
   )
 
+  // ── MOBILE LIST VIEW ────────────────────────────────────────────────────��─
+  if (isMobile && mobileView === 'list') return (
+    <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
+
+      {/* Dark header */}
+      <div style={{ background: 'var(--ink)', padding: '1rem 1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          <Logo size={18} />
+          <button
+            onClick={() => navigate(`/idea/${ideaId}`)}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}
+          >← Back to idea</button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={() => navigate(`/pitch/${ideaId}`)} style={{ width: '100%', minHeight: 44, background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 8, fontSize: 14, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500 }}>
+            Preview PDF →
+          </button>
+          <button onClick={() => navigate(`/deck/${ideaId}`)} style={{ width: '100%', minHeight: 44, background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 8, fontSize: 14, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500 }}>
+            Build Deck →
+          </button>
+        </div>
+      </div>
+
+      {/* Title + progress */}
+      <div style={{ padding: '1.25rem 1.25rem 0' }}>
+        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--gold)' }}>Pitch Builder</span>
+        <h1 className="serif" style={{ fontSize: 26, marginBottom: '0.25rem', marginTop: '0.15rem' }}>{idea?.title}</h1>
+        <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: '1.25rem' }}>Fill in all 10 sections to generate a branded investor PDF. Auto-saves as you type.</p>
+        <div style={{ marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{filledCount} of {SECTIONS.length} sections completed</span>
+            {allComplete && <span style={{ fontSize: 12, color: 'var(--success)', fontWeight: 500 }}>✓ Ready</span>}
+          </div>
+          <div style={{ height: 5, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${(filledCount / SECTIONS.length) * 100}%`, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', borderRadius: 3, transition: 'width 0.4s ease' }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Section list */}
+      <div style={{ padding: '0 1.25rem 2rem' }}>
+        {SECTIONS.map((section, idx) => {
+          const filled = pitch[section.key]?.trim()
+          const excerpt = filled ? filled.slice(0, 80) + (filled.length > 80 ? '…' : '') : null
+          return (
+            <div
+              key={section.key}
+              onClick={() => { setMobileActiveIdx(idx); setMobileView('editor') }}
+              style={{ background: '#fff', border: '0.5px solid var(--border)', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '0.75rem', cursor: 'pointer', minHeight: 64 }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: excerpt ? 5 : 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 4, padding: '2px 7px', background: filled ? '#EAF3DE' : 'var(--surface)', color: filled ? '#3B6D11' : 'var(--muted)', border: `0.5px solid ${filled ? '#c3dea8' : 'var(--border)'}`, flexShrink: 0 }}>
+                  {String(idx + 1).padStart(2, '0')}
+                </span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', flex: 1 }}>{section.label}</span>
+                {filled
+                  ? <span style={{ fontSize: 12, color: '#3B6D11', flexShrink: 0 }}>✓</span>
+                  : <span style={{ fontSize: 16, color: 'var(--muted)', flexShrink: 0 }}>›</span>
+                }
+              </div>
+              {excerpt
+                ? <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5, margin: 0 }}>{excerpt}</p>
+                : <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, margin: 0, fontStyle: 'italic' }}>{section.hint}</p>
+              }
+            </div>
+          )
+        })}
+
+        {/* Export PDF card */}
+        <div style={{ background: '#fff', border: '0.5px solid var(--border)', borderRadius: 14, padding: '1.5rem', marginTop: '0.5rem' }}>
+          <h3 className="serif" style={{ fontSize: 20, marginBottom: '0.4rem' }}>Export as PDF</h3>
+          <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
+            {allComplete
+              ? 'Your pitch is complete. Generate a branded PDF ready to share with investors.'
+              : `Complete all 10 sections to unlock PDF export. ${SECTIONS.length - filledCount} section${SECTIONS.length - filledCount !== 1 ? 's' : ''} remaining.`}
+          </p>
+          <button
+            onClick={handleGeneratePDF}
+            disabled={!allComplete || generatingPDF}
+            style={{ width: '100%', minHeight: 44, background: allComplete ? 'var(--ink)' : 'var(--surface)', color: allComplete ? '#fff' : 'var(--muted)', border: `0.5px solid ${allComplete ? 'transparent' : 'var(--border)'}`, borderRadius: 8, fontSize: 14, fontWeight: 500, opacity: generatingPDF ? 0.7 : 1, cursor: allComplete ? 'pointer' : 'default' }}
+          >
+            {generatingPDF ? 'Generating...' : '↓ Generate PDF'}
+          </button>
+          {pdfReady && (
+            <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', background: '#EAF3DE', borderRadius: 8, fontSize: 13, color: '#3B6D11', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>✓</span><span>PDF generated and downloaded.</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── MOBILE EDITOR VIEW ────────────────────────────────────────────────────
+  if (isMobile && mobileView === 'editor') {
+    const section = SECTIONS[mobileActiveIdx]
+    const isFirst = mobileActiveIdx === 0
+    const isLast = mobileActiveIdx === SECTIONS.length - 1
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--surface)', paddingBottom: 80 }}>
+
+        {/* Top bar */}
+        <div style={{ background: 'var(--ink)', padding: '0 1.25rem', display: 'flex', alignItems: 'center', gap: 8, minHeight: 56, position: 'sticky', top: 0, zIndex: 10 }}>
+          <button
+            onClick={() => setMobileView('list')}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 14, cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center', flexShrink: 0, padding: '0 4px' }}
+          >← Back</button>
+          <span style={{ flex: 1, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#fff' }}>
+            {section.label} — {mobileActiveIdx + 1} of {SECTIONS.length}
+          </span>
+          <div style={{ width: 56, flexShrink: 0 }} />
+        </div>
+
+        {/* Section editor */}
+        <div style={{ padding: '1.25rem' }}>
+          <SectionCard
+            section={section}
+            index={mobileActiveIdx}
+            value={pitch[section.key]}
+            onChange={val => updateField(section.key, val)}
+            aiEnabled={aiEnabled}
+            loadingAI={!!loadingSuggestion[section.key]}
+            suggestion={suggestions[section.key]}
+            onAISuggest={() => getSuggestion(section.key)}
+            onUseSuggestion={() => useSuggestion(section.key)}
+            onDismissSuggestion={() => dismissSuggestion(section.key)}
+          />
+        </div>
+
+        {/* Fixed bottom nav */}
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '0.5px solid var(--border)', padding: '0.75rem 1.25rem', display: 'flex', gap: 12 }}>
+          <button
+            onClick={() => setMobileActiveIdx(i => i - 1)}
+            disabled={isFirst}
+            style={{ flex: 1, minHeight: 44, background: isFirst ? 'var(--surface)' : 'var(--ink)', color: isFirst ? 'var(--muted)' : '#fff', border: '0.5px solid var(--border)', borderRadius: 8, fontSize: 14, cursor: isFirst ? 'default' : 'pointer', opacity: isFirst ? 0.4 : 1 }}
+          >← Previous</button>
+          <button
+            onClick={() => setMobileActiveIdx(i => i + 1)}
+            disabled={isLast}
+            style={{ flex: 1, minHeight: 44, background: isLast ? 'var(--surface)' : 'var(--ink)', color: isLast ? 'var(--muted)' : '#fff', border: '0.5px solid var(--border)', borderRadius: 8, fontSize: 14, cursor: isLast ? 'default' : 'pointer', opacity: isLast ? 0.4 : 1 }}
+          >Next →</button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── DESKTOP (unchanged) ────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
 
