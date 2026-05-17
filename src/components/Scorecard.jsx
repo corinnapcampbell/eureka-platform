@@ -6,12 +6,11 @@ const CIRCUMFERENCE = 2 * Math.PI * R
 function isBMFilled(raw) {
   if (!raw) return false
   try {
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
-    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.models)) {
-      return parsed.models.length > 0
-    }
-  } catch {}
-  return String(raw).trim().length > 0
+    const bm = typeof raw === 'string' ? JSON.parse(raw) : raw
+    return !!(bm && Array.isArray(bm.models) && bm.models.length > 0)
+  } catch {
+    return false
+  }
 }
 
 function hasValue(v) {
