@@ -64,7 +64,8 @@ function buildSnapshotHTML(form, idea) {
 
   const q = '#pdf-preview'
   const CSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+    * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
     ${q} .pdf-wrap{display:flex;flex-direction:column;gap:12px;width:375px;margin:0 auto}
     ${q} .page{width:375px;height:667px;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;display:flex;flex-direction:column;box-sizing:border-box}
     ${q} .abar{height:4px;background:linear-gradient(90deg,#7b9ff7,#9b7ff7);flex-shrink:0}
@@ -239,7 +240,7 @@ export default function SharedIdea() {
     const fresh = await fetchFreshIdea()
     const form = buildSnapshotForm(fresh)
     const inner = buildSnapshotHTML(form, fresh)
-    const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fresh.title} — Pitch PDF</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f5f5f3;padding:20px 0;min-height:100vh"><div id="pdf-preview">${inner}</div></body></html>`
+    const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fresh.title} — Pitch PDF</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"></head><body style="margin:0;background:#f5f5f3;padding:20px 0;min-height:100vh"><div id="pdf-preview">${inner}</div></body></html>`
     const blob = new Blob([fullHTML], { type: 'text/html' })
     window.open(URL.createObjectURL(blob), '_blank')
     setViewingSnapshotPDF(false)

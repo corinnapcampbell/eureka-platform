@@ -80,7 +80,8 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
 
   const q = '#pdf-preview'
   const CSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+    * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
     ${q} .pdf-wrap { display:flex; flex-direction:column; gap:12px; width:375px; margin:0 auto; }
     ${q} .page { width:375px; height:667px; border-radius:8px; overflow:hidden; border:1px solid #e0e0e0; display:flex; flex-direction:column; box-sizing:border-box; }
     ${q} .abar { height:4px; background:linear-gradient(90deg,#7b9ff7,#9b7ff7); flex-shrink:0; }
