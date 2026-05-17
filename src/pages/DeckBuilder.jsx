@@ -422,25 +422,32 @@ export default function DeckBuilder({ session }) {
 
       {/* ── MOBILE SLIDE LIST (list view only) ──────────────────────────────── */}
       <div className="pb-mobile-only pb-list-only" style={{ padding: '1rem 1.25rem 2rem', minHeight: '50vh' }}>
-        {slides.map((slide, i) => {
-          const excerpt = getSlideExcerpt(slide)
-          return (
-            <div
-              key={i}
-              onClick={() => { setCurrent(i); setMobileView('editor') }}
-              style={{ background: '#1a1a2e', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '0.75rem', cursor: 'pointer', minHeight: 64, display: 'flex', alignItems: 'center', gap: 12 }}
-            >
-              <div style={{ width: 30, height: 30, borderRadius: 6, background: 'rgba(123,159,247,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#7b9ff7', flexShrink: 0 }}>
+        {slides.map((slide, i) => (
+          <div
+            key={i}
+            onClick={() => { setCurrent(i); setMobileView('editor') }}
+            style={{ background: '#1a1a2e', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '0.75rem', cursor: 'pointer' }}
+          >
+            {/* Header row: badge + title + arrow */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '0.75rem' }}>
+              <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(123,159,247,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#7b9ff7', flexShrink: 0 }}>
                 {i + 1}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: excerpt ? 3 : 0 }}>{SLIDE_NAMES[i]}</div>
-                {excerpt && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{excerpt}</div>}
-              </div>
-              <span style={{ fontSize: 20, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>›</span>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#fff' }}>{SLIDE_NAMES[i]}</span>
+              <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.25)', flexShrink: 0 }}>›</span>
             </div>
-          )
-        })}
+            {/* Thumbnail: 16:9 box containing a scaled-down real slide */}
+            <div style={{ width: '100%', paddingBottom: '56.25%', position: 'relative', overflow: 'hidden', borderRadius: 6, pointerEvents: 'none' }}>
+              <div style={{ position: 'absolute', inset: 0 }}>
+                <ScaledSlide
+                  slide={slide}
+                  slideNum={i + 1}
+                  containerStyle={{ borderRadius: 0 }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ── MOBILE EDITOR HEADER (editor view only) ─────────────────────────── */}
