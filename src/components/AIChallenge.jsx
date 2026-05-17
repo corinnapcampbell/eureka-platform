@@ -16,8 +16,9 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
     setError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL.replace(/\/rest\/v1\/?$/, '')
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-challenge`,
+        `${baseUrl}/functions/v1/ai-challenge`,
         {
           method: 'POST',
           headers: {
@@ -29,12 +30,11 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
         }
       )
       const result = await response.json()
-      console.log('AI Challenge result:', JSON.stringify(result))
       if (result.error) {
         setError('Unable to analyse right now: ' + result.error)
-        return
+      } else {
+        setResult(result)
       }
-      setResult(result)
     } catch {
       setError('Unable to analyse right now. Please try again.')
     }
