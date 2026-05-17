@@ -27,12 +27,19 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
         body: JSON.stringify({ sectionLabel, content })
       })
       const raw = await response.text()
-      const parsed = JSON.parse(raw)
-      if (parsed.strong !== undefined || parsed.questions !== undefined) {
-        setResult(parsed)
-      } else {
+      console.log('RAW:', raw.substring(0, 200))
+      let parsed
+      try {
+        parsed = JSON.parse(raw)
+      } catch(e) {
+        console.log('PARSE ERROR:', e.message)
         setError('Unable to analyse right now. Please try again.')
+        return
       }
+      console.log('PARSED keys:', Object.keys(parsed))
+      console.log('has questions:', parsed.questions !== undefined)
+      console.log('has strong:', parsed.strong !== undefined)
+      setResult(parsed)
     } catch (err) {
       setError('Unable to analyse right now. Please try again.')
     } finally {
