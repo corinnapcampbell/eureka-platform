@@ -35,11 +35,12 @@ export default function SharedIdea() {
   const [showMobilePDF, setShowMobilePDF] = useState(false)
   const [mobilePDFContent, setMobilePDFContent] = useState('')
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-  const [isLandscape, setIsLandscape] = useState(window.matchMedia('(orientation: landscape)').matches)
+  const [isLandscape, setIsLandscape] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > window.innerHeight : false
+  )
   const [showMobileDeck, setShowMobileDeck] = useState(false)
   const [mobileDeckSlides, setMobileDeckSlides] = useState(null)
   const [mobileDeckCurrent, setMobileDeckCurrent] = useState(0)
-  const [showRotatePrompt, setShowRotatePrompt] = useState(true)
   const mobileDeckTouchStart = useRef(null)
 
   useEffect(() => {
@@ -75,13 +76,10 @@ export default function SharedIdea() {
   }, [token])
 
   useEffect(() => {
-    const update = () => {
-      const landscape = window.innerWidth > window.innerHeight
-      setIsLandscape(landscape)
-    }
+    const update = () => setIsLandscape(window.innerWidth > window.innerHeight)
     update()
     window.addEventListener('resize', update)
-    window.addEventListener('orientationchange', update)
+    window.addEventListener('orientationchange', () => setTimeout(update, 100))
     return () => {
       window.removeEventListener('resize', update)
       window.removeEventListener('orientationchange', update)
@@ -620,14 +618,19 @@ export default function SharedIdea() {
         <div
           className="deck-mobile-viewer"
           style={{
-            position: isLandscape ? 'fixed' : 'relative',
-            top: isLandscape ? 0 : 'auto',
-            left: isLandscape ? 0 : 'auto',
-            width: isLandscape ? '100vw' : '100%',
-            height: isLandscape ? '100vh' : 'auto',
-            zIndex: isLandscape ? 9999 : 'auto',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
             background: '#0e0e1f',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflowX: 'hidden',
+            overflowY: 'hidden',
           }}
           onTouchStart={e => { mobileDeckTouchStart.current = e.touches[0].clientX }}
           onTouchEnd={e => {
@@ -639,29 +642,25 @@ export default function SharedIdea() {
         >
           <button
             onClick={() => setShowMobileDeck(false)}
-            style={{ position: 'absolute', top: 12, right: 12, zIndex: 10002, background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 6, width: 32, height: 32, color: 'rgba(255,255,255,0.8)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+            style={{ position: 'fixed', top: 12, right: 12, zIndex: 10000, background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', borderRadius: '50%', width: 36, height: 36, cursor: 'pointer', fontSize: 18 }}
           >✕</button>
 
-          <div className="deck-mobile-slide" style={{ width: isLandscape ? `min(100vw, calc(100vh * 1.7778))` : '100vw' }}>
+          <div style={{ width: isLandscape ? '100vw' : '100vw', height: isLandscape ? '100vh' : 'auto', maxWidth: isLandscape ? '100vw' : '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <ScaledSlide
               slide={mobileDeckSlides[mobileDeckCurrent]}
               slideNum={mobileDeckCurrent + 1}
-              containerStyle={{ borderRadius: isLandscape ? 0 : 4 }}
+              width={window.innerWidth}
+              containerStyle={{ borderRadius: 0 }}
             />
           </div>
 
-          <div style={{ position: 'absolute', bottom: isLandscape ? 8 : 20, left: '50%', transform: 'translateX(-50%)', fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: 1, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>
+          <div style={{ position: 'fixed', bottom: isMobile && !isLandscape ? 56 : 20, left: '50%', transform: 'translateX(-50%)', fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: 1, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>
             {mobileDeckCurrent + 1} / {mobileDeckSlides.length}
           </div>
 
-          {!isLandscape && showRotatePrompt && (
-            <div
-              onClick={() => setShowRotatePrompt(false)}
-              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(14,14,31,0.92)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', zIndex: 10001 }}
-            >
-              <span style={{ fontSize: 18 }}>↻</span>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontFamily: "'DM Sans', sans-serif" }}>Rotate for full screen experience</span>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>✕</span>
+          {isMobile && !isLandscape && (
+            <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', background: 'rgba(123,159,247,0.15)', color: '#7b9ff7', borderRadius: 20, padding: '8px 16px', fontSize: 12, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+              ↻ Rotate for full screen
             </div>
           )}
         </div>
