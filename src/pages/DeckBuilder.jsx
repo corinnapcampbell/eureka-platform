@@ -49,6 +49,7 @@ export default function DeckBuilder({ session }) {
   const [mobileView, setMobileView] = useState('list')
   const saveTimer = useRef(null)
   const touchStart = useRef(null)
+  const slideRenderRef = useRef(null)
 
   useEffect(() => {
     async function load() {
@@ -188,30 +189,46 @@ export default function DeckBuilder({ session }) {
   }
 
   async function handlePDF() {
-    if (!slides) return
+    if (!slides || !slideRenderRef.current) return
     setGeneratingPDF(true)
     try {
-      const elements = document.querySelectorAll('.deck-slide-render')
-      const doc = new jsPDF({ orientation: 'l', unit: 'px', format: [SLIDE_W, SLIDE_H] })
+      // Move container on-screen but invisible so browsers fully paint the slides
+      const container = slideRenderRef.current
+      container.style.cssText = 'position: fixed; left: 0; top: 0; z-index: -999; opacity: 0; pointer-events: none; visibility: visible;'
+
+      // Wait for paint
+      await new Promise(r => setTimeout(r, 500))
+
+      const elements = container.querySelectorAll('.deck-slide-render')
+      console.log('[DeckPDF] slide elements found:', elements.length)
+
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'px', format: [SLIDE_W, SLIDE_H] })
 
       for (let i = 0; i < elements.length; i++) {
-        if (i > 0) doc.addPage([SLIDE_W, SLIDE_H], 'l')
+        if (i > 0) doc.addPage([SLIDE_W, SLIDE_H], 'landscape')
         const canvas = await html2canvas(elements[i], {
           scale: 2,
           useCORS: true,
           allowTaint: true,
           width: SLIDE_W,
           height: SLIDE_H,
-          backgroundColor: null,
+          backgroundColor: '#0e0e1f',
+          logging: false,
         })
-        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+        const imgData = canvas.toDataURL('image/jpeg', 0.92)
         doc.addImage(imgData, 'JPEG', 0, 0, SLIDE_W, SLIDE_H)
       }
+
+      // Restore hidden state
+      container.style.cssText = 'position: fixed; left: -9999px; top: 0; pointer-events: none; z-index: -1; opacity: 0; visibility: hidden;'
 
       const slug = (idea?.title || 'deck').replace(/[^a-z0-9]+/gi, '-').toLowerCase()
       doc.save(`${slug}-deck.pdf`)
     } catch (e) {
       console.error('PDF error:', e)
+      if (slideRenderRef.current) {
+        slideRenderRef.current.style.cssText = 'position: fixed; left: -9999px; top: 0; pointer-events: none; z-index: -1; opacity: 0; visibility: hidden;'
+      }
     }
     setGeneratingPDF(false)
   }
@@ -441,12 +458,15 @@ export default function DeckBuilder({ session }) {
       )}
 
       {/* ── HIDDEN FULL-RES SLIDES for PDF capture ──────────────────────────── */}
-      <div style={{ position: 'fixed', left: '-9999px', top: 0, pointerEvents: 'none', zIndex: -1, visibility: 'hidden' }}>
+      <div
+        ref={slideRenderRef}
+        style={{ position: 'fixed', left: '-9999px', top: 0, pointerEvents: 'none', zIndex: -1, opacity: 0, visibility: 'hidden' }}
+      >
         {slides.map((slide, i) => (
           <div
             key={i}
             className="deck-slide-render"
-            style={{ width: SLIDE_W, height: SLIDE_H, overflow: 'hidden' }}
+            style={{ width: SLIDE_W, height: SLIDE_H, overflow: 'hidden', flexShrink: 0 }}
           >
             <SlideContent slide={slide} slideNum={i + 1} />
           </div>
