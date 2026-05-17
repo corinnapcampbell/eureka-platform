@@ -256,8 +256,9 @@ export default function SharedIdea() {
     const { error: logError } = await supabase.from('idea_access_log').insert({
       idea_id: idea.id,
       viewer_email: email,
-      viewer_ip: 'logged',
+      ip_address: 'logged',
       nda_accepted: true,
+      viewed_at: new Date().toISOString(),
     })
     if (logError) console.error('idea_access_log insert error:', logError.message, logError.code)
 

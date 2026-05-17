@@ -258,7 +258,7 @@ export default function IdeaDetail({ session }) {
         .from('idea_access_log')
         .select('*')
         .eq('idea_id', id)
-        .order('created_at', { ascending: false })
+        .order('viewed_at', { ascending: false })
       setAccessLog(data || [])
       setLoadingLog(false)
     }
@@ -347,8 +347,8 @@ export default function IdeaDetail({ session }) {
     const headers = ['Email', 'Date & Time', 'IP Address', 'NDA Accepted']
     const rows = accessLog.map(r => [
       r.viewer_email || '',
-      r.created_at ? new Date(r.created_at).toLocaleString('en-US') : '',
-      r.viewer_ip || '',
+      r.viewed_at ? new Date(r.viewed_at).toLocaleString('en-US') : '',
+      r.ip_address || '',
       r.nda_accepted ? 'Yes' : 'No',
     ])
     const csv = [headers, ...rows]
@@ -894,9 +894,9 @@ export default function IdeaDetail({ session }) {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
                         <span style={{ fontSize: 11, color: '#888780' }}>
-                          {entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          {entry.viewed_at ? new Date(entry.viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                         </span>
-                        {entry.viewer_ip && <span style={{ fontSize: 10, color: '#b0b0a8' }}>{entry.viewer_ip}</span>}
+                        {entry.ip_address && <span style={{ fontSize: 10, color: '#b0b0a8' }}>{entry.ip_address}</span>}
                       </div>
                     </div>
                   ))}
@@ -945,8 +945,8 @@ export default function IdeaDetail({ session }) {
               {[
                 { label: 'Total Views', value: accessLog.length },
                 { label: 'Unique Viewers', value: new Set(accessLog.map(r => r.viewer_email)).size },
-                { label: 'First Viewed', value: accessLog.length ? new Date(accessLog[accessLog.length - 1].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
-                { label: 'Last Viewed', value: accessLog.length ? new Date(accessLog[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
+                { label: 'First Viewed', value: accessLog.length ? new Date(accessLog[accessLog.length - 1].viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
+                { label: 'Last Viewed', value: accessLog.length ? new Date(accessLog[0].viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
               ].map(stat => (
                 <div key={stat.label} style={{ background: '#f9f9f7', borderRadius: 10, padding: '0.85rem 1rem' }}>
                   <p style={{ fontSize: 10, color: '#888780', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>{stat.label}</p>
@@ -970,9 +970,9 @@ export default function IdeaDetail({ session }) {
                     <div key={entry.id || i} style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1fr 1fr', padding: '0.7rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center' }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{entry.viewer_email || 'Anonymous'}</span>
                       <span style={{ fontSize: 12, color: '#555552' }}>
-                        {entry.created_at ? new Date(entry.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                        {entry.viewed_at ? new Date(entry.viewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
-                      <span style={{ fontSize: 11, color: '#888780', fontFamily: 'monospace' }}>{entry.viewer_ip || '—'}</span>
+                      <span style={{ fontSize: 11, color: '#888780', fontFamily: 'monospace' }}>{entry.ip_address || '—'}</span>
                       <span style={{ fontSize: 11, background: '#dcfce7', color: '#16a34a', borderRadius: 4, padding: '2px 7px', fontWeight: 500, display: 'inline-block', whiteSpace: 'nowrap' }}>
                         {entry.nda_accepted ? 'NDA Accepted' : 'Pending'}
                       </span>
