@@ -10,48 +10,34 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
   if (!isPaid) return null
 
   async function handleChallenge() {
-    if (!content?.trim()) return
+    if (loading || !content?.trim()) return
     setLoading(true)
     setResult(null)
     setError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const fnUrl = 'https://gvjtmyesrrdwkcwkusiz.supabase.co/functions/v1/ai-challenge'
-      const response = await fetch(
-        fnUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          },
-          body: JSON.stringify({ sectionLabel, content }),
-        }
-      )
+      const response = await fetch(fnUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ sectionLabel, content })
+      })
       const raw = await response.text()
-      console.log('AI Challenge raw response:', raw)
-
-      let result
-      try {
-        result = JSON.parse(raw)
-      } catch (e) {
-        setError('Unable to parse response. Please try again.')
-        setLoading(false)
-        return
-      }
-
-      console.log('AI Challenge parsed result:', JSON.stringify(result))
-
-      if (!response.ok || result.error) {
-        setError('Unable to analyse right now. Please try again.')
+      const parsed = JSON.parse(raw)
+      if (parsed.strong !== undefined || parsed.questions !== undefined) {
+        setResult(parsed)
       } else {
-        setResult(result)
+        setError('Unable to analyse right now. Please try again.')
       }
-    } catch {
+    } catch (err) {
       setError('Unable to analyse right now. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const btnStyle = {
