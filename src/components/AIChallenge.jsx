@@ -30,6 +30,10 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
       )
       const result = await response.json()
       console.log('AI Challenge result:', JSON.stringify(result))
+      if (result.error) {
+        setError('Unable to analyse right now: ' + result.error)
+        return
+      }
       setResult(result)
     } catch {
       setError('Unable to analyse right now. Please try again.')
