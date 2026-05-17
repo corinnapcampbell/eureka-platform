@@ -196,33 +196,54 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
   const bmBullet = (items) => items.length ? items.map(item => `· ${escH(item)}`).join('<br>') : ''
   const sH = (icon, label) => `<div class="shead"><div class="sicon">${icon}</div><div class="slabel">${label}</div></div>`
 
+  const OVERHEAD = 60, LINE = 28
+  const sectionHeight = (s) => {
+    switch (s.type) {
+      case 'problem': case 'solution': case 'competitive_advantage':
+        return OVERHEAD + Math.ceil(s.text.length / 60) * LINE
+      case 'how_it_works':
+        return OVERHEAD + s.items.length * (LINE + 10)
+      case 'target_market':
+        return OVERHEAD + Math.ceil(s.items.length / 4) * (LINE + 8)
+      case 'market_size':
+        return OVERHEAD + 3 * LINE
+      case 'business_model':
+        return OVERHEAD + Math.max(s.freeItems.length, s.paidItems.length) * LINE + 60
+      case 'risks': case 'next_steps':
+        return OVERHEAD + s.items.length * (LINE + 8)
+      default:
+        return OVERHEAD + 2 * LINE
+    }
+  }
+
   const sections = [
-    { h: 80 + Math.ceil((form.problem || '').length / 100) * 15,
+    { type: 'problem', text: form.problem || '',
       html: `${sH('⚡', 'THE PROBLEM')}<div class="stext">${escH(form.problem)}</div>` },
-    { h: 100 + Math.ceil((form.solution || '').length / 100) * 15,
+    { type: 'solution', text: form.solution || '',
       html: `<div class="hlight"><div class="hlabel">💡 THE SOLUTION</div><div class="htext">${escH(form.solution)}</div></div>` },
-    { h: 80 + steps.length * 50,
+    { type: 'how_it_works', items: steps,
       html: `${sH('⚙️', 'HOW IT WORKS')}${stepsHTML}` },
-    { h: 100,
+    { type: 'market_size',
       html: `${sH('📈', 'MARKET SIZE')}<div class="bmet">${marketBoxes.map(b => `<div class="bm"><div class="bmv">${escH(b.v)}</div><div class="bml">${escH(b.l)}</div></div>`).join('')}</div><div class="stext" style="font-size:11px;color:#888;margin-top:2px;">${escH(form.market_size)}</div>` },
-    { h: 70 + Math.ceil((audienceTags.length || 1) / 3) * 35,
+    { type: 'target_market', items: audienceTags.length > 0 ? audienceTags : [form.target_audience || ''],
       html: `${sH('🎯', 'TARGET MARKET')}${tagsHTML}` },
-    { h: 80 + freeBullets.length * 40 + paidBullets.length * 40,
+    { type: 'business_model', freeItems: freeBullets, paidItems: paidBullets,
       html: `${sH('💰', 'BUSINESS MODEL')}<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeBullets)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidBullets)}</div></div></div>` },
-    { h: 80 + Math.ceil((form.competitive_advantage || '').length / 100) * 15,
+    { type: 'competitive_advantage', text: form.competitive_advantage || '',
       html: `${sH('🏆', 'COMPETITIVE ADVANTAGE')}<div class="stext">${escH(form.competitive_advantage)}</div>` },
-    { h: 70 + risks.length * 45,
+    { type: 'risks', items: risks,
       html: `${sH('⚠️', 'RISKS &amp; CHALLENGES')}<div class="risks">${risks.map(r => `<div class="risk"><div class="rdot"></div><div class="rtxt">${escH(r)}</div></div>`).join('')}</div>` },
-    { h: 70 + nextSteps.length * 45,
+    { type: 'next_steps', items: nextSteps,
       html: `${sH('🚀', 'NEXT STEPS')}<div class="tl">${nextSteps.map(s => `<div class="tli"><div class="tldot"></div><div><div class="tltitle">${escH(s)}</div></div></div>`).join('')}</div>` },
   ].filter(s => s.html)
 
-  const PAGE_H = 547
+  const PAGE_H = 557
   const buckets = []
   let cur = [], curH = 0
-  for (const { h, html } of sections) {
+  for (const s of sections) {
+    const h = sectionHeight(s)
     if (curH + h > PAGE_H && cur.length) { buckets.push(cur); cur = []; curH = 0 }
-    cur.push(html); curH += h
+    cur.push(s.html); curH += h
   }
   if (cur.length) buckets.push(cur)
 
