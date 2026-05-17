@@ -304,7 +304,7 @@ export default function SharedIdea() {
               onKeyDown={e => e.key === 'Enter' && email && !accepting && acceptNDA()}
               style={{
                 width: '100%', background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)',
-                borderRadius: 10, padding: '12px 14px', fontSize: 14, color: '#fff', outline: 'none',
+                borderRadius: 10, padding: '12px 14px', fontSize: 16, color: '#fff', outline: 'none',
                 boxSizing: 'border-box',
               }}
             />

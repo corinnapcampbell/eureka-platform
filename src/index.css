@@ -87,6 +87,17 @@ input, textarea, select { font-family: 'DM Sans', sans-serif; }
   .biz-model-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
 }
  
+@media screen and (max-width: 768px) {
+  * {
+    -webkit-text-size-adjust: none !important;
+    text-size-adjust: none !important;
+  }
+
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 .spinner {
   width: 20px; height: 20px;
   border: 2px solid var(--border);
