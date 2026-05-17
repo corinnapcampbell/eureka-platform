@@ -15,9 +15,13 @@
   --success: #3B6D11;
 }
  
-html, body {
+html {
+  max-width: 100vw;
+}
+body {
   overflow-x: hidden;
   max-width: 100vw;
+  -webkit-overflow-scrolling: touch;
 }
 
 html, body, #root {
