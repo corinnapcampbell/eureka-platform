@@ -43,9 +43,10 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
@@ -54,17 +55,11 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
           messages: [{ role: 'user', content: buildUserMessage(sectionLabel, content) }],
         }),
       })
-      console.log('AI Challenge response status:', res.status)
-      if (!res.ok) {
-        const errorText = await res.text()
-        console.log('AI Challenge error body:', errorText)
-        throw new Error(`HTTP ${res.status}`)
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       const text = data.content?.[0]?.text || ''
       setResult(parseResponse(text))
-    } catch (err) {
-      console.log('AI Challenge caught error:', err)
+    } catch {
       setError('Unable to analyse right now. Please try again.')
     }
     setLoading(false)
