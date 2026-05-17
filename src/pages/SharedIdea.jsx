@@ -346,7 +346,7 @@ export default function SharedIdea() {
 
   return (
     <>
-    <div style={{ minHeight: '100vh', background: '#f5f5f3', width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f3', width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box', position: 'relative' }}>
       {authSession && (
         <a href="/dashboard" style={{ position: 'fixed', top: 14, right: 16, zIndex: 999, background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
       )}
@@ -395,7 +395,7 @@ export default function SharedIdea() {
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem', width: '100%', boxSizing: 'border-box' }}>
 
         {/* Card 1: Problem & Solution */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem', width: '100%' }}>
           {idea.problem && (
             <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>
