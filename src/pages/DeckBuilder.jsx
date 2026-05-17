@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { buildDefaultSlides, ScaledSlide, Thumbnail, SLIDE_NAMES, SLIDE_W, SLIDE_H, SlideContent } from '../components/DeckSlides'
+import BusinessModelSection, { parseBMValue, extractBMChips, serializeBMValue } from '../components/BusinessModelSection'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -47,6 +48,7 @@ export default function DeckBuilder({ session }) {
   const [savingProgress, setSavingProgress] = useState(false)
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [mobileView, setMobileView] = useState('list')
+  const [bmValue, setBmValue] = useState(null)
   const saveTimer = useRef(null)
   const touchStart = useRef(null)
   const slideRenderRef = useRef(null)
@@ -55,6 +57,7 @@ export default function DeckBuilder({ session }) {
     async function load() {
       const { data: ideaData } = await supabase.from('ideas').select('*').eq('id', ideaId).single()
       setIdea(ideaData)
+      setBmValue(parseBMValue(ideaData?.business_model))
 
       const userId = session?.user?.id
       const ownerCheck = userId && ideaData?.user_id === userId
@@ -148,13 +151,12 @@ export default function DeckBuilder({ session }) {
     if (!deckId || !slides) return
     setSavingProgress(true)
     clearTimeout(saveTimer.current)
-    const bizSlide = slides.find(s => s.type === 'business')
-    const deckFreeTierChips = bizSlide?.freeTierChips || []
-    const deckPaidTierChips = bizSlide?.paidTierChips || []
-    const businessModel = [
-      ...deckFreeTierChips.map(f => `Free: ${f}`),
-      ...deckPaidTierChips.map(p => `Paid: ${p}`),
-    ].join('\n')
+    const businessModel = bmValue ? serializeBMValue(bmValue) : (() => {
+      const bizSlide = slides.find(s => s.type === 'business')
+      const deckFreeTierChips = bizSlide?.freeTierChips || []
+      const deckPaidTierChips = bizSlide?.paidTierChips || []
+      return [...deckFreeTierChips.map(f => `Free: ${f}`), ...deckPaidTierChips.map(p => `Paid: ${p}`)].join('\n')
+    })()
     const advSlide = slides.find(s => s.type === 'advantage')
     const deckWeHaveChips = advSlide?.weHaveChips || []
     const deckOthersDontChips = advSlide?.othersDontChips || []
@@ -319,15 +321,31 @@ export default function DeckBuilder({ session }) {
           </div>
 
           {/* Main slide */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px 36px', background: '#1a1a2e', overflow: 'hidden' }}>
-            <div style={{ width: '100%', maxWidth: 900 }}>
-              <ScaledSlide
-                slide={slides[current]}
-                slideNum={current + 1}
-                onUpdate={updates => updateSlide(current, updates)}
-                containerStyle={{ boxShadow: '0 8px 50px rgba(0,0,0,0.55)', borderRadius: 8 }}
-              />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#1a1a2e', overflow: slides[current]?.type === 'business' ? 'auto' : 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px 36px', minHeight: slides[current]?.type === 'business' ? 'auto' : '100%' }}>
+              <div style={{ width: '100%', maxWidth: 900 }}>
+                <ScaledSlide
+                  slide={slides[current]}
+                  slideNum={current + 1}
+                  onUpdate={updates => updateSlide(current, updates)}
+                  containerStyle={{ boxShadow: '0 8px 50px rgba(0,0,0,0.55)', borderRadius: 8 }}
+                />
+              </div>
             </div>
+            {slides[current]?.type === 'business' && isOwner && (
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '24px 36px 36px', background: '#131320' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 16 }}>Business Model Details</p>
+                <BusinessModelSection
+                  value={bmValue}
+                  onChange={v => {
+                    setBmValue(v)
+                    const { free, paid } = extractBMChips(v)
+                    updateSlide(current, { freeTierChips: free, paidTierChips: paid })
+                  }}
+                  theme="dark"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -408,6 +426,20 @@ export default function DeckBuilder({ session }) {
           onUpdate={updates => updateSlide(current, updates)}
           containerStyle={{ boxShadow: '0 8px 50px rgba(0,0,0,0.55)', borderRadius: 8 }}
         />
+        {slides[current]?.type === 'business' && isOwner && (
+          <div style={{ marginTop: 24, background: '#131320', borderRadius: 12, padding: '1.25rem' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 14 }}>Business Model Details</p>
+            <BusinessModelSection
+              value={bmValue}
+              onChange={v => {
+                setBmValue(v)
+                const { free, paid } = extractBMChips(v)
+                updateSlide(current, { freeTierChips: free, paidTierChips: paid })
+              }}
+              theme="dark"
+            />
+          </div>
+        )}
       </div>
 
       {/* ── MOBILE BOTTOM NAV (editor view only, fixed) ─────────────────────── */}

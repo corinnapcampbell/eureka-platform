@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
 import { dedupeArray } from '../utils/generatePDF'
+import BusinessModelSection, { parseBMValue, serializeBMValue } from '../components/BusinessModelSection'
 
 function splitHowItWorks(text) {
   if (!text?.trim()) return []
@@ -194,6 +195,73 @@ function _buildSnapshotHTML(form, idea) {
   }).join('')
 
   return `<style>${CSS}</style><div class="pdf-wrap">${cover}${contentPages}</div>`
+}
+
+function BMReadView({ raw }) {
+  const bm = parseBMValue(raw)
+  if (!bm || !bm.models?.length) {
+    return <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{raw}</p>
+  }
+  const { models, freemium, marketplace, subscription, oneTime, advertising, licensing, transactionFees, hardwareSoftware, other } = bm
+  return (
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+        {models.map(m => (
+          <span key={m} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#4a6fd4', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 20, padding: '3px 10px', fontWeight: 500 }}>{m}</span>
+        ))}
+      </div>
+      {models.includes('Freemium / SaaS') && freemium && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: 12 }}>
+          {freemium.freeTier && (
+            <div style={{ borderRadius: 10, border: '0.5px solid rgba(20,184,166,0.25)', borderTop: '3px solid #14b8a6', padding: '0.85rem 1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#14b8a6', marginBottom: '0.6rem' }}>🆓 Free Tier{freemium.paidPrice ? '' : ''}</p>
+              {freemium.freeTier.split('\n').filter(Boolean).map((line, i) => (
+                <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}><span style={{ color: '#14b8a6', fontWeight: 700, flexShrink: 0 }}>·</span><span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{line}</span></div>
+              ))}
+            </div>
+          )}
+          {(freemium.paidFeatures || freemium.paidPrice) && (
+            <div style={{ borderRadius: 10, border: '0.5px solid rgba(139,92,246,0.25)', borderTop: '3px solid #8b5cf6', padding: '0.85rem 1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '0.6rem' }}>⭐ Paid Tier{freemium.paidPrice ? ` · ${freemium.paidPrice}` : ''}</p>
+              {(freemium.paidFeatures || '').split('\n').filter(Boolean).map((line, i) => (
+                <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}><span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>·</span><span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{line}</span></div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {models.filter(m => m !== 'Freemium / SaaS').map(m => {
+        const dataMap = { Marketplace: marketplace, Subscription: subscription, 'One-time Purchase': oneTime, Advertising: advertising, Licensing: licensing, 'Transaction Fees': transactionFees, 'Hardware + Software': hardwareSoftware, Other: other }
+        const d = dataMap[m]
+        if (!d) return null
+        const entries = Object.entries(d).filter(([k, v]) => k !== 'tiers' && k !== 'cards' && v)
+        const tiers = d.tiers || []
+        const cards = d.cards || []
+        return (
+          <div key={m} style={{ marginBottom: 10, padding: '0.85rem 1rem', borderRadius: 10, border: '0.5px solid rgba(123,159,247,0.2)', background: 'rgba(123,159,247,0.03)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#7b9ff7', marginBottom: '0.6rem' }}>{m === 'Other' && d.name ? d.name : m}</p>
+            {entries.map(([k, v]) => (
+              <p key={k} style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.6, marginBottom: 4 }}>{v}</p>
+            ))}
+            {tiers.map((tier, i) => (
+              <div key={i} style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.6, marginBottom: 4 }}>
+                {[tier.name, tier.price].filter(Boolean).join(' · ')}
+                {tier.features && <span style={{ color: '#888780' }}> — {tier.features.split('\n')[0]}</span>}
+              </div>
+            ))}
+            {cards.map((card, i) => (
+              <div key={i} style={{ marginBottom: 6 }}>
+                {card.title && <p style={{ fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 3 }}>{card.title}</p>}
+                {(card.items || []).filter(Boolean).map((item, ii) => (
+                  <div key={ii} style={{ display: 'flex', gap: 6, marginBottom: 2 }}><span style={{ color: '#7b9ff7', flexShrink: 0 }}>·</span><span style={{ fontSize: 13, color: '#2c2c2a' }}>{item}</span></div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 export default function IdeaDetail({ session }) {
@@ -428,7 +496,9 @@ export default function IdeaDetail({ session }) {
   }
 
   function startEdit(field) {
-    setInlineEdit(v => ({ ...v, [field]: idea[field] || '' }))
+    const raw = idea[field] || ''
+    const val = field === 'business_model' ? parseBMValue(raw) : raw
+    setInlineEdit(v => ({ ...v, [field]: val }))
   }
   function cancelEdit(field) {
     setInlineEdit(v => { const n = { ...v }; delete n[field]; return n })
@@ -436,7 +506,10 @@ export default function IdeaDetail({ session }) {
   async function saveInlineField(field) {
     setInlineSaving(field)
     const val = inlineEdit[field]
-    const { data } = await supabase.from('ideas').update({ [field]: val }).eq('id', id).select().single()
+    const saveVal = field === 'business_model' && val && typeof val === 'object'
+      ? serializeBMValue(val)
+      : val
+    const { data } = await supabase.from('ideas').update({ [field]: saveVal }).eq('id', id).select().single()
     if (data) setIdea(data)
     setInlineSaving(null)
     cancelEdit(field)
@@ -705,44 +778,19 @@ export default function IdeaDetail({ session }) {
             </div>
             {inlineEdit.business_model !== undefined ? (
               <>
-                <textarea value={inlineEdit.business_model} onChange={e => setInlineEdit(v => ({ ...v, business_model: e.target.value }))} rows={6} style={inlineTextareaStyle} placeholder={'Use "Free: ..." and "Paid: ..." lines for tiered display, or write freely'} />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <BusinessModelSection
+                  value={inlineEdit.business_model}
+                  onChange={v => setInlineEdit(prev => ({ ...prev, business_model: v }))}
+                  theme="light"
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
                   <button onClick={() => saveInlineField('business_model')} disabled={inlineSaving === 'business_model'} style={inlineSaveBtnStyle}>{inlineSaving === 'business_model' ? 'Saving…' : 'Save'}</button>
                   <button onClick={() => cancelEdit('business_model')} style={inlineCancelBtnStyle}>Cancel</button>
                 </div>
                 {savedField === 'business_model' && <span style={savedConfirmStyle}>Saved ✓</span>}
               </>
             ) : idea.business_model ? (
-              (() => {
-                const lines = (idea.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
-                const freeItems = lines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
-                const paidItems = lines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
-                if (freeItems.length === 0 && paidItems.length === 0) {
-                  return <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.business_model}</p>
-                }
-                return (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div style={{ borderRadius: 10, border: '0.5px solid rgba(20,184,166,0.25)', borderTop: '3px solid #14b8a6', padding: '0.85rem 1rem' }}>
-                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#14b8a6', marginBottom: '0.6rem' }}>🆓 Free Tier</p>
-                      {freeItems.map((item, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
-                          <span style={{ color: '#14b8a6', fontWeight: 700, flexShrink: 0 }}>·</span>
-                          <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ borderRadius: 10, border: '0.5px solid rgba(139,92,246,0.25)', borderTop: '3px solid #8b5cf6', padding: '0.85rem 1rem' }}>
-                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '0.6rem' }}>⭐ Paid Tier</p>
-                      {paidItems.map((item, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
-                          <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>·</span>
-                          <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })()
+              <BMReadView raw={idea.business_model} />
             ) : (
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe your business model</p>
             )}

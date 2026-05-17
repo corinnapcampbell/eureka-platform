@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { parseBMValue, extractBMChips } from './BusinessModelSection'
 
 export const SLIDE_W = 960
 export const SLIDE_H = 540
@@ -88,8 +89,14 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
   const lf   = idea?.looking_for || ''
 
   const bizLines = toLines(biz, 4)
-  const bizFreeChips = biz.split('\n').map(l => l.trim()).filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, '').trim()).filter(Boolean)
-  const bizPaidChips = biz.split('\n').map(l => l.trim()).filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, '').trim()).filter(Boolean)
+  const bmParsed = parseBMValue(biz)
+  const { free: _bizFree, paid: _bizPaid } = extractBMChips(bmParsed)
+  const bizFreeChips = _bizFree.length
+    ? _bizFree
+    : biz.split('\n').map(l => l.trim()).filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, '').trim()).filter(Boolean)
+  const bizPaidChips = _bizPaid.length
+    ? _bizPaid
+    : biz.split('\n').map(l => l.trim()).filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, '').trim()).filter(Boolean)
   const mktNum   = (mkt.match(/\$[\d.,]+[BMKbmk]?\+?/) || [''])[0]
 
   return [

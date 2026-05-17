@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import Logo from '../components/Logo'
+import BusinessModelSection, { parseBMValue, extractBMChips, serializeBMValue } from '../components/BusinessModelSection'
 
 const FIELDS = [
   { key: 'tagline',               label: 'Tagline',               hint: 'One punchy sentence capturing the essence of your idea', rows: 2 },
@@ -358,15 +359,13 @@ export default function PitchPDF({ session }) {
   const [savingProgress,   setSavingProgress]   = useState(false)
   const previewRef = useRef(null)
 
+  const [bmValue,           setBmValue]           = useState(null)
+
   // Chip input state
   const [howItWorksChips,   setHowItWorksChips]   = useState([])
   const [howItWorksInput,   setHowItWorksInput]   = useState('')
   const [targetMarketChips, setTargetMarketChips] = useState([])
   const [targetMarketInput, setTargetMarketInput] = useState('')
-  const [freeTierChips,     setFreeTierChips]     = useState([])
-  const [freeTierInput,     setFreeTierInput]     = useState('')
-  const [paidTierChips,     setPaidTierChips]     = useState([])
-  const [paidTierInput,     setPaidTierInput]     = useState('')
   const [risksChips,        setRisksChips]        = useState([])
   const [risksInput,        setRisksInput]        = useState('')
   const [nextStepsChips,    setNextStepsChips]    = useState([])
@@ -420,27 +419,12 @@ export default function PitchPDF({ session }) {
         .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
         .filter(Boolean)
 
-      const bmLines = splitLines(data.business_model || '').map(s => s.trim()).filter(Boolean)
-      const freeChips = bmLines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
-      const paidChips = bmLines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
-      const parsedFreeTier = (freeChips.length || paidChips.length) ? freeChips : bmLines
-      const parsedPaidTier = (freeChips.length || paidChips.length) ? paidChips : []
+      setBmValue(parseBMValue(data.business_model))
 
       setHowItWorksChips(parsedHowItWorks)
       setTargetMarketChips(parsedTargetMarket)
       setRisksChips(parsedRisks)
       setNextStepsChips(parsedNextSteps)
-      setFreeTierChips(parsedFreeTier)
-      setPaidTierChips(parsedPaidTier)
-
-      console.log('CHIPS PRE-POPULATED:', {
-        howItWorks:   parsedHowItWorks,
-        targetMarket: parsedTargetMarket,
-        risks:        parsedRisks,
-        nextSteps:    parsedNextSteps,
-        freeTier:     parsedFreeTier,
-        paidTier:     parsedPaidTier,
-      })
 
       setLoading(false)
     }
@@ -538,9 +522,7 @@ export default function PitchPDF({ session }) {
       target_audience:       targetMarketChips.length
         ? targetMarketChips.join(', ')
         : form.target_audience,
-      business_model:        (freeTierChips.length || paidTierChips.length)
-        ? [...freeTierChips.map(f => `Free: ${f}`), ...paidTierChips.map(f => `Paid: ${f}`)].join('\n')
-        : form.business_model,
+      business_model:        bmValue ? serializeBMValue(bmValue) : form.business_model,
       risks:                 risksChips.length
         ? risksChips.join('\n')
         : form.risks,
@@ -561,9 +543,11 @@ export default function PitchPDF({ session }) {
       risks:         risksChips.join('\n'),
       next_steps:    nextStepsChips.join('\n'),
     }
-    let bmSplit = (freeTierChips.length || paidTierChips.length)
-      ? { free: freeTierChips, paid: paidTierChips }
-      : null
+    let bmSplit = null
+    if (bmValue) {
+      const { free, paid } = extractBMChips(bmValue)
+      if (free.length || paid.length) bmSplit = { free, paid }
+    }
 
     try {
       const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
@@ -623,24 +607,14 @@ export default function PitchPDF({ session }) {
   }
 
   async function handlePublish() {
-    console.log('CHIP STATE AT PUBLISH:', {
-      howItWorksChips,
-      targetMarketChips,
-      freeTierChips,
-      paidTierChips,
-      risksChips,
-      nextStepsChips,
-    })
     setPublishing(true)
     const snapshot = {
       ...form,
-      how_it_works:    howItWorksChips.length   ? howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n')                                        : form.how_it_works,
-      target_audience: targetMarketChips.length  ? targetMarketChips.join(', ')                                                                     : form.target_audience,
-      risks:           risksChips.length         ? risksChips.join('\n')                                                                            : form.risks,
-      next_steps:      nextStepsChips.length     ? nextStepsChips.join('\n')                                                                        : form.next_steps,
-      business_model:  (freeTierChips.length || paidTierChips.length)
-        ? [...freeTierChips.map(f => `Free: ${f}`), ...paidTierChips.map(f => `Paid: ${f}`)].join('\n')
-        : form.business_model,
+      how_it_works:    howItWorksChips.length   ? howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n') : form.how_it_works,
+      target_audience: targetMarketChips.length  ? targetMarketChips.join(', ')                               : form.target_audience,
+      risks:           risksChips.length         ? risksChips.join('\n')                                       : form.risks,
+      next_steps:      nextStepsChips.length     ? nextStepsChips.join('\n')                                   : form.next_steps,
+      business_model:  bmValue ? serializeBMValue(bmValue) : form.business_model,
     }
     await supabase.from('ideas').update({
       pdf_published: true,
@@ -797,30 +771,11 @@ export default function PitchPDF({ session }) {
             />
           </div>
 
-          {/* Business Model — two side-by-side chip inputs */}
+          {/* Business Model */}
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Business Model</div>
-            <div style={{ fontSize: 12, color: '#b0b0a8', marginBottom: '0.75rem' }}>Free tier, paid tier, pricing structure</div>
-            <div className="biz-model-grid">
-              <div>
-                <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>🆓 Free Tier</div>
-                <ChipInput
-                  chips={freeTierChips} setChips={setFreeTierChips}
-                  inputVal={freeTierInput} setInputVal={setFreeTierInput}
-                  placeholder="Free feature, press Enter..."
-                  suggestionList={suggestions.freeTier} loadingSuggestions={loadingSuggestions} color="#4caf89"
-                />
-              </div>
-              <div>
-                <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>⭐ Paid Tier</div>
-                <ChipInput
-                  chips={paidTierChips} setChips={setPaidTierChips}
-                  inputVal={paidTierInput} setInputVal={setPaidTierInput}
-                  placeholder="Paid feature, press Enter..."
-                  suggestionList={suggestions.paidTier} loadingSuggestions={loadingSuggestions} color="#f0a500"
-                />
-              </div>
-            </div>
+            <div style={{ fontSize: 12, color: '#b0b0a8', marginBottom: '1rem' }}>Select your model(s) and fill in the details</div>
+            <BusinessModelSection value={bmValue} onChange={setBmValue} theme="light" />
           </div>
 
           {/* Risks & Challenges — chip input */}
