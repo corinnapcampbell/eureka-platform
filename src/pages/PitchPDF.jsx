@@ -802,7 +802,7 @@ export default function PitchPDF({ session }) {
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Business Model</div>
             <div style={{ fontSize: 12, color: '#b0b0a8', marginBottom: '0.75rem' }}>Free tier, paid tier, pricing structure</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div className="biz-model-grid">
               <div>
                 <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>🆓 Free Tier</div>
                 <ChipInput

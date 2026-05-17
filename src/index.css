@@ -68,6 +68,15 @@ input, textarea, select { font-family: 'DM Sans', sans-serif; }
 @media (min-width: 640px) {
   .feature-cards { grid-template-columns: repeat(3, 1fr); }
 }
+
+.biz-model-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .biz-model-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+}
  
 .spinner {
   width: 20px; height: 20px;
