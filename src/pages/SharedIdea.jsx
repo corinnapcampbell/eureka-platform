@@ -580,7 +580,36 @@ export default function SharedIdea() {
         {idea.business_model && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Business Model</p>
-            <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.business_model}</p>
+            {(() => {
+              const lines = (idea.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
+              const freeItems = lines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
+              const paidItems = lines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
+              if (freeItems.length === 0 && paidItems.length === 0) {
+                return <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.business_model}</p>
+              }
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ borderRadius: 10, border: '0.5px solid rgba(20,184,166,0.25)', borderTop: '3px solid #14b8a6', padding: '0.85rem 1rem' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#14b8a6', marginBottom: '0.6rem' }}>🆓 Free Tier</p>
+                    {freeItems.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+                        <span style={{ color: '#14b8a6', fontWeight: 700, flexShrink: 0 }}>·</span>
+                        <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ borderRadius: 10, border: '0.5px solid rgba(139,92,246,0.25)', borderTop: '3px solid #8b5cf6', padding: '0.85rem 1rem' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '0.6rem' }}>⭐ Paid Tier</p>
+                    {paidItems.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+                        <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>·</span>
+                        <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
 
