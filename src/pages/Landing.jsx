@@ -13,7 +13,7 @@ export default function Landing() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '0.5px solid var(--border)'
       }}>
-        <Logo size={22} dark />
+        <Logo size={22} variant="light" />
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button onClick={() => navigate('/auth')} style={{
             background: 'none', border: '0.5px solid var(--border)',
@@ -82,7 +82,7 @@ export default function Landing() {
       {/* Footer */}
       <div style={{ borderTop: '0.5px solid var(--border)', padding: '2rem', textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
         <div style={{ marginBottom: '0.5rem' }}>
-          © {new Date().getFullYear()} <Logo size={13} dark /> All rights reserved.
+          © {new Date().getFullYear()} <Logo size={13} variant="light" /> All rights reserved.
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
           <a href="/privacy-policy" style={{ color: 'var(--muted)', textDecoration: 'none' }}>Privacy Policy</a>

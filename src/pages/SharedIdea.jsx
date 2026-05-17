@@ -356,7 +356,7 @@ export default function SharedIdea() {
   if (stage === 'error') return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#0e0e1f', padding: '2rem', position: 'relative' }}>
       <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-        <Logo size={22} />
+        <Logo size={22} variant="dark" />
       </span>
       <span style={{ fontSize: 40, opacity: 0.25 }}>⬡</span>
       <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#fff' }}>Link not found</h2>
@@ -385,7 +385,7 @@ export default function SharedIdea() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-            <Logo size={24} />
+            <Logo size={24} variant="dark" />
           </span>
         </div>
 
@@ -502,7 +502,7 @@ export default function SharedIdea() {
           {/* Nav row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: 8 }}>
             <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-              <Logo size={20} />
+              <Logo size={20} variant="dark" />
             </span>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(123,159,247,0.09)', border: '0.5px solid rgba(123,159,247,0.18)', borderRadius: 20, padding: '5px 13px' }}>
               <span style={{ fontSize: 11 }}>🔒</span>

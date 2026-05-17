@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
+import Logo from '../components/Logo'
 
 const FIELDS = [
   { key: 'tagline',               label: 'Tagline',               hint: 'One punchy sentence capturing the essence of your idea', rows: 2 },
@@ -699,10 +700,8 @@ export default function PitchPDF({ session }) {
               ← Back to idea
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontWeight: 300, fontSize: 15 }}>
-                <span style={{ color: 'rgba(255,255,255,0.88)' }}>Eurek</span>
-                <span style={{ color: '#7b9ff7' }}>AI</span>
-                <span style={{ color: 'rgba(255,255,255,0.88)' }}>dea</span>
+              <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+                <Logo size={15} variant="dark" />
               </span>
               {session && (
                 <button onClick={() => navigate('/dashboard')} title="My Dashboard" style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

@@ -489,7 +489,7 @@ export default function IdeaDetail({ session }) {
           {/* Nav row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: 8 }}>
             <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-              <Logo size={20} />
+              <Logo size={20} variant="dark" />
             </span>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <button onClick={() => setEditing(true)} style={btnPrimary}>Edit idea</button>

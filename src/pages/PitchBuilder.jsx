@@ -161,7 +161,7 @@ export default function PitchBuilder({ session }) {
       {/* ── DESKTOP HEADER ─────────────────────────────────────────────────── */}
       <div className="pb-desktop-only" style={{ background: 'var(--ink)' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Logo size={20} />
+          <Logo size={20} variant="dark" />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button onClick={() => navigate(`/pitch/${ideaId}`)} style={{ background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: '#7b9ff7', cursor: 'pointer' }}>
               Preview PDF →
@@ -179,7 +179,7 @@ export default function PitchBuilder({ session }) {
       {/* ── MOBILE LIST HEADER (visible on mobile, list view only) ─────────── */}
       <div className="pb-mobile-only pb-list-only" style={{ background: 'var(--ink)', padding: '1rem 1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-          <Logo size={18} />
+          <Logo size={18} variant="dark" />
           <button
             onClick={() => navigate(`/idea/${ideaId}`)}
             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}

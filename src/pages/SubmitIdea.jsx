@@ -109,7 +109,7 @@ export default function SubmitIdea({ session }) {
     <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
       <div style={{ background: 'var(--ink)', padding: '0' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 2rem' }}>
-          <Logo size={20} />
+          <Logo size={20} variant="dark" />
         </div>
       </div>
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '5rem 2rem', textAlign: 'center' }}>
@@ -138,7 +138,7 @@ export default function SubmitIdea({ session }) {
       {/* Header */}
       <div style={{ background: 'var(--ink)', padding: '0' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Logo size={20} />
+          <Logo size={20} variant="dark" />
           <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>← Back to vault</button>
         </div>
         {/* Progress */}
