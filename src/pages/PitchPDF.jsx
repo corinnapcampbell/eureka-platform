@@ -65,6 +65,8 @@ function buildBMHtml(bmValue, escH, bmBullet) {
   for (const type of bmValue.models) {
     const key = BM_TYPE_KEY[type] || type.toLowerCase().replace(/[^a-z]/g, '')
     const data = bmValue[key] || {}
+    const titleText = type === 'Other' ? (data.name || 'Custom Model') : type
+    let inner = ''
     switch (type) {
       case 'Freemium / SaaS': {
         const freeItems = (data.freeTier || '').split('\n').map(s => s.trim()).filter(Boolean)
@@ -72,12 +74,12 @@ function buildBMHtml(bmValue, escH, bmBullet) {
           ...(data.paidPrice ? [data.paidPrice] : []),
           ...(data.paidFeatures || '').split('\n').map(s => s.trim()).filter(Boolean),
         ]
-        parts.push(`<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeItems)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidItems)}</div></div></div>`)
+        inner = `<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeItems)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidItems)}</div></div></div>`
         break
       }
       case 'Subscription': {
         const tiers = (data.tiers || []).filter(t => t.name || t.price || t.features)
-        if (tiers.length) parts.push(`<div class="twocards">${tiers.map(t => `<div class="card bl"><div class="clabel">${escH(t.name || 'Tier')}</div><div class="cicon" style="font-size:13px;font-weight:600;color:#7b9ff7;margin-bottom:4px">${escH(t.price || '')}</div><div class="ctext">${bmBullet((t.features || '').split('\n').map(s => s.trim()).filter(Boolean))}</div></div>`).join('')}</div>`)
+        if (tiers.length) inner = `<div class="twocards">${tiers.map(t => `<div class="card bl"><div class="clabel">${escH(t.name || 'Tier')}</div><div class="cicon" style="font-size:13px;font-weight:600;color:#7b9ff7;margin-bottom:4px">${escH(t.price || '')}</div><div class="ctext">${bmBullet((t.features || '').split('\n').map(s => s.trim()).filter(Boolean))}</div></div>`).join('')}</div>`
         break
       }
       case 'Marketplace': {
@@ -86,7 +88,7 @@ function buildBMHtml(bmValue, escH, bmBullet) {
           ...(data.sellers || '').split('\n').map(s => s.trim()).filter(Boolean),
           ...(data.commission ? [`Commission: ${data.commission}`] : []),
         ]
-        parts.push(`<div class="twocards"><div class="card bl"><div class="cicon">🛍️</div><div class="clabel">BUYERS</div><div class="ctext">${bmBullet(buyerItems)}</div></div><div class="card pu"><div class="cicon">🏪</div><div class="clabel">SELLERS</div><div class="ctext">${bmBullet(sellerItems)}</div></div></div>`)
+        inner = `<div class="twocards"><div class="card bl"><div class="cicon">🛍️</div><div class="clabel">BUYERS</div><div class="ctext">${bmBullet(buyerItems)}</div></div><div class="card pu"><div class="cicon">🏪</div><div class="clabel">SELLERS</div><div class="ctext">${bmBullet(sellerItems)}</div></div></div>`
         break
       }
       case 'One-time Purchase': {
@@ -95,7 +97,7 @@ function buildBMHtml(bmValue, escH, bmBullet) {
           ...(data.included || '').split('\n').map(s => s.trim()).filter(Boolean),
           ...(data.upsells ? [`Upsells: ${data.upsells}`] : []),
         ]
-        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        inner = `<div class="stext">${bmBullet(items)}</div>`
         break
       }
       case 'Advertising': {
@@ -104,7 +106,7 @@ function buildBMHtml(bmValue, escH, bmBullet) {
           ...(data.formats || '').split('\n').map(s => s.trim()).filter(Boolean),
           ...(data.audience ? [`Audience: ${data.audience}`] : []),
         ]
-        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        inner = `<div class="stext">${bmBullet(items)}</div>`
         break
       }
       case 'Licensing': {
@@ -113,7 +115,7 @@ function buildBMHtml(bmValue, escH, bmBullet) {
           ...(data.licensees || '').split('\n').map(s => s.trim()).filter(Boolean),
           ...(data.exclusivity ? [data.exclusivity] : []),
         ]
-        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        inner = `<div class="stext">${bmBullet(items)}</div>`
         break
       }
       case 'Transaction Fees': {
@@ -122,7 +124,7 @@ function buildBMHtml(bmValue, escH, bmBullet) {
           ...(data.whoPays ? [data.whoPays] : []),
           ...(data.flow || '').split('\n').map(s => s.trim()).filter(Boolean),
         ]
-        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        inner = `<div class="stext">${bmBullet(items)}</div>`
         break
       }
       case 'Hardware + Software': {
@@ -131,17 +133,20 @@ function buildBMHtml(bmValue, escH, bmBullet) {
           ...(data.softwarePrice ? [`Software: ${data.softwarePrice}`] : []),
           ...(data.recurring || '').split('\n').map(s => s.trim()).filter(Boolean),
         ]
-        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        inner = `<div class="stext">${bmBullet(items)}</div>`
         break
       }
       case 'Other': {
         const cards = (data.cards || []).filter(c => c.title || (c.items || []).some(i => i?.trim()))
-        if (cards.length) parts.push(`<div class="twocards">${cards.map(card => `<div class="card bl"><div class="clabel">${escH(card.title || '')}</div><div class="ctext">${bmBullet((card.items || []).map(s => (s || '').trim()).filter(Boolean))}</div></div>`).join('')}</div>`)
+        if (cards.length) inner = `<div class="twocards">${cards.map(card => `<div class="card bl"><div class="clabel">${escH(card.title || '')}</div><div class="ctext">${bmBullet((card.items || []).map(s => (s || '').trim()).filter(Boolean))}</div></div>`).join('')}</div>`
         break
       }
     }
+    if (inner) {
+      parts.push(`<div style="break-inside:avoid;page-break-inside:avoid;break-after:auto"><h3 class="bm-model-title">${escH(titleText)}</h3>${inner}</div>`)
+    }
   }
-  return parts.length ? parts.join('<div style="height:6px"></div>') : null
+  return parts.length ? `<div style="break-before:auto">${parts.join('<div style="height:6px"></div>')}</div>` : null
 }
 
 function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
@@ -245,6 +250,8 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
     ${q} .pf { font-size:8px; color:#ccc; }
     ${q} .dfooter { background:#0e0e1f; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
     ${q} .dfbadge { background:rgba(123,159,247,0.1); border:1px solid rgba(123,159,247,0.2); border-radius:20px; padding:3px 10px; font-size:8px; color:#7b9ff7; letter-spacing:2px; text-transform:uppercase; }
+    ${q} .bm-model-title { font-family:'Outfit',sans-serif; font-weight:400; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:#7b9ff7; margin:14px 0 8px 0; padding-bottom:5px; border-bottom:1px solid rgba(123,159,247,0.2); }
+    ${q} .bm-model-title:first-child { margin-top:0; }
   `
 
   const phead = (n) => `
