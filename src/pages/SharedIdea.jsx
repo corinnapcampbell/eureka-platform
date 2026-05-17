@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
 import { generateIdeaPDF, dedupeArray } from '../utils/generatePDF'
 import { parseBMValue, buildBMHtml, buildSnapshotHTML } from '../utils/businessModel'
+import { ScaledSlide } from '../components/DeckSlides'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 
@@ -33,6 +34,13 @@ export default function SharedIdea() {
   const [viewingSnapshotPDF, setViewingSnapshotPDF] = useState(false)
   const [showMobilePDF, setShowMobilePDF] = useState(false)
   const [mobilePDFContent, setMobilePDFContent] = useState('')
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  const [isLandscape, setIsLandscape] = useState(window.matchMedia('(orientation: landscape)').matches)
+  const [showMobileDeck, setShowMobileDeck] = useState(false)
+  const [mobileDeckSlides, setMobileDeckSlides] = useState(null)
+  const [mobileDeckCurrent, setMobileDeckCurrent] = useState(0)
+  const [showRotatePrompt, setShowRotatePrompt] = useState(true)
+  const mobileDeckTouchStart = useRef(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setAuthSession(session))
@@ -65,6 +73,34 @@ export default function SharedIdea() {
     }
     fetchLink()
   }, [token])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: landscape)')
+    const handler = (e) => setIsLandscape(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  async function openMobileDeck() {
+    if (!deckInfo?.share_token) return
+    if (mobileDeckSlides) {
+      setShowMobileDeck(true)
+      setMobileDeckCurrent(0)
+      setShowRotatePrompt(true)
+      return
+    }
+    const { data } = await supabase
+      .from('pitch_decks')
+      .select('slides')
+      .eq('share_token', deckInfo.share_token)
+      .single()
+    if (data?.slides?.length) {
+      setMobileDeckSlides(data.slides)
+      setMobileDeckCurrent(0)
+      setShowMobileDeck(true)
+      setShowRotatePrompt(true)
+    }
+  }
 
   async function acceptNDA() {
     if (!email) return
@@ -489,23 +525,26 @@ export default function SharedIdea() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <a
-                      href={deckInfo ? `/deck/view/${deckInfo.share_token}` : `/deck/${idea.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
-                    >
-                      View
-                    </a>
+                    {isMobile ? (
+                      <button
+                        onClick={openMobileDeck}
+                        style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500 }}
+                      >View</button>
+                    ) : (
+                      <a
+                        href={deckInfo ? `/deck/view/${deckInfo.share_token}` : `/deck/${idea.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
+                      >View</a>
+                    )}
                     {deckInfo && (
                       <a
                         href={`/deck/view/${deckInfo.share_token}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.13)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
-                      >
-                        ↓ Download
-                      </a>
+                      >↓ Download</a>
                     )}
                   </div>
                 </div>
@@ -567,6 +606,66 @@ export default function SharedIdea() {
           title="Pitch Document"
         />
       </div>
+    )}
+
+    {showMobileDeck && mobileDeckSlides && (
+      <>
+        <style>{`
+          @media (orientation: landscape) and (max-width: 1024px) {
+            .deck-mobile-viewer {
+              position: fixed !important;
+              top: 0 !important;
+              left: 0 !important;
+              width: 100vw !important;
+              height: 100vh !important;
+              z-index: 9999 !important;
+              background: #0e0e1f !important;
+            }
+            .deck-mobile-slide {
+              width: min(100vw, calc(100vh * 1.7778)) !important;
+            }
+          }
+        `}</style>
+        <div
+          className="deck-mobile-viewer"
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#0e0e1f', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
+          onTouchStart={e => { mobileDeckTouchStart.current = e.touches[0].clientX }}
+          onTouchEnd={e => {
+            if (mobileDeckTouchStart.current === null) return
+            const diff = mobileDeckTouchStart.current - e.changedTouches[0].clientX
+            if (Math.abs(diff) > 50) setMobileDeckCurrent(c => diff > 0 ? Math.min(mobileDeckSlides.length - 1, c + 1) : Math.max(0, c - 1))
+            mobileDeckTouchStart.current = null
+          }}
+        >
+          <button
+            onClick={() => setShowMobileDeck(false)}
+            style={{ position: 'absolute', top: 12, right: 12, zIndex: 10002, background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 6, width: 32, height: 32, color: 'rgba(255,255,255,0.8)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+          >✕</button>
+
+          <div className="deck-mobile-slide" style={{ width: '100vw' }}>
+            <ScaledSlide
+              slide={mobileDeckSlides[mobileDeckCurrent]}
+              slideNum={mobileDeckCurrent + 1}
+              containerStyle={{ borderRadius: isLandscape ? 0 : 4 }}
+            />
+          </div>
+
+          <div style={{ position: 'absolute', bottom: isLandscape ? 8 : 20, left: '50%', transform: 'translateX(-50%)', fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: 1, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>
+            {mobileDeckCurrent + 1} / {mobileDeckSlides.length}
+          </div>
+
+          {!isLandscape && showRotatePrompt && (
+            <div
+              onClick={() => setShowRotatePrompt(false)}
+              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(14,14,31,0.92)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', zIndex: 10001 }}
+            >
+              <span style={{ fontSize: 18 }}>↻</span>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontFamily: "'DM Sans', sans-serif" }}>Rotate for full screen experience</span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>✕</span>
+            </div>
+          )}
+        </div>
+      </>
     )}
     </>
   )
