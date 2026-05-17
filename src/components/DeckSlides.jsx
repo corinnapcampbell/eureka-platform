@@ -285,8 +285,8 @@ function AccentBars() {
 
 function SlideFooter({ slideNum, dark }) {
   const muted = dark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'
-  const textFill = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)'
-  const gradId = dark ? 'aiGradFtW' : 'aiGradFtD'
+  const textFill = dark ? '#ffffff' : '#0e0e1f'
+  const gradId = `aiGradSlide${slideNum}${dark ? 'W' : 'D'}`
   return (
     <div style={{ position: 'absolute', bottom: 8, left: 28, right: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1 }}>
       <svg xmlns="http://www.w3.org/2000/svg" height="14" width="91" viewBox="0 0 260 40" style={{ display: 'block' }}>
@@ -325,15 +325,15 @@ function CoverSlide({ slide, slideNum, onUpdate }) {
       <div style={{ position: 'absolute', top: 18, left: 28 }}>
         <svg xmlns="http://www.w3.org/2000/svg" height="19" width="124" viewBox="0 0 260 40" style={{ display: 'block' }}>
           <defs>
-            <linearGradient id="aiGradCover" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={`aiGradSlide${slideNum}H`} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#7b9ff7" />
               <stop offset="100%" stopColor="#9b7ff7" />
             </linearGradient>
           </defs>
           <text fontFamily="Outfit, Helvetica, Arial, sans-serif" fontWeight="300" fontSize="32" y="32">
-            <tspan fill="rgba(255,255,255,0.85)">Eurek</tspan>
-            <tspan fill="url(#aiGradCover)">AI</tspan>
-            <tspan fill="rgba(255,255,255,0.85)">dea</tspan>
+            <tspan fill="#ffffff">Eurek</tspan>
+            <tspan fill={`url(#aiGradSlide${slideNum}H)`}>AI</tspan>
+            <tspan fill="#ffffff">dea</tspan>
           </text>
         </svg>
       </div>
