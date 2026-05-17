@@ -128,7 +128,10 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
       headline: mktNum ? `A ${mktNum} market opportunity.` : 'A large, fast-growing market with no dominant player.',
       metrics: metricsFrom(mkt),
       description: mkt || 'Rapidly growing market at the intersection of key technology trends.',
-      tags: cats.length ? cats : ['Founders', 'Investors', 'Enterprises'],
+      tags: (() => {
+        const aud = (idea?.target_audience || '').split(/,\s*/).map(s => s.trim()).filter(Boolean)
+        return aud.length ? aud : (cats.length ? cats : ['Founders', 'Investors', 'Enterprises'])
+      })(),
     },
     {
       type: 'business',
@@ -438,6 +441,7 @@ function SolutionSlide({ slide, slideNum, onUpdate }) {
 }
 
 function MarketSlide({ slide, slideNum, onUpdate }) {
+  const [tagInput, setTagInput] = useState('')
   const updateMetric = (i, field, val) => {
     if (!onUpdate) return
     const metrics = slide.metrics.map((m, mi) => mi === i ? { ...m, [field]: val } : m)
@@ -466,12 +470,26 @@ function MarketSlide({ slide, slideNum, onUpdate }) {
         <div style={{ fontSize: 14, color: '#555', lineHeight: 1.6, marginBottom: 16 }}>
           {onUpdate ? <ET value={slide.description} onChange={v => onUpdate({ description: v })} multiline style={{ fontSize: 14, color: '#555' }} /> : slide.description}
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {(slide.tags || []).map((t, i) => (
-            <span key={i} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 13px', border: '0.5px solid rgba(123,159,247,0.22)' }}>
-              {t}
-            </span>
-          ))}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {onUpdate ? (
+            <DeckChipInput
+              chips={slide.tags || []}
+              onChipsChange={v => onUpdate({ tags: v })}
+              inputVal={tagInput}
+              setInputVal={setTagInput}
+              placeholder="Add an audience, press Enter…"
+              chipBg="rgba(155,127,247,0.1)"
+              chipBorder="rgba(155,127,247,0.3)"
+              chipText="#9b7ff7"
+              inputColor="#555"
+            />
+          ) : (
+            (slide.tags || []).map((t, i) => (
+              <span key={i} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 13px', border: '0.5px solid rgba(123,159,247,0.22)' }}>
+                {t}
+              </span>
+            ))
+          )}
         </div>
       </div>
       <SlideFooter slideNum={slideNum} />

@@ -141,9 +141,13 @@ export default function DeckBuilder({ session }) {
       ...deckOthersDontChips.map(f => `They: ${f}`),
     ].join('\n')
     await supabase.from('pitch_decks').update({ slides }).eq('id', deckId)
+    const marketSlide = slides.find(s => s.type === 'market')
+    const deckTargetMarketChips = marketSlide?.tags || []
+    const targetAudience = deckTargetMarketChips.join(', ')
     const ideaUpdates = {}
     if (businessModel) ideaUpdates.business_model = businessModel
     if (competitiveAdvantage) ideaUpdates.competitive_advantage = competitiveAdvantage
+    if (targetAudience) ideaUpdates.target_audience = targetAudience
     if (Object.keys(ideaUpdates).length) await supabase.from('ideas').update(ideaUpdates).eq('id', ideaId)
     setSavingProgress(false)
   }
