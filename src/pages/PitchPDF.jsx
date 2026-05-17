@@ -83,7 +83,7 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
     * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
     ${q} .pdf-wrap { display:flex; flex-direction:column; gap:12px; width:375px; margin:0 auto; }
-    ${q} .page { width:375px; height:667px; border-radius:8px; overflow:hidden; border:1px solid #e0e0e0; display:flex; flex-direction:column; box-sizing:border-box; }
+    ${q} .page { width:375px; border-radius:8px; overflow:hidden; border:1px solid #e0e0e0; display:flex; flex-direction:column; box-sizing:border-box; }
     ${q} .abar { height:4px; background:linear-gradient(90deg,#7b9ff7,#9b7ff7); flex-shrink:0; }
     ${q} .cover { background:#0e0e1f; flex:1; padding:28px 22px 22px; display:flex; flex-direction:column; justify-content:space-between; }
     ${q} .logo { font-family:'Outfit',sans-serif; font-size:14px; font-weight:300; color:#fff; }
@@ -105,7 +105,7 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
     ${q} .logod { font-family:'Outfit',sans-serif; font-size:12px; font-weight:300; color:#0e0e1f; }
     ${q} .logod b { background:linear-gradient(90deg,#7b9ff7,#9b7ff7); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:700; }
     ${q} .pnum { font-size:9px; color:#ccc; }
-    ${q} .pbody { padding:14px 18px; display:flex; flex-direction:column; gap:13px; flex:1; overflow:hidden; }
+    ${q} .pbody { padding:14px 18px; display:flex; flex-direction:column; gap:13px; }
     ${q} .shead { display:flex; align-items:center; gap:9px; flex-shrink:0; }
     ${q} .sicon { width:32px; height:32px; border-radius:8px; background:rgba(123,159,247,0.1); border:1px solid rgba(123,159,247,0.15); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
     ${q} .slabel { font-size:9px; letter-spacing:2px; color:#9b7ff7; text-transform:uppercase; font-weight:600; }
@@ -193,112 +193,46 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
     ? `<div class="tags">${audienceTags.map(t => `<div class="tag">${escH(t)}</div>`).join('')}</div>`
     : `<div class="stext">${escH(form.target_audience)}</div>`
 
-  const page2 = `
-    <div class="page">
-      <div class="abar"></div>
-      <div class="cpage">
-        ${phead(2)}
-        <div class="pbody">
-          <div class="shead"><div class="sicon">⚡</div><div class="slabel">THE PROBLEM</div></div>
-          <div class="stext">${escH(form.problem)}</div>
-          <div class="divider"></div>
-          <div class="hlight">
-            <div class="hlabel">💡 THE SOLUTION</div>
-            <div class="htext">${escH(form.solution)}</div>
-          </div>
-        </div>
-        ${pfooter}
-      </div>
-      <div class="abar"></div>
-    </div>`
+  const bmBullet = (items) => items.length ? items.map(item => `· ${escH(item)}`).join('<br>') : ''
+  const sH = (icon, label) => `<div class="shead"><div class="sicon">${icon}</div><div class="slabel">${label}</div></div>`
 
-  const page3 = `
-    <div class="page">
-      <div class="abar"></div>
-      <div class="cpage">
-        ${phead(3)}
-        <div class="pbody">
-          <div class="shead"><div class="sicon">⚙️</div><div class="slabel">HOW IT WORKS</div></div>
-          ${stepsHTML}
-          <div class="divider"></div>
-          <div class="shead"><div class="sicon">📈</div><div class="slabel">MARKET SIZE</div></div>
-          <div class="bmet">
-            ${marketBoxes.map(b => `<div class="bm"><div class="bmv">${escH(b.v)}</div><div class="bml">${escH(b.l)}</div></div>`).join('')}
-          </div>
-          <div class="stext" style="font-size:11px;color:#888;margin-top:2px;">${escH(form.market_size)}</div>
-        </div>
-        ${pfooter}
-      </div>
-      <div class="abar"></div>
-    </div>`
+  const sections = [
+    { h: 120 + Math.ceil((form.problem || '').length / 100) * 20,
+      html: `${sH('⚡', 'THE PROBLEM')}<div class="stext">${escH(form.problem)}</div>` },
+    { h: 140 + Math.ceil((form.solution || '').length / 100) * 20,
+      html: `<div class="hlight"><div class="hlabel">💡 THE SOLUTION</div><div class="htext">${escH(form.solution)}</div></div>` },
+    { h: 100 + steps.length * 60,
+      html: `${sH('⚙️', 'HOW IT WORKS')}${stepsHTML}` },
+    { h: 120,
+      html: `${sH('📈', 'MARKET SIZE')}<div class="bmet">${marketBoxes.map(b => `<div class="bm"><div class="bmv">${escH(b.v)}</div><div class="bml">${escH(b.l)}</div></div>`).join('')}</div><div class="stext" style="font-size:11px;color:#888;margin-top:2px;">${escH(form.market_size)}</div>` },
+    { h: 80 + Math.ceil((audienceTags.length || 1) / 5) * 40,
+      html: `${sH('🎯', 'TARGET MARKET')}${tagsHTML}` },
+    { h: 100 + (freeBullets.length + paidBullets.length) * 30,
+      html: `${sH('💰', 'BUSINESS MODEL')}<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeBullets)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidBullets)}</div></div></div>` },
+    { h: 120 + Math.ceil((form.competitive_advantage || '').length / 100) * 20,
+      html: `${sH('🏆', 'COMPETITIVE ADVANTAGE')}<div class="stext">${escH(form.competitive_advantage)}</div>` },
+    { h: 80 + risks.length * 50,
+      html: `${sH('⚠️', 'RISKS &amp; CHALLENGES')}<div class="risks">${risks.map(r => `<div class="risk"><div class="rdot"></div><div class="rtxt">${escH(r)}</div></div>`).join('')}</div>` },
+    { h: 80 + nextSteps.length * 50,
+      html: `${sH('🚀', 'NEXT STEPS')}<div class="tl">${nextSteps.map(s => `<div class="tli"><div class="tldot"></div><div><div class="tltitle">${escH(s)}</div></div></div>`).join('')}</div>` },
+  ].filter(s => s.html)
 
-  const bmBullet = (items) => items.length
-    ? items.map(item => `· ${escH(item)}`).join('<br>')
-    : ''
+  const PAGE_H = 900
+  const buckets = []
+  let cur = [], curH = 0
+  for (const { h, html } of sections) {
+    if (curH + h > PAGE_H && cur.length) { buckets.push(cur); cur = []; curH = 0 }
+    cur.push(html); curH += h
+  }
+  if (cur.length) buckets.push(cur)
 
-  const page4 = `
-    <div class="page">
-      <div class="abar"></div>
-      <div class="cpage">
-        ${phead(4)}
-        <div class="pbody">
-          <div class="shead"><div class="sicon">🎯</div><div class="slabel">TARGET MARKET</div></div>
-          ${tagsHTML}
-          <div class="divider"></div>
-          <div class="shead"><div class="sicon">💰</div><div class="slabel">BUSINESS MODEL</div></div>
-          <div class="twocards">
-            <div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeBullets)}</div></div>
-            <div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidBullets)}</div></div>
-          </div>
-        </div>
-        ${pfooter}
-      </div>
-      <div class="abar"></div>
-    </div>`
+  const darkFooter = `<div class="dfooter"><div class="logo">Eurek<b>AI</b>dea</div><div class="dfbadge">myeurekaidea.com</div></div>`
+  const contentPages = buckets.map((htmls, i) => {
+    const foot = i === buckets.length - 1 ? darkFooter : pfooter
+    return `<div class="page"><div class="abar"></div><div class="cpage">${phead(i + 2)}<div class="pbody">${htmls.join('<div class="divider"></div>')}</div>${foot}</div><div class="abar"></div></div>`
+  }).join('')
 
-  const page5 = `
-    <div class="page">
-      <div class="abar"></div>
-      <div class="cpage">
-        ${phead(5)}
-        <div class="pbody">
-          <div class="shead"><div class="sicon">🏆</div><div class="slabel">COMPETITIVE ADVANTAGE</div></div>
-          <div class="stext">${escH(form.competitive_advantage)}</div>
-          <div class="divider"></div>
-          <div class="shead"><div class="sicon">⚠️</div><div class="slabel">RISKS &amp; CHALLENGES</div></div>
-          <div class="risks">
-            ${risks.map(r => `<div class="risk"><div class="rdot"></div><div class="rtxt">${escH(r)}</div></div>`).join('')}
-          </div>
-        </div>
-        ${pfooter}
-      </div>
-      <div class="abar"></div>
-    </div>`
-
-  const lastPage = `
-    <div class="page">
-      <div class="abar"></div>
-      <div class="cpage">
-        ${phead('Final')}
-        <div class="pbody">
-          <div class="shead"><div class="sicon">🚀</div><div class="slabel">NEXT STEPS</div></div>
-          <div class="tl">
-            ${nextSteps.map(s => `
-              <div class="tli">
-                <div class="tldot"></div>
-                <div><div class="tltitle">${escH(s)}</div></div>
-              </div>`).join('')}
-          </div>
-        </div>
-        <div class="dfooter">
-          <div class="logo">Eurek<b>AI</b>dea</div>
-          <div class="dfbadge">myeurekaidea.com</div>
-        </div>
-      </div>
-      <div class="abar"></div>
-    </div>`
-
-  return `<style>${CSS}</style><div class="pdf-wrap">${coverPage}${page2}${page3}${page4}${page5}${lastPage}</div>`
+  return `<style>${CSS}</style><div class="pdf-wrap">${coverPage}${contentPages}</div>`
 }
 
 function addChip(chips, setChips, input, setInput) {
