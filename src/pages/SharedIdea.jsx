@@ -249,7 +249,7 @@ export default function SharedIdea() {
 
         {/* Title */}
         <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(28px, 6vw, 40px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.75rem', letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(22px, 5vw, 48px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.75rem', letterSpacing: '-0.5px', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
             {idea.title}
           </h1>
           {idea.target_audience && (
@@ -346,7 +346,7 @@ export default function SharedIdea() {
 
   return (
     <>
-    <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f3', width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box' }}>
       {authSession && (
         <a href="/dashboard" style={{ position: 'fixed', top: 14, right: 16, zIndex: 999, background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
       )}
@@ -354,7 +354,7 @@ export default function SharedIdea() {
       <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
 
       {/* Dark header */}
-      <div style={{ background: '#0e0e1f', paddingBottom: '2.5rem' }}>
+      <div style={{ background: '#0e0e1f', paddingBottom: '2.5rem', overflowX: 'hidden', boxSizing: 'border-box' }}>
         <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.25rem 0' }}>
 
           {/* Nav row */}
@@ -379,7 +379,7 @@ export default function SharedIdea() {
           </div>
 
           {/* Title */}
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(28px, 5vw, 40px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(22px, 5vw, 48px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
             {idea.title}
           </h1>
           {idea.target_audience && (
