@@ -1,31 +1,6 @@
 import { useState } from 'react'
+import { supabase } from '../supabase'
 
-const SYSTEM_PROMPT = 'You are a tough but fair investor evaluating a startup pitch. Your job is to identify weaknesses and ask hard questions. Be direct and specific. If the content is genuinely strong and complete, say so honestly — do not force criticism where none is warranted.'
-
-function buildUserMessage(sectionLabel, content) {
-  return `Section: ${sectionLabel}
-Content: ${content}
-
-Evaluate this section of a startup pitch. If there are weaknesses:
-1. Ask 1-3 specific tough investor questions about this section
-2. Give a concrete suggestion for how to strengthen it
-
-If this section is genuinely strong and addresses likely investor concerns well, respond with:
-STRONG: [brief positive note]
-
-Format your response as JSON:
-{
-  "strong": true/false,
-  "strongNote": "note if strong",
-  "questions": ["q1", "q2", "q3"],
-  "suggestion": "improvement suggestion"
-}`
-}
-
-function parseResponse(text) {
-  const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || text.match(/(\{[\s\S]*\})/)
-  return JSON.parse(match ? match[1] : text)
-}
 
 export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid }) {
   const [loading, setLoading] = useState(false)
@@ -40,25 +15,21 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
     setResult(null)
     setError(null)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: buildUserMessage(sectionLabel, content) }],
-        }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      const text = data.content?.[0]?.text || ''
-      setResult(parseResponse(text))
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-challenge`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ sectionLabel, content }),
+        }
+      )
+      const result = await response.json()
+      setResult(result)
     } catch {
       setError('Unable to analyse right now. Please try again.')
     }
