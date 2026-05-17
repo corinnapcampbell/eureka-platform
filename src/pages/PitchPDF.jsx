@@ -300,6 +300,91 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
   return `<style>${CSS}</style><div class="pdf-wrap">${coverPage}${page2}${page3}${page4}${page5}${lastPage}</div>`
 }
 
+function addChip(chips, setChips, input, setInput) {
+  const val = input.trim()
+  if (val && !chips.includes(val)) setChips([...chips, val])
+  setInput('')
+}
+
+function removeChip(chips, setChips, index) {
+  setChips(chips.filter((_, i) => i !== index))
+}
+
+function addSuggestion(chips, setChips, val) {
+  if (!chips.includes(val)) setChips([...chips, val])
+}
+
+function ChipInput({ chips, setChips, inputVal, setInputVal, placeholder, suggestionList, loadingSuggestions, color = '#7b9ff7' }) {
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={inputVal}
+          onChange={e => setInputVal(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addChip(chips, setChips, inputVal, setInputVal) } }}
+          placeholder={placeholder || 'Type a point and press Enter...'}
+          style={{
+            flex: 1, padding: '8px 12px', borderRadius: 8,
+            border: '0.5px solid rgba(44,44,42,0.2)', background: '#fafaf8', color: '#2c2c2a',
+            fontSize: 14, outline: 'none', fontFamily: 'inherit',
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => addChip(chips, setChips, inputVal, setInputVal)}
+          style={{
+            padding: '8px 14px', borderRadius: 8, border: 'none',
+            background: color, color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+          }}
+        >+ Add</button>
+      </div>
+      {chips.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+          {chips.map((chip, i) => (
+            <span key={i} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: color + '22', border: `1px solid ${color}`,
+              borderRadius: 20, padding: '4px 12px', fontSize: 13, color: '#2c2c2a',
+            }}>
+              {chip}
+              <span
+                onClick={() => removeChip(chips, setChips, i)}
+                style={{ cursor: 'pointer', color: '#aaa', fontWeight: 700, fontSize: 15, lineHeight: 1 }}
+              >×</span>
+            </span>
+          ))}
+        </div>
+      )}
+      {suggestionList?.length > 0 && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 11, color: '#b0b0a8', marginBottom: 6 }}>
+            {loadingSuggestions ? '✨ Loading suggestions...' : '✨ AI suggestions — click to add:'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {suggestionList.map((s, i) => (
+              !chips.includes(s) && (
+                <span
+                  key={i}
+                  onClick={() => addSuggestion(chips, setChips, s)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center',
+                    background: 'transparent', border: `1px dashed ${color}88`,
+                    borderRadius: 20, padding: '3px 10px', fontSize: 12,
+                    color: '#888', cursor: 'pointer', opacity: 0.75,
+                    transition: 'opacity 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '0.75'}
+                >{s}</span>
+              )
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function PitchPDF({ session }) {
   const { ideaId } = useParams()
   const navigate   = useNavigate()
@@ -405,8 +490,8 @@ export default function PitchPDF({ session }) {
   }, [ideaId, navigate])
 
   useEffect(() => {
-    if (!idea || !idea.title) return
-    const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
+    if (!idea?.id || !idea?.problem) return
+    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
     if (!apiKey) return
     const loadSuggestions = async () => {
       setLoadingSuggestions(true)
@@ -447,7 +532,7 @@ export default function PitchPDF({ session }) {
       }
     }
     loadSuggestions()
-  }, [idea])
+  }, [idea?.id])
 
   useEffect(() => {
     if (stage === 'preview') {
@@ -458,88 +543,6 @@ export default function PitchPDF({ session }) {
     }
   }, [stage])
 
-  const addChip = (chips, setChips, input, setInput) => {
-    const val = input.trim()
-    if (val && !chips.includes(val)) setChips([...chips, val])
-    setInput('')
-  }
-
-  const removeChip = (chips, setChips, index) => {
-    setChips(chips.filter((_, i) => i !== index))
-  }
-
-  const addSuggestion = (chips, setChips, val) => {
-    if (!chips.includes(val)) setChips([...chips, val])
-  }
-
-  const ChipInput = ({ chips, setChips, inputVal, setInputVal, placeholder, suggestionKey, color = '#7b9ff7' }) => (
-    <div style={{ marginTop: 8 }}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          value={inputVal}
-          onChange={e => setInputVal(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addChip(chips, setChips, inputVal, setInputVal) } }}
-          placeholder={placeholder || 'Type a point and press Enter...'}
-          style={{
-            flex: 1, padding: '8px 12px', borderRadius: 8,
-            border: '0.5px solid rgba(44,44,42,0.2)', background: '#fafaf8', color: '#2c2c2a',
-            fontSize: 14, outline: 'none', fontFamily: 'inherit',
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => addChip(chips, setChips, inputVal, setInputVal)}
-          style={{
-            padding: '8px 14px', borderRadius: 8, border: 'none',
-            background: color, color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500,
-          }}
-        >+ Add</button>
-      </div>
-      {chips.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-          {chips.map((chip, i) => (
-            <span key={i} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: color + '22', border: `1px solid ${color}`,
-              borderRadius: 20, padding: '4px 12px', fontSize: 13, color: '#2c2c2a',
-            }}>
-              {chip}
-              <span
-                onClick={() => removeChip(chips, setChips, i)}
-                style={{ cursor: 'pointer', color: '#aaa', fontWeight: 700, fontSize: 15, lineHeight: 1 }}
-              >×</span>
-            </span>
-          ))}
-        </div>
-      )}
-      {suggestions[suggestionKey]?.length > 0 && (
-        <div style={{ marginTop: 10 }}>
-          <div style={{ fontSize: 11, color: '#b0b0a8', marginBottom: 6 }}>
-            {loadingSuggestions ? '✨ Loading suggestions...' : '✨ AI suggestions — click to add:'}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {suggestions[suggestionKey].map((s, i) => (
-              !chips.includes(s) && (
-                <span
-                  key={i}
-                  onClick={() => addSuggestion(chips, setChips, s)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center',
-                    background: 'transparent', border: `1px dashed ${color}88`,
-                    borderRadius: 20, padding: '3px 10px', fontSize: 12,
-                    color: '#888', cursor: 'pointer', opacity: 0.75,
-                    transition: 'opacity 0.2s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '0.75'}
-                >{s}</span>
-              )
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
 
   async function aiSuggest(fieldKey) {
     setSuggesting(fieldKey)
@@ -783,7 +786,7 @@ export default function PitchPDF({ session }) {
               chips={howItWorksChips} setChips={setHowItWorksChips}
               inputVal={howItWorksInput} setInputVal={setHowItWorksInput}
               placeholder="Describe a step and press Enter..."
-              suggestionKey="howItWorks" color="#7b9ff7"
+              suggestionList={suggestions.howItWorks} loadingSuggestions={loadingSuggestions} color="#7b9ff7"
             />
           </div>
 
@@ -799,7 +802,7 @@ export default function PitchPDF({ session }) {
               chips={targetMarketChips} setChips={setTargetMarketChips}
               inputVal={targetMarketInput} setInputVal={setTargetMarketInput}
               placeholder="e.g. 🚀 Startup Founders — press Enter to add"
-              suggestionKey="targetMarket" color="#9b7ff7"
+              suggestionList={suggestions.targetMarket} loadingSuggestions={loadingSuggestions} color="#9b7ff7"
             />
           </div>
 
@@ -814,7 +817,7 @@ export default function PitchPDF({ session }) {
                   chips={freeTierChips} setChips={setFreeTierChips}
                   inputVal={freeTierInput} setInputVal={setFreeTierInput}
                   placeholder="Free feature, press Enter..."
-                  suggestionKey="freeTier" color="#4caf89"
+                  suggestionList={suggestions.freeTier} loadingSuggestions={loadingSuggestions} color="#4caf89"
                 />
               </div>
               <div>
@@ -823,7 +826,7 @@ export default function PitchPDF({ session }) {
                   chips={paidTierChips} setChips={setPaidTierChips}
                   inputVal={paidTierInput} setInputVal={setPaidTierInput}
                   placeholder="Paid feature, press Enter..."
-                  suggestionKey="paidTier" color="#f0a500"
+                  suggestionList={suggestions.paidTier} loadingSuggestions={loadingSuggestions} color="#f0a500"
                 />
               </div>
             </div>
@@ -841,7 +844,7 @@ export default function PitchPDF({ session }) {
               chips={risksChips} setChips={setRisksChips}
               inputVal={risksInput} setInputVal={setRisksInput}
               placeholder="Describe a risk and press Enter..."
-              suggestionKey="risks" color="#e05c7a"
+              suggestionList={suggestions.risks} loadingSuggestions={loadingSuggestions} color="#e05c7a"
             />
           </div>
 
@@ -857,7 +860,7 @@ export default function PitchPDF({ session }) {
               chips={nextStepsChips} setChips={setNextStepsChips}
               inputVal={nextStepsInput} setInputVal={setNextStepsInput}
               placeholder="Describe a milestone and press Enter..."
-              suggestionKey="nextSteps" color="#7b9ff7"
+              suggestionList={suggestions.nextSteps} loadingSuggestions={loadingSuggestions} color="#7b9ff7"
             />
           </div>
 
