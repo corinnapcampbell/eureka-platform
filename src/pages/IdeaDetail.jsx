@@ -5,6 +5,7 @@ import Logo from '../components/Logo'
 import { dedupeArray } from '../utils/generatePDF'
 import BusinessModelSection, { parseBMValue, serializeBMValue } from '../components/BusinessModelSection'
 import Scorecard from '../components/Scorecard'
+import AIChallenge from '../components/AIChallenge'
 
 function splitHowItWorks(text) {
   if (!text?.trim()) return []
@@ -291,6 +292,7 @@ export default function IdeaDetail({ session }) {
   const [inlineEdit, setInlineEdit] = useState({})
   const [inlineSaving, setInlineSaving] = useState(null)
   const [savedField, setSavedField] = useState(null)
+  const [isPaid, setIsPaid] = useState(true) // hardcoded true for testing; wire to real tier later
 
   const startEditRef = useRef(null)
 
@@ -750,6 +752,7 @@ export default function IdeaDetail({ session }) {
                 </p>
               )}
               {savedField === 'problem' && <span style={savedConfirmDarkStyle}>Saved ✓</span>}
+              <AIChallenge sectionKey="problem" sectionLabel="Problem" content={idea.problem} isPaid={isPaid} />
             </div>
           )}
 
@@ -777,6 +780,7 @@ export default function IdeaDetail({ session }) {
                   </p>
                 )}
                 {savedField === 'solution' && <span style={savedConfirmStyle}>Saved ✓</span>}
+                <AIChallenge sectionKey="solution" sectionLabel="Solution" content={idea.solution} isPaid={isPaid} />
               </div>
             </div>
           )}
@@ -848,6 +852,7 @@ export default function IdeaDetail({ session }) {
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe how your idea works</p>
             )}
             {savedField === 'how_it_works' && inlineEdit.how_it_works === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <AIChallenge sectionKey="how_it_works" sectionLabel="How It Works" content={idea.how_it_works} isPaid={isPaid} />
           </div>
         )}
 
@@ -877,6 +882,12 @@ export default function IdeaDetail({ session }) {
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe your business model</p>
             )}
             {savedField === 'business_model' && inlineEdit.business_model === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <AIChallenge
+              sectionKey="business_model"
+              sectionLabel="Business Model"
+              content={(() => { try { const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model; return bm?.models?.length ? `Models: ${bm.models.join(', ')}` : '' } catch { return idea.business_model || '' } })()}
+              isPaid={isPaid}
+            />
           </div>
         )}
 
@@ -901,6 +912,7 @@ export default function IdeaDetail({ session }) {
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe your competitive advantage</p>
             )}
             {savedField === 'competitive_advantage' && inlineEdit.competitive_advantage === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <AIChallenge sectionKey="competitive_advantage" sectionLabel="Competitive Advantage" content={idea.competitive_advantage} isPaid={isPaid} />
           </div>
         )}
 
@@ -925,6 +937,7 @@ export default function IdeaDetail({ session }) {
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to list your risks & challenges</p>
             )}
             {savedField === 'risks' && inlineEdit.risks === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <AIChallenge sectionKey="risks" sectionLabel="Risks & Challenges" content={idea.risks} isPaid={isPaid} />
           </div>
         )}
 
@@ -949,6 +962,7 @@ export default function IdeaDetail({ session }) {
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to outline your next steps</p>
             )}
             {savedField === 'next_steps' && inlineEdit.next_steps === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <AIChallenge sectionKey="next_steps" sectionLabel="Next Steps" content={idea.next_steps} isPaid={isPaid} />
           </div>
         )}
 
