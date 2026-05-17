@@ -217,6 +217,8 @@ export default function IdeaDetail({ session }) {
   const [publishing, setPublishing] = useState(null)   // 'pdf' | 'deck' | null
   const [deckInfo, setDeckInfo] = useState(null)
   const [viewingPDF, setViewingPDF] = useState(false)
+  const [showMobilePDF, setShowMobilePDF] = useState(false)
+  const [mobilePDFContent, setMobilePDFContent] = useState('')
 
   useEffect(() => {
     async function fetchIdea() {
@@ -411,8 +413,14 @@ export default function IdeaDetail({ session }) {
     }
     const inner = _buildSnapshotHTML(form, fresh)
     const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fresh.title} — Pitch PDF</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"></head><body style="margin:0;background:#f5f5f3;padding:20px 0;min-height:100vh"><div id="pdf-preview">${inner}</div></body></html>`
-    const blob = new Blob([fullHTML], { type: 'text/html' })
-    window.open(URL.createObjectURL(blob), '_blank')
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      setMobilePDFContent(fullHTML)
+      setShowMobilePDF(true)
+    } else {
+      const blob = new Blob([fullHTML], { type: 'text/html' })
+      window.open(URL.createObjectURL(blob), '_blank')
+    }
     setViewingPDF(false)
   }
 
@@ -448,6 +456,7 @@ export default function IdeaDetail({ session }) {
   const date = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
   return (
+    <>
     <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
       {/* Gradient accent bar */}
       <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
@@ -1089,6 +1098,24 @@ export default function IdeaDetail({ session }) {
         </div>
       )}
     </div>
+
+    {showMobilePDF && (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: '#0e0e1f', zIndex: 9999, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '0.5px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', fontFamily: "'DM Sans', sans-serif" }}>Investor Preview</span>
+          <button
+            onClick={() => setShowMobilePDF(false)}
+            style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 6, width: 32, height: 32, color: 'rgba(255,255,255,0.7)', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+          >×</button>
+        </div>
+        <iframe
+          srcDoc={mobilePDFContent}
+          style={{ flex: 1, border: 'none', width: '100%' }}
+          title="Investor Preview"
+        />
+      </div>
+    )}
+    </>
   )
 }
 
