@@ -16,9 +16,9 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
     setError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL.replace(/\/rest\/v1\/?$/, '')
+      const fnUrl = 'https://gvjtmyesrrdwkcwkusiz.supabase.co/functions/v1/ai-challenge'
       const response = await fetch(
-        `${baseUrl}/functions/v1/ai-challenge`,
+        fnUrl,
         {
           method: 'POST',
           headers: {
