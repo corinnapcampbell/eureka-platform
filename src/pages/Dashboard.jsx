@@ -34,7 +34,9 @@ export default function Dashboard({ session }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '0.5px solid var(--border)'
       }}>
-        <Logo size={20} dark />
+        <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+          <Logo size={20} dark />
+        </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>{session.user.email}</span>
           <button onClick={signOut} style={{

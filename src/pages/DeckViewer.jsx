@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { ScaledSlide } from '../components/DeckSlides'
 import jsPDF from 'jspdf'
@@ -8,6 +8,8 @@ const SLIDES_COUNT = 8
 
 export default function DeckViewer() {
   const { shareToken } = useParams()
+  const navigate = useNavigate()
+  const [authSession, setAuthSession] = useState(null)
   const [slides, setSlides] = useState(null)
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -15,6 +17,10 @@ export default function DeckViewer() {
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [ideaTitle, setIdeaTitle] = useState('')
   const touchStart = useRef(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setAuthSession(session))
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -125,6 +131,9 @@ export default function DeckViewer() {
         touchStart.current = null
       }}
     >
+      {authSession && (
+        <a href="/dashboard" style={{ position: 'absolute', top: 14, right: 16, zIndex: 100, background: 'rgba(123,159,247,0.12)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
+      )}
       {current > 0 && (
         <button
           onClick={() => setCurrent(c => c - 1)}

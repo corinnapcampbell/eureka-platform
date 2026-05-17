@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
 import { generateIdeaPDF, dedupeArray } from '../utils/generatePDF'
@@ -205,6 +205,8 @@ function buildSnapshotHTML(form, idea) {
 
 export default function SharedIdea() {
   const { token } = useParams()
+  const navigate = useNavigate()
+  const [authSession, setAuthSession] = useState(null)
   const [stage, setStage] = useState('loading')
   const [idea, setIdea] = useState(null)
   const [email, setEmail] = useState('')
@@ -214,6 +216,10 @@ export default function SharedIdea() {
   const [downloadingPDF, setDownloadingPDF] = useState(false)
   const [downloadingSnapshotPDF, setDownloadingSnapshotPDF] = useState(false)
   const [viewingSnapshotPDF, setViewingSnapshotPDF] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setAuthSession(session))
+  }, [])
 
   useEffect(() => {
     async function fetchLink() {
@@ -339,8 +345,10 @@ export default function SharedIdea() {
   )
 
   if (stage === 'error') return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#0e0e1f', padding: '2rem' }}>
-      <Logo size={22} />
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: '#0e0e1f', padding: '2rem', position: 'relative' }}>
+      <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+        <Logo size={22} />
+      </span>
       <span style={{ fontSize: 40, opacity: 0.25 }}>⬡</span>
       <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#fff' }}>Link not found</h2>
       <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>This link may have expired or been revoked.</p>
@@ -351,6 +359,9 @@ export default function SharedIdea() {
   // ─── PHASE 1: TEASER / NDA ───────────────────────────────────────────────
   if (stage === 'nda') return (
     <div style={{ minHeight: '100vh', background: '#0e0e1f', position: 'relative', overflow: 'hidden' }}>
+      {authSession && (
+        <a href="/dashboard" style={{ position: 'fixed', top: 14, right: 16, zIndex: 999, background: 'rgba(123,159,247,0.12)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
+      )}
       {/* Gradient accent bar */}
       <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
 
@@ -364,7 +375,9 @@ export default function SharedIdea() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <Logo size={24} />
+          <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+            <Logo size={24} />
+          </span>
         </div>
 
         {/* Title */}
@@ -466,6 +479,9 @@ export default function SharedIdea() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
+      {authSession && (
+        <a href="/dashboard" style={{ position: 'fixed', top: 14, right: 16, zIndex: 999, background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
+      )}
       {/* Gradient accent bar */}
       <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
 
@@ -475,7 +491,9 @@ export default function SharedIdea() {
 
           {/* Nav row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: 8 }}>
-            <Logo size={20} />
+            <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+              <Logo size={20} />
+            </span>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(123,159,247,0.09)', border: '0.5px solid rgba(123,159,247,0.18)', borderRadius: 20, padding: '5px 13px' }}>
               <span style={{ fontSize: 11 }}>🔒</span>
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>NDA accepted · access logged</span>
