@@ -23,6 +23,7 @@ export default function DeckBuilder({ session }) {
   const [shareCopied, setShareCopied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingProgress, setSavingProgress] = useState(false)
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const saveTimer = useRef(null)
   const touchStart = useRef(null)
@@ -120,6 +121,14 @@ export default function DeckBuilder({ session }) {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [presenting])
+
+  async function saveProgress() {
+    if (!deckId || !slides) return
+    setSavingProgress(true)
+    clearTimeout(saveTimer.current)
+    await supabase.from('pitch_decks').update({ slides }).eq('id', deckId)
+    setSavingProgress(false)
+  }
 
   async function handleShare() {
     setShareModal(true)
@@ -283,6 +292,13 @@ export default function DeckBuilder({ session }) {
           style={{ background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#fff', cursor: 'pointer', flexShrink: 0 }}
         >
           ▶ Present
+        </button>
+        <button
+          onClick={saveProgress}
+          disabled={savingProgress}
+          style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: 'rgba(255,255,255,0.55)', cursor: savingProgress ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: savingProgress ? 0.6 : 1 }}
+        >
+          {savingProgress ? 'Saving...' : '💾 Save Progress'}
         </button>
         <button
           onClick={handleShare}
