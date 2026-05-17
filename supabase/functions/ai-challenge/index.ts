@@ -25,7 +25,7 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20251001',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1000,
         system: 'You are a tough but fair investor evaluating a startup pitch. Identify weaknesses and ask hard questions. Be direct and specific. If content is genuinely strong and complete, say so honestly — do not force criticism.',
         messages: [{
