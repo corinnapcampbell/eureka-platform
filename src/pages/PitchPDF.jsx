@@ -296,8 +296,7 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
   const bmBullet = (items) => items.length ? items.map(item => `· ${escH(item)}`).join('<br>') : ''
   const sH = (icon, label) => `<div class="shead"><div class="sicon">${icon}</div><div class="slabel">${label}</div></div>`
 
-  const fallbackBMInner = `<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeBullets)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidBullets)}</div></div></div>`
-  const bmInner = (bmValue && buildBMHtml(bmValue, escH, bmBullet)) || fallbackBMInner
+  const bmInner = buildBMHtml(bmValue, escH, bmBullet) || '<p style="color:#aaa;font-size:12px;margin:0;font-style:italic">No business model selected yet.</p>'
 
   const OVERHEAD = 60, LINE = 28
   const sectionHeight = (s) => {
@@ -520,7 +519,7 @@ export default function PitchPDF({ session }) {
         .map(s => s.replace(/^\d+[\.\)]\s*/, '').trim())
         .filter(Boolean)
 
-      setBmValue(parseBMValue(data.business_model))
+      setBmValue(parseBMValue(data.business_model) || { models: [] })
 
       setHowItWorksChips(parsedHowItWorks)
       setTargetMarketChips(parsedTargetMarket)
@@ -823,7 +822,14 @@ export default function PitchPDF({ session }) {
                 <div style={{ fontSize: 12, color: '#b0b0a8' }}>Select your model(s) and fill in the details</div>
               </div>
             </div>
-            <BusinessModelSection value={bmValue} onChange={setBmValue} theme="light" />
+            <BusinessModelSection
+              value={bmValue}
+              onChange={(val) => {
+                setBmValue(val)
+                supabase.from('ideas').update({ business_model: serializeBMValue(val) }).eq('id', ideaId)
+              }}
+              theme="light"
+            />
           </div>
 
           {/* Risks & Challenges — chip input */}
