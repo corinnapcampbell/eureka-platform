@@ -29,9 +29,22 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
           body: JSON.stringify({ sectionLabel, content }),
         }
       )
-      const result = await response.json()
-      if (result.error) {
-        setError('Unable to analyse right now: ' + result.error)
+      const raw = await response.text()
+      console.log('AI Challenge raw response:', raw)
+
+      let result
+      try {
+        result = JSON.parse(raw)
+      } catch (e) {
+        setError('Unable to parse response. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      console.log('AI Challenge parsed result:', JSON.stringify(result))
+
+      if (!response.ok || result.error) {
+        setError('Unable to analyse right now. Please try again.')
       } else {
         setResult(result)
       }
