@@ -47,7 +47,104 @@ function fallbackSplitBM(text) {
   return { free: lines, paid: [] }
 }
 
-function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
+const BM_TYPE_KEY = {
+  'Freemium / SaaS':    'freemium',
+  'Marketplace':        'marketplace',
+  'Subscription':       'subscription',
+  'One-time Purchase':  'oneTime',
+  'Advertising':        'advertising',
+  'Licensing':          'licensing',
+  'Transaction Fees':   'transactionFees',
+  'Hardware + Software':'hardwareSoftware',
+  'Other':              'other',
+}
+
+function buildBMHtml(bmValue, escH, bmBullet) {
+  if (!bmValue?.models?.length) return null
+  const parts = []
+  for (const type of bmValue.models) {
+    const key = BM_TYPE_KEY[type] || type.toLowerCase().replace(/[^a-z]/g, '')
+    const data = bmValue[key] || {}
+    switch (type) {
+      case 'Freemium / SaaS': {
+        const freeItems = (data.freeTier || '').split('\n').map(s => s.trim()).filter(Boolean)
+        const paidItems = [
+          ...(data.paidPrice ? [data.paidPrice] : []),
+          ...(data.paidFeatures || '').split('\n').map(s => s.trim()).filter(Boolean),
+        ]
+        parts.push(`<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeItems)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidItems)}</div></div></div>`)
+        break
+      }
+      case 'Subscription': {
+        const tiers = (data.tiers || []).filter(t => t.name || t.price || t.features)
+        if (tiers.length) parts.push(`<div class="twocards">${tiers.map(t => `<div class="card bl"><div class="clabel">${escH(t.name || 'Tier')}</div><div class="cicon" style="font-size:13px;font-weight:600;color:#7b9ff7;margin-bottom:4px">${escH(t.price || '')}</div><div class="ctext">${bmBullet((t.features || '').split('\n').map(s => s.trim()).filter(Boolean))}</div></div>`).join('')}</div>`)
+        break
+      }
+      case 'Marketplace': {
+        const buyerItems = (data.buyers || '').split('\n').map(s => s.trim()).filter(Boolean)
+        const sellerItems = [
+          ...(data.sellers || '').split('\n').map(s => s.trim()).filter(Boolean),
+          ...(data.commission ? [`Commission: ${data.commission}`] : []),
+        ]
+        parts.push(`<div class="twocards"><div class="card bl"><div class="cicon">🛍️</div><div class="clabel">BUYERS</div><div class="ctext">${bmBullet(buyerItems)}</div></div><div class="card pu"><div class="cicon">🏪</div><div class="clabel">SELLERS</div><div class="ctext">${bmBullet(sellerItems)}</div></div></div>`)
+        break
+      }
+      case 'One-time Purchase': {
+        const items = [
+          ...(data.price ? [`Price: ${data.price}`] : []),
+          ...(data.included || '').split('\n').map(s => s.trim()).filter(Boolean),
+          ...(data.upsells ? [`Upsells: ${data.upsells}`] : []),
+        ]
+        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        break
+      }
+      case 'Advertising': {
+        const items = [
+          ...(data.revenue ? [`Revenue: ${data.revenue}`] : []),
+          ...(data.formats || '').split('\n').map(s => s.trim()).filter(Boolean),
+          ...(data.audience ? [`Audience: ${data.audience}`] : []),
+        ]
+        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        break
+      }
+      case 'Licensing': {
+        const items = [
+          ...(data.royalties ? [`Royalties: ${data.royalties}`] : []),
+          ...(data.licensees || '').split('\n').map(s => s.trim()).filter(Boolean),
+          ...(data.exclusivity ? [data.exclusivity] : []),
+        ]
+        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        break
+      }
+      case 'Transaction Fees': {
+        const items = [
+          ...(data.fee ? [`Fee: ${data.fee}`] : []),
+          ...(data.whoPays ? [data.whoPays] : []),
+          ...(data.flow || '').split('\n').map(s => s.trim()).filter(Boolean),
+        ]
+        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        break
+      }
+      case 'Hardware + Software': {
+        const items = [
+          ...(data.hardwarePrice ? [`Hardware: ${data.hardwarePrice}`] : []),
+          ...(data.softwarePrice ? [`Software: ${data.softwarePrice}`] : []),
+          ...(data.recurring || '').split('\n').map(s => s.trim()).filter(Boolean),
+        ]
+        parts.push(`<div class="stext">${bmBullet(items)}</div>`)
+        break
+      }
+      case 'Other': {
+        const cards = (data.cards || []).filter(c => c.title || (c.items || []).some(i => i?.trim()))
+        if (cards.length) parts.push(`<div class="twocards">${cards.map(card => `<div class="card bl"><div class="clabel">${escH(card.title || '')}</div><div class="ctext">${bmBullet((card.items || []).map(s => (s || '').trim()).filter(Boolean))}</div></div>`).join('')}</div>`)
+        break
+      }
+    }
+  }
+  return parts.length ? parts.join('<div style="height:6px"></div>') : null
+}
+
+function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
   const cats = Array.isArray(idea.categories)
     ? idea.categories
     : typeof idea.categories === 'string'
@@ -62,8 +159,9 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
 
   const marketNums = (form.market_size || '').match(/\$[\d.]+[BMKbmk]+\+?/g) || []
 
-  const { free: freeBullets, paid: paidBullets } =
-    (bmSplit?.free?.length || bmSplit?.paid?.length) ? bmSplit : fallbackSplitBM(form.business_model)
+  const { free: freeBullets, paid: paidBullets } = bmValue
+    ? extractBMChips(bmValue)
+    : fallbackSplitBM(form.business_model)
 
   const risks = (form.risks || '').split('\n').map(s => s.trim()).filter(Boolean)
   const nextSteps = (form.next_steps || '').split('\n').map(s => s.trim()).filter(Boolean)
@@ -198,6 +296,9 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
   const bmBullet = (items) => items.length ? items.map(item => `· ${escH(item)}`).join('<br>') : ''
   const sH = (icon, label) => `<div class="shead"><div class="sicon">${icon}</div><div class="slabel">${label}</div></div>`
 
+  const fallbackBMInner = `<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeBullets)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidBullets)}</div></div></div>`
+  const bmInner = (bmValue && buildBMHtml(bmValue, escH, bmBullet)) || fallbackBMInner
+
   const OVERHEAD = 60, LINE = 28
   const sectionHeight = (s) => {
     switch (s.type) {
@@ -230,7 +331,7 @@ function buildPreviewHTML(form, idea, userEmail, bmSplit = null) {
     { type: 'target_market', items: audienceTags.length > 0 ? audienceTags : [form.target_audience || ''],
       html: `${sH('🎯', 'TARGET MARKET')}${tagsHTML}` },
     { type: 'business_model', freeItems: freeBullets, paidItems: paidBullets,
-      html: `${sH('💰', 'BUSINESS MODEL')}<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${bmBullet(freeBullets)}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${bmBullet(paidBullets)}</div></div></div>` },
+      html: `${sH('💰', 'BUSINESS MODEL')}${bmInner}` },
     { type: 'competitive_advantage', text: form.competitive_advantage || '',
       html: `${sH('🏆', 'COMPETITIVE ADVANTAGE')}<div class="stext">${escH(form.competitive_advantage)}</div>` },
     { type: 'risks', items: risks,
@@ -538,69 +639,12 @@ export default function PitchPDF({ session }) {
     setGenerating(true)
     const formWithChips = {
       ...form,
-      how_it_works:  howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+      how_it_works:    howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n'),
       target_audience: targetMarketChips.join(', '),
-      risks:         risksChips.join('\n'),
-      next_steps:    nextStepsChips.join('\n'),
+      risks:           risksChips.join('\n'),
+      next_steps:      nextStepsChips.join('\n'),
     }
-    let bmSplit = null
-    if (bmValue) {
-      const { free, paid } = extractBMChips(bmValue)
-      if (free.length || paid.length) bmSplit = { free, paid }
-    }
-
-    try {
-      const apiKey = import.meta.env.VITE_ANTHROPIC_KEY
-      if (!bmSplit && apiKey && form.business_model?.trim()) {
-        const prompt =
-          `You are a business model analyzer. Read this text and split it into exactly two lists: free tier features and paid tier features. Return ONLY a JSON object with no other text, no markdown, no explanation. Format: {"free": ["feature 1", "feature 2"], "paid": ["feature 1", "feature 2"]}. If you cannot find clear free/paid distinction, infer it intelligently — free tier typically includes basic features, paid tier includes advanced/premium features. Text to analyze: ` +
-          form.business_model
-
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 400,
-            messages: [{ role: 'user', content: prompt }],
-          }),
-        })
-
-        const data = await res.json()
-        const raw = data.content?.[0]?.text?.trim() || ''
-        console.log('Business model split raw response:', raw)
-
-        const jsonMatch = raw.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0])
-          if (Array.isArray(parsed.free) || Array.isArray(parsed.paid)) {
-            bmSplit = {
-              free: Array.isArray(parsed.free) ? parsed.free : [],
-              paid: Array.isArray(parsed.paid) ? parsed.paid : [],
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Business model split error:', e)
-    }
-
-    // Fallback: split sentences in half
-    if (!bmSplit?.free?.length && !bmSplit?.paid?.length) {
-      const sentences = (form.business_model || '')
-        .split(/(?<=[.!?])\s+/)
-        .map(s => s.trim())
-        .filter(Boolean)
-      const mid = Math.ceil(sentences.length / 2)
-      bmSplit = { free: sentences.slice(0, mid), paid: sentences.slice(mid) }
-    }
-
-    const html = buildPreviewHTML(formWithChips, idea, session?.user?.email, bmSplit)
+    const html = buildPreviewHTML(formWithChips, idea, session?.user?.email, bmValue)
     setPreviewHTML(html)
     setGenerating(false)
     setStage('preview')
