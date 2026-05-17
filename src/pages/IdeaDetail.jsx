@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import Logo from '../components/Logo'
 import { dedupeArray } from '../utils/generatePDF'
 import BusinessModelSection, { parseBMValue, serializeBMValue } from '../components/BusinessModelSection'
+import Scorecard from '../components/Scorecard'
 
 function splitHowItWorks(text) {
   if (!text?.trim()) return []
@@ -648,6 +649,8 @@ export default function IdeaDetail({ session }) {
 
       {/* White content area */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
+
+        {isOwner && <Scorecard idea={idea} />}
 
         {/* Card 1: Problem & Solution */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
