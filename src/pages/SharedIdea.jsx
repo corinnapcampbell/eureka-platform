@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
 import { generateIdeaPDF, dedupeArray } from '../utils/generatePDF'
+import { parseBMValue, buildBMHtml } from '../utils/businessModel'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 
@@ -44,11 +45,7 @@ function buildSnapshotHTML(form, idea) {
   const audienceTags = (form.target_audience || '').split(',').map(s => s.trim()).filter(Boolean)
     .filter(t => !cats.some(c => c.toLowerCase() === t.toLowerCase()))
   const marketNums = (form.market_size || '').match(/\$[\d.]+[BMKbmk]+\+?/g) || []
-  const bmLines = (form.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
-  const freeItems = bmLines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
-  const paidItems = bmLines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
-  const freeHTML = freeItems.length ? freeItems.map(f => `· ${_esc(f)}`).join('<br>') : _esc(bmLines[0] || '')
-  const paidHTML = paidItems.length ? paidItems.map(f => `· ${_esc(f)}`).join('<br>') : _esc(bmLines[1] || '')
+  const bmValue = parseBMValue(form.business_model || '')
   const risks = (form.risks || '').split('\n').map(s => s.trim()).filter(Boolean)
   const nextSteps = (form.next_steps || '').split('\n').map(s => s.trim()).filter(Boolean)
   const dateStr = idea.created_at
@@ -129,6 +126,8 @@ function buildSnapshotHTML(form, idea) {
     ${q} .pf{font-size:8px;color:#ccc}
     ${q} .dfooter{background:#0e0e1f;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
     ${q} .dfbadge{background:rgba(123,159,247,0.1);border:1px solid rgba(123,159,247,0.2);border-radius:20px;padding:3px 10px;font-size:8px;color:#7b9ff7;letter-spacing:2px;text-transform:uppercase}
+    ${q} .bm-model-title{font-family:'Outfit',sans-serif;font-weight:400;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#7b9ff7;margin:14px 0 8px 0;padding-bottom:5px;border-bottom:1px solid rgba(123,159,247,0.2)}
+    ${q} .bm-model-title:first-child{margin-top:0}
   `
   const ph = (n) => `<div class="phead"><div class="logod">Eurek<b>AI</b>dea</div><div class="pnum">Page ${n}</div></div>`
   const pf = `<div class="pfooter"><div class="pf">CONFIDENTIAL</div><div class="pf">myeurekaidea.com</div></div>`
@@ -155,7 +154,7 @@ function buildSnapshotHTML(form, idea) {
       case 'market_size':
         return OVERHEAD + 3 * LINE
       case 'business_model':
-        return OVERHEAD + Math.max(s.freeItems.length, s.paidItems.length) * LINE + 60
+        return OVERHEAD + (s.bmValue?.models?.length || 1) * (LINE * 3 + 40)
       case 'risks': case 'next_steps':
         return OVERHEAD + s.items.length * (LINE + 8)
       default:
@@ -174,8 +173,8 @@ function buildSnapshotHTML(form, idea) {
       html: `${sH('📈','MARKET SIZE')}<div class="bmet">${marketBoxes.map(b=>`<div class="bm"><div class="bmv">${_esc(b.v)}</div><div class="bml">${_esc(b.l)}</div></div>`).join('')}</div><div class="stext" style="font-size:11px;color:#888;margin-top:2px">${_esc(form.market_size)}</div>` },
     { type: 'target_market', items: audienceTags.length>0 ? audienceTags : [form.target_audience||''],
       html: `${sH('🎯','TARGET MARKET')}${tagsHTML}` },
-    { type: 'business_model', freeItems: freeItems, paidItems: paidItems,
-      html: `${sH('💰','BUSINESS MODEL')}<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${freeHTML}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${paidHTML}</div></div></div>` },
+    { type: 'business_model', bmValue: bmValue,
+      html: `${sH('💰','BUSINESS MODEL')}${buildBMHtml(bmValue) || ''}` },
     { type: 'competitive_advantage', text: form.competitive_advantage||'',
       html: `${sH('🏆','COMPETITIVE ADVANTAGE')}<div class="stext">${_esc(form.competitive_advantage)}</div>` },
     { type: 'risks', items: risks,
@@ -605,41 +604,29 @@ export default function SharedIdea() {
         })()}
 
         {/* Card 4: Business Model (conditional) */}
-        {idea.business_model && (
-          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Business Model</p>
-            {(() => {
-              const lines = (idea.business_model || '').split('\n').map(s => s.trim()).filter(Boolean)
-              const freeItems = lines.filter(l => /^free:/i.test(l)).map(l => l.replace(/^free:\s*/i, ''))
-              const paidItems = lines.filter(l => /^paid:/i.test(l)).map(l => l.replace(/^paid:\s*/i, ''))
-              if (freeItems.length === 0 && paidItems.length === 0) {
-                return <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.business_model}</p>
-              }
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div style={{ borderRadius: 10, border: '0.5px solid rgba(20,184,166,0.25)', borderTop: '3px solid #14b8a6', padding: '0.85rem 1rem' }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#14b8a6', marginBottom: '0.6rem' }}>🆓 Free Tier</p>
-                    {freeItems.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
-                        <span style={{ color: '#14b8a6', fontWeight: 700, flexShrink: 0 }}>·</span>
-                        <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ borderRadius: 10, border: '0.5px solid rgba(139,92,246,0.25)', borderTop: '3px solid #8b5cf6', padding: '0.85rem 1rem' }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '0.6rem' }}>⭐ Paid Tier</p>
-                    {paidItems.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
-                        <span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>·</span>
-                        <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            })()}
-          </div>
-        )}
+        {idea.business_model && (() => {
+          const bmVal = parseBMValue(idea.business_model)
+          const bmHtml = buildBMHtml(bmVal)
+          if (!bmHtml) return null
+          return (
+            <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <style>{`
+                .bm-investor .twocards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+                .bm-investor .card{background:#f8f8fc;border-radius:8px;padding:11px;box-sizing:border-box}
+                .bm-investor .card.bl{border-top:3px solid #7b9ff7}
+                .bm-investor .card.pu{border-top:3px solid #9b7ff7}
+                .bm-investor .cicon{font-size:18px;margin-bottom:5px}
+                .bm-investor .clabel{font-size:8px;letter-spacing:2px;color:#9b7ff7;text-transform:uppercase;font-weight:600;margin-bottom:5px}
+                .bm-investor .ctext{font-size:11px;color:#555;line-height:1.6}
+                .bm-investor .stext{font-size:12px;color:#333;line-height:1.7}
+                .bm-investor .bm-model-title{font-family:'Outfit',sans-serif;font-weight:400;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#7b9ff7;margin:14px 0 8px 0;padding-bottom:5px;border-bottom:1px solid rgba(123,159,247,0.2)}
+                .bm-investor .bm-model-title:first-child{margin-top:0}
+              `}</style>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Business Model</p>
+              <div className="bm-investor" dangerouslySetInnerHTML={{ __html: bmHtml }} />
+            </div>
+          )
+        })()}
 
         {/* Card 5: Pitch Documents — only shown when at least one is published */}
         {(idea.pdf_published || idea.deck_published) && (
