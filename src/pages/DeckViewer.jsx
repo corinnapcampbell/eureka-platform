@@ -162,11 +162,10 @@ export default function DeckViewer() {
       )}
 
       <div style={{
-        width: isMobilePortrait ? '100vh' : '90vw',
-        maxWidth: isMobilePortrait ? '100vh' : '90vw',
+        width: isMobilePortrait ? `${window.innerHeight}px` : '90vw',
+        maxWidth: isMobilePortrait ? `${window.innerHeight}px` : '90vw',
         transform: isMobilePortrait ? 'rotate(90deg)' : 'none',
         transformOrigin: 'center center',
-        transition: 'transform 0.3s ease',
       }}>
         {slides && (
           <ScaledSlide
