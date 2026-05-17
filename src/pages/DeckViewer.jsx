@@ -17,9 +17,6 @@ export default function DeckViewer() {
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [ideaTitle, setIdeaTitle] = useState('')
   const touchStart = useRef(null)
-  const [isMobilePortrait, setIsMobilePortrait] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 768 && window.innerHeight > window.innerWidth : false
-  )
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setAuthSession(session))
@@ -43,17 +40,6 @@ export default function DeckViewer() {
     }
     load()
   }, [shareToken])
-
-  useEffect(() => {
-    const update = () => setIsMobilePortrait(window.innerWidth < 768 && window.innerHeight > window.innerWidth)
-    update()
-    window.addEventListener('resize', update)
-    window.addEventListener('orientationchange', () => setTimeout(update, 100))
-    return () => {
-      window.removeEventListener('resize', update)
-      window.removeEventListener('orientationchange', update)
-    }
-  }, [])
 
   useEffect(() => {
     function handleKey(e) {
@@ -162,19 +148,13 @@ export default function DeckViewer() {
       )}
 
       <div style={{
-        width: isMobilePortrait ? `${window.innerHeight}px` : '90vw',
-        height: isMobilePortrait ? `${window.innerWidth}px` : 'auto',
-        transform: isMobilePortrait ? `rotate(90deg) translateX(-${window.innerWidth}px)` : 'none',
-        transformOrigin: 'top left',
-        position: isMobilePortrait ? 'absolute' : 'relative',
-        top: isMobilePortrait ? `${window.innerWidth}px` : 'auto',
-        left: isMobilePortrait ? '0' : 'auto',
+        width: '90vw',
+        maxWidth: '90vw',
       }}>
         {slides && (
           <ScaledSlide
             slide={slides[current]}
             slideNum={current + 1}
-            width={isMobilePortrait ? window.innerHeight : undefined}
             containerStyle={{ boxShadow: '0 12px 60px rgba(0,0,0,0.7)', borderRadius: 8 }}
           />
         )}
@@ -186,12 +166,6 @@ export default function DeckViewer() {
       <div style={{ position: 'absolute', bottom: 14, right: 20, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif" }}>
         Presented via EurekAIdea · myeurekaidea.com
       </div>
-
-      {isMobilePortrait && (
-        <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(123,159,247,0.15)', color: '#7b9ff7', borderRadius: 20, padding: '6px 14px', fontSize: 11, fontFamily: 'Outfit, sans-serif', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-          Viewing in landscape mode
-        </div>
-      )}
     </div>
   )
 }
