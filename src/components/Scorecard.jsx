@@ -37,6 +37,12 @@ const CRITERIA = [
 
 const TOTAL_PTS = CRITERIA.reduce((s, c) => s + c.pts, 0)
 
+// Fields that map to a non-standard section ID
+const SECTION_ID_MAP = {
+  pdf_published: 'section-pitch-docs',
+  deck_published: 'section-pitch-docs',
+}
+
 function ringColor(pct) {
   if (pct === 100) return '#22c55e'
   if (pct >= 71)   return '#7b9ff7'
@@ -44,7 +50,18 @@ function ringColor(pct) {
   return '#ef4444'
 }
 
-export default function Scorecard({ idea, onClickMissing }) {
+function handleMissingClick(field, setOpen) {
+  setOpen(false)
+  const sectionId = SECTION_ID_MAP[field] || ('section-' + field)
+  const el = document.getElementById(sectionId)
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  window.dispatchEvent(new CustomEvent('openEditSection', { detail: { field } }))
+  el.classList.add('section-highlight')
+  setTimeout(() => el.classList.remove('section-highlight'), 3000)
+}
+
+export default function Scorecard({ idea }) {
   const [animated, setAnimated] = useState(false)
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
@@ -112,13 +129,10 @@ export default function Scorecard({ idea, onClickMissing }) {
           </svg>
           <div style={{
             position: 'absolute', inset: 0,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1, fontFamily: "'Outfit', sans-serif" }}>
               {pct}%
-            </span>
-            <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', fontFamily: "'Outfit', sans-serif", marginTop: 2 }}>
-              done
             </span>
           </div>
         </div>
@@ -151,7 +165,7 @@ export default function Scorecard({ idea, onClickMissing }) {
                 {missing.map((item, i) => (
                   <li key={i}>
                     <button
-                      onClick={() => { setOpen(false); onClickMissing?.(item.field) }}
+                      onClick={() => handleMissingClick(item.field, setOpen)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
                         display: 'flex', alignItems: 'center', gap: 8,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
@@ -292,6 +292,18 @@ export default function IdeaDetail({ session }) {
   const [inlineSaving, setInlineSaving] = useState(null)
   const [savedField, setSavedField] = useState(null)
 
+  const startEditRef = useRef(null)
+
+  useEffect(() => {
+    const INLINE_FIELDS = new Set(['title', 'problem', 'solution', 'how_it_works', 'business_model', 'tagline', 'target_audience', 'competitive_advantage', 'risks', 'next_steps'])
+    function handler(e) {
+      const { field } = e.detail
+      if (INLINE_FIELDS.has(field) && startEditRef.current) startEditRef.current(field)
+    }
+    window.addEventListener('openEditSection', handler)
+    return () => window.removeEventListener('openEditSection', handler)
+  }, [])
+
   useEffect(() => {
     async function fetchIdea() {
       const { data } = await supabase
@@ -501,6 +513,7 @@ export default function IdeaDetail({ session }) {
     const val = field === 'business_model' ? parseBMValue(raw) : raw
     setInlineEdit(v => ({ ...v, [field]: val }))
   }
+  startEditRef.current = startEdit
   function cancelEdit(field) {
     setInlineEdit(v => { const n = { ...v }; delete n[field]; return n })
   }
@@ -534,29 +547,6 @@ export default function IdeaDetail({ session }) {
     setPublishing(null)
   }
 
-  function handleScorecardClick(field) {
-    const scrollTo = (id) => setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 60)
-    const fieldMap = {
-      title: () => { scrollTo('section-title'); startEdit('title') },
-      problem: () => { scrollTo('section-problem'); startEdit('problem') },
-      solution: () => { scrollTo('section-solution'); startEdit('solution') },
-      how_it_works: () => { scrollTo('section-how_it_works'); startEdit('how_it_works') },
-      key_details: () => { scrollTo('section-key-details'); setEditing(true) },
-      business_model: () => { scrollTo('section-business_model'); startEdit('business_model') },
-      tagline: () => setEditing(true),
-      target_audience: () => setEditing(true),
-      market_size: () => setEditing(true),
-      competitive_advantage: () => setEditing(true),
-      risks: () => setEditing(true),
-      next_steps: () => setEditing(true),
-      pdf_published: () => scrollTo('section-pitch-docs'),
-      deck_published: () => scrollTo('section-pitch-docs'),
-    }
-    fieldMap[field]?.()
-  }
-
   if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f' }}>
       <div className="spinner" />
@@ -575,6 +565,14 @@ export default function IdeaDetail({ session }) {
 
   return (
     <>
+    <style>{`
+      .section-highlight { animation: highlightPulse 3s ease-out forwards; }
+      @keyframes highlightPulse {
+        0%   { box-shadow: 0 0 0 3px #7b9ff7; border-radius: 14px; }
+        50%  { box-shadow: 0 0 0 6px rgba(123,159,247,0.4); border-radius: 14px; }
+        100% { box-shadow: 0 0 0 0px rgba(123,159,247,0); border-radius: 14px; }
+      }
+    `}</style>
     <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
       {/* Gradient accent bar */}
       <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
@@ -637,11 +635,64 @@ export default function IdeaDetail({ session }) {
               </div>
             )}
           </div>
-          {idea.target_audience && (
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', marginBottom: '0.5rem' }}>
-              Built for {idea.target_audience}
-            </p>
+          {/* Tagline */}
+          {(idea.tagline || isOwner) && (
+            <div id="section-tagline" style={{ marginBottom: '0.5rem' }}>
+              {inlineEdit.tagline !== undefined ? (
+                <>
+                  <input
+                    value={inlineEdit.tagline}
+                    onChange={e => setInlineEdit(v => ({ ...v, tagline: e.target.value }))}
+                    placeholder="A short, memorable tagline…"
+                    autoFocus
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 8, padding: '8px 12px', fontSize: 15, color: '#fff', outline: 'none', boxSizing: 'border-box', fontFamily: "'Outfit', sans-serif", fontStyle: 'italic' }}
+                  />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button onClick={() => saveInlineField('tagline')} disabled={inlineSaving === 'tagline'} style={inlineSaveBtnStyle}>{inlineSaving === 'tagline' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('tagline')} style={inlineCancelBtnDarkStyle}>Cancel</button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {idea.tagline
+                    ? <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)', fontStyle: 'italic' }}>{idea.tagline}</p>
+                    : <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Add a tagline…</p>
+                  }
+                  {isOwner && <button onClick={() => startEdit('tagline')} style={pencilBtnDarkStyle} title="Edit tagline">✏️</button>}
+                </div>
+              )}
+            </div>
           )}
+
+          {/* Target Audience */}
+          {(idea.target_audience || isOwner) && (
+            <div id="section-target_audience" style={{ marginBottom: '0.5rem' }}>
+              {inlineEdit.target_audience !== undefined ? (
+                <>
+                  <input
+                    value={inlineEdit.target_audience}
+                    onChange={e => setInlineEdit(v => ({ ...v, target_audience: e.target.value }))}
+                    placeholder="Who is this built for?"
+                    autoFocus
+                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 8, padding: '6px 12px', fontSize: 14, color: '#fff', outline: 'none', fontFamily: "'Outfit', sans-serif" }}
+                  />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button onClick={() => saveInlineField('target_audience')} disabled={inlineSaving === 'target_audience'} style={inlineSaveBtnStyle}>{inlineSaving === 'target_audience' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('target_audience')} style={inlineCancelBtnDarkStyle}>Cancel</button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {idea.target_audience
+                    ? <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)' }}>Built for {idea.target_audience}</p>
+                    : <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Add target audience…</p>
+                  }
+                  {isOwner && <button onClick={() => startEdit('target_audience')} style={pencilBtnDarkStyle} title="Edit target audience">✏️</button>}
+                </div>
+              )}
+            </div>
+          )}
+
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.22)', marginBottom: '1.75rem' }}>Submitted {date}</p>
 
           {/* Build action buttons */}
@@ -666,7 +717,7 @@ export default function IdeaDetail({ session }) {
             >
               📊 Build Pitch Deck
             </button>
-            {isOwner && <Scorecard idea={idea} onClickMissing={handleScorecardClick} />}
+            {isOwner && <Scorecard idea={idea} />}
           </div>
         </div>
       </div>
@@ -732,19 +783,25 @@ export default function IdeaDetail({ session }) {
         </div>
 
         {/* Card 2: Key Details */}
-        {(idea.market_size || idea.terms || (idea.category || []).length > 0 || idea.asking_price) && (
-          <div id="section-key-details" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+        {(idea.market_size || idea.terms || (idea.category || []).length > 0 || idea.asking_price || isOwner) && (
+          <div id="section-key_details" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Key Details</p>
               {isOwner && <button onClick={() => setEditing(true)} style={pencilBtnLightStyle} title="Edit key details">✏️</button>}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {idea.market_size && (
-                <div style={{ background: '#f5f5f3', borderRadius: 8, padding: '8px 14px' }}>
-                  <span style={{ fontSize: 11, color: '#888780' }}>Market · </span>
-                  <span style={{ fontSize: 13, color: '#2c2c2a', fontWeight: 500 }}>{idea.market_size}</span>
-                </div>
-              )}
+              <div id="section-market_size">
+                {idea.market_size ? (
+                  <div style={{ background: '#f5f5f3', borderRadius: 8, padding: '8px 14px' }}>
+                    <span style={{ fontSize: 11, color: '#888780' }}>Market · </span>
+                    <span style={{ fontSize: 13, color: '#2c2c2a', fontWeight: 500 }}>{idea.market_size}</span>
+                  </div>
+                ) : isOwner ? (
+                  <div style={{ background: '#f5f5f3', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', opacity: 0.5 }} onClick={() => setEditing(true)}>
+                    <span style={{ fontSize: 13, color: '#888780', fontStyle: 'italic' }}>+ Market size</span>
+                  </div>
+                ) : null}
+              </div>
               {dedupeArray(idea.category || []).map(c => (
                 <div key={c} style={{ background: '#EBF0F7', borderRadius: 8, padding: '8px 14px', fontSize: 13, color: '#3B5273', fontWeight: 500 }}>{c}</div>
               ))}
@@ -823,7 +880,79 @@ export default function IdeaDetail({ session }) {
           </div>
         )}
 
-        {/* Card 5: AI Executive Summary (collapsed) */}
+        {/* Card 5: Competitive Advantage */}
+        {(idea.competitive_advantage || isOwner) && (
+          <div id="section-competitive_advantage" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Competitive Advantage</p>
+              {isOwner && inlineEdit.competitive_advantage === undefined && <button onClick={() => startEdit('competitive_advantage')} style={pencilBtnLightStyle} title="Edit competitive advantage">✏️</button>}
+            </div>
+            {inlineEdit.competitive_advantage !== undefined ? (
+              <>
+                <textarea value={inlineEdit.competitive_advantage} onChange={e => setInlineEdit(v => ({ ...v, competitive_advantage: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What makes this uniquely positioned to win?" autoFocus />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveInlineField('competitive_advantage')} disabled={inlineSaving === 'competitive_advantage'} style={inlineSaveBtnStyle}>{inlineSaving === 'competitive_advantage' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('competitive_advantage')} style={inlineCancelBtnStyle}>Cancel</button>
+                </div>
+              </>
+            ) : idea.competitive_advantage ? (
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.competitive_advantage}</p>
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe your competitive advantage</p>
+            )}
+            {savedField === 'competitive_advantage' && inlineEdit.competitive_advantage === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+          </div>
+        )}
+
+        {/* Card 6: Risks & Challenges */}
+        {(idea.risks || isOwner) && (
+          <div id="section-risks" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Risks & Challenges</p>
+              {isOwner && inlineEdit.risks === undefined && <button onClick={() => startEdit('risks')} style={pencilBtnLightStyle} title="Edit risks">✏️</button>}
+            </div>
+            {inlineEdit.risks !== undefined ? (
+              <>
+                <textarea value={inlineEdit.risks} onChange={e => setInlineEdit(v => ({ ...v, risks: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What obstacles or risks could affect this idea?" autoFocus />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveInlineField('risks')} disabled={inlineSaving === 'risks'} style={inlineSaveBtnStyle}>{inlineSaving === 'risks' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('risks')} style={inlineCancelBtnStyle}>Cancel</button>
+                </div>
+              </>
+            ) : idea.risks ? (
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.risks}</p>
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to list your risks & challenges</p>
+            )}
+            {savedField === 'risks' && inlineEdit.risks === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+          </div>
+        )}
+
+        {/* Card 7: Next Steps */}
+        {(idea.next_steps || isOwner) && (
+          <div id="section-next_steps" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Next Steps</p>
+              {isOwner && inlineEdit.next_steps === undefined && <button onClick={() => startEdit('next_steps')} style={pencilBtnLightStyle} title="Edit next steps">✏️</button>}
+            </div>
+            {inlineEdit.next_steps !== undefined ? (
+              <>
+                <textarea value={inlineEdit.next_steps} onChange={e => setInlineEdit(v => ({ ...v, next_steps: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What are the next steps to bring this idea to life?" autoFocus />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveInlineField('next_steps')} disabled={inlineSaving === 'next_steps'} style={inlineSaveBtnStyle}>{inlineSaving === 'next_steps' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('next_steps')} style={inlineCancelBtnStyle}>Cancel</button>
+                </div>
+              </>
+            ) : idea.next_steps ? (
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.next_steps}</p>
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to outline your next steps</p>
+            )}
+            {savedField === 'next_steps' && inlineEdit.next_steps === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+          </div>
+        )}
+
+        {/* Card 8: AI Executive Summary (collapsed) */}
         {idea.ai_profile && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, marginBottom: '1.25rem', overflow: 'hidden' }}>
             <button
