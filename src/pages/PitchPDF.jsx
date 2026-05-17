@@ -396,8 +396,9 @@ export default function PitchPDF({ session }) {
   const [previewHTML, setPreviewHTML] = useState('')
   const [publishing,  setPublishing]  = useState(false)
   const [publishSuccess, setPublishSuccess] = useState(false)
-  const [downloading, setDownloading] = useState(false)
-  const [generating,  setGenerating]  = useState(false)
+  const [downloading,      setDownloading]      = useState(false)
+  const [generating,       setGenerating]       = useState(false)
+  const [savingProgress,   setSavingProgress]   = useState(false)
   const previewRef = useRef(null)
 
   // Chip input state
@@ -564,6 +565,34 @@ export default function PitchPDF({ session }) {
       console.error('AI suggest error:', e)
     }
     setSuggesting(null)
+  }
+
+  async function saveProgress() {
+    setSavingProgress(true)
+    const updates = {
+      tagline:               form.tagline,
+      problem:               form.problem,
+      solution:              form.solution,
+      market_size:           form.market_size,
+      competitive_advantage: form.competitive_advantage,
+      how_it_works:          howItWorksChips.length
+        ? howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n')
+        : form.how_it_works,
+      target_audience:       targetMarketChips.length
+        ? targetMarketChips.join(', ')
+        : form.target_audience,
+      business_model:        (freeTierChips.length || paidTierChips.length)
+        ? [...freeTierChips.map(f => `Free: ${f}`), ...paidTierChips.map(f => `Paid: ${f}`)].join('\n')
+        : form.business_model,
+      risks:                 risksChips.length
+        ? risksChips.join('\n')
+        : form.risks,
+      next_steps:            nextStepsChips.length
+        ? nextStepsChips.join('\n')
+        : form.next_steps,
+    }
+    await supabase.from('ideas').update(updates).eq('id', ideaId)
+    setSavingProgress(false)
   }
 
   async function handleGenerate() {
@@ -864,19 +893,35 @@ export default function PitchPDF({ session }) {
             />
           </div>
 
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            style={{
-              width: '100%', background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
-              color: '#fff', border: 'none', borderRadius: 12, padding: '16px',
-              fontSize: 16, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer',
-              marginTop: '0.5rem', letterSpacing: '0.2px',
-              opacity: generating ? 0.75 : 1, transition: 'opacity 0.15s',
-            }}
-          >
-            {generating ? '…Building Preview' : '✨ Generate Preview'}
-          </button>
+          <div style={{ display: 'flex', gap: 10, marginTop: '0.5rem' }}>
+            <button
+              onClick={saveProgress}
+              disabled={savingProgress}
+              style={{
+                flex: '0 0 auto', background: 'none',
+                border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 12, padding: '16px 22px',
+                fontSize: 14, fontWeight: 500, color: '#888780',
+                cursor: savingProgress ? 'not-allowed' : 'pointer',
+                opacity: savingProgress ? 0.6 : 1, transition: 'opacity 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {savingProgress ? 'Saving…' : '💾 Save Progress'}
+            </button>
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              style={{
+                flex: 1, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
+                color: '#fff', border: 'none', borderRadius: 12, padding: '16px',
+                fontSize: 16, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer',
+                letterSpacing: '0.2px',
+                opacity: generating ? 0.75 : 1, transition: 'opacity 0.15s',
+              }}
+            >
+              {generating ? '…Building Preview' : '✨ Generate Preview'}
+            </button>
+          </div>
         </div>
       )}
 
