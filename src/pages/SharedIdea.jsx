@@ -355,7 +355,7 @@ export default function SharedIdea() {
 
       {/* Dark header */}
       <div style={{ background: '#0e0e1f', paddingBottom: '2.5rem', overflowX: 'hidden', boxSizing: 'border-box', width: '100%', position: 'relative' }}>
-        <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.25rem 0' }}>
+        <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.25rem 0', width: '100%', boxSizing: 'border-box' }}>
 
           {/* Nav row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: 8 }}>
