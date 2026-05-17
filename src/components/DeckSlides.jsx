@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { parseBMValue, extractBMChips } from './BusinessModelSection'
 
-export const SLIDE_W = 960
-export const SLIDE_H = 540
+export const SLIDE_W = 1920
+export const SLIDE_H = 1080
 const NAVY = '#0e0e1f'
 const GRAD = 'linear-gradient(90deg, #7b9ff7, #9b7ff7)'
 
