@@ -285,14 +285,23 @@ function AccentBars() {
 
 function SlideFooter({ slideNum, dark }) {
   const muted = dark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'
-  const logoText = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)'
+  const textFill = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)'
+  const gradId = dark ? 'aiGradFtW' : 'aiGradFtD'
   return (
     <div style={{ position: 'absolute', bottom: 8, left: 28, right: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1 }}>
-      <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 300, fontSize: 11 }}>
-        <span style={{ color: logoText }}>Eurek</span>
-        <span style={{ background: GRAD, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>AI</span>
-        <span style={{ color: logoText }}>dea</span>
-      </span>
+      <svg xmlns="http://www.w3.org/2000/svg" height="14" width="91" viewBox="0 0 260 40" style={{ display: 'block' }}>
+        <defs>
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#7b9ff7" />
+            <stop offset="100%" stopColor="#9b7ff7" />
+          </linearGradient>
+        </defs>
+        <text fontFamily="Outfit, Helvetica, Arial, sans-serif" fontWeight="300" fontSize="32" y="32">
+          <tspan fill={textFill}>Eurek</tspan>
+          <tspan fill={`url(#${gradId})`}>AI</tspan>
+          <tspan fill={textFill}>dea</tspan>
+        </text>
+      </svg>
       <span style={{ fontSize: 9, color: muted, letterSpacing: 0.3 }}>Confidential · {slideNum} / 8</span>
     </div>
   )
@@ -313,10 +322,20 @@ function CoverSlide({ slide, slideNum, onUpdate }) {
       <div style={{ position: 'absolute', bottom: 60, left: -60, width: 220, height: 220, borderRadius: '50%', border: '1px solid rgba(123,159,247,0.1)' }} />
       <div style={{ position: 'absolute', bottom: 20, left: -20, width: 140, height: 140, borderRadius: '50%', border: '1px solid rgba(123,159,247,0.06)' }} />
 
-      <div style={{ position: 'absolute', top: 18, left: 28, fontFamily: "'Outfit', sans-serif", fontWeight: 300, fontSize: 15 }}>
-        <span style={{ color: 'rgba(255,255,255,0.85)' }}>Eurek</span>
-        <span style={{ background: GRAD, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>AI</span>
-        <span style={{ color: 'rgba(255,255,255,0.85)' }}>dea</span>
+      <div style={{ position: 'absolute', top: 18, left: 28 }}>
+        <svg xmlns="http://www.w3.org/2000/svg" height="19" width="124" viewBox="0 0 260 40" style={{ display: 'block' }}>
+          <defs>
+            <linearGradient id="aiGradCover" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#7b9ff7" />
+              <stop offset="100%" stopColor="#9b7ff7" />
+            </linearGradient>
+          </defs>
+          <text fontFamily="Outfit, Helvetica, Arial, sans-serif" fontWeight="300" fontSize="32" y="32">
+            <tspan fill="rgba(255,255,255,0.85)">Eurek</tspan>
+            <tspan fill="url(#aiGradCover)">AI</tspan>
+            <tspan fill="rgba(255,255,255,0.85)">dea</tspan>
+          </text>
+        </svg>
       </div>
       <div style={{ position: 'absolute', top: 16, right: 28, fontSize: 9, letterSpacing: 1.5, color: 'rgba(255,255,255,0.22)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 3, padding: '3px 8px' }}>
         CONFIDENTIAL
@@ -670,7 +689,7 @@ function RoadmapSlide({ slide, slideNum, onUpdate }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, flex: 1 }}>
           {(slide.steps || []).map((step, i) => (
             <div key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.09)', borderRadius: 12, padding: '18px 20px' }}>
-              <div style={{ fontSize: 26, fontWeight: 700, background: GRAD, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', marginBottom: 8, fontFamily: "'DM Serif Display', serif" }}>
+              <div style={{ fontSize: 26, fontWeight: 700, color: '#7b9ff7', marginBottom: 8, fontFamily: "'DM Serif Display', serif" }}>
                 {step.num}
               </div>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 6 }}>

@@ -199,20 +199,6 @@ export default function DeckBuilder({ session }) {
       // Wait for paint
       await new Promise(r => setTimeout(r, 500))
 
-      // Replace CSS gradient logo spans with SVG — html2canvas can't render background-clip:text
-      Array.from(container.querySelectorAll('span'))
-        .filter(s => s.style.webkitTextFillColor === 'transparent')
-        .forEach(aiSpan => {
-          const parent = aiSpan.parentElement
-          if (!parent) return
-          const fontSize = parseFloat(getComputedStyle(parent).fontSize) || 12
-          const svgH = Math.round(fontSize * 1.4)
-          const svgW = Math.round(svgH * (280 / 48))
-          const uid = `aiG${Math.random().toString(36).slice(2, 8)}`
-          const textFill = aiSpan.previousElementSibling?.style?.color || 'rgba(255,255,255,0.85)'
-          parent.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="${svgH}" width="${svgW}" viewBox="0 0 280 48" style="display:block"><defs><linearGradient id="${uid}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#7b9ff7"/><stop offset="100%" stop-color="#9b7ff7"/></linearGradient></defs><text font-family="Outfit, Helvetica, Arial, sans-serif" font-weight="300" font-size="36" y="36"><tspan fill="${textFill}">Eurek</tspan><tspan fill="url(#${uid})">AI</tspan><tspan fill="${textFill}">dea</tspan></text></svg>`
-        })
-
       const elements = container.querySelectorAll('.deck-slide-render')
       console.log('[DeckPDF] slide elements found:', elements.length)
 
