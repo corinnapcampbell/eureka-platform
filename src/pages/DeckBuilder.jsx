@@ -126,7 +126,15 @@ export default function DeckBuilder({ session }) {
     if (!deckId || !slides) return
     setSavingProgress(true)
     clearTimeout(saveTimer.current)
+    const bizSlide = slides.find(s => s.type === 'business')
+    const deckFreeTierChips = bizSlide?.freeTierChips || []
+    const deckPaidTierChips = bizSlide?.paidTierChips || []
+    const businessModel = [
+      ...deckFreeTierChips.map(f => `Free: ${f}`),
+      ...deckPaidTierChips.map(p => `Paid: ${p}`),
+    ].join('\n')
     await supabase.from('pitch_decks').update({ slides }).eq('id', deckId)
+    if (businessModel) await supabase.from('ideas').update({ business_model: businessModel }).eq('id', ideaId)
     setSavingProgress(false)
   }
 
@@ -217,8 +225,10 @@ export default function DeckBuilder({ session }) {
             const descLines = doc.splitTextToSize(slide.description || '', W - ml * 2)
             doc.text(descLines, ml, y)
           } else if (slide.type === 'business') {
-            doc.text(`Free: ${slide.freeTier || ''}`, ml, y); y += 12
-            doc.text(`Paid: ${slide.paidTier || ''}`, ml, y); y += 12
+            const fChips = slide.freeTierChips || (slide.freeTier ? [slide.freeTier] : [])
+            const pChips = slide.paidTierChips || (slide.paidTier ? [slide.paidTier] : [])
+            doc.text(`Free: ${fChips.join(', ')}`, ml, y); y += 12
+            doc.text(`Paid: ${pChips.join(', ')}`, ml, y); y += 12
             doc.setFontSize(8); doc.text(slide.note || '', ml, y)
           } else if (slide.type === 'advantage') {
             ;(slide.weHave || []).forEach(w => { doc.text(`✓ ${w}`, ml, y); y += 6 }); y += 4
