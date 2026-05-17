@@ -602,8 +602,8 @@ export default function PitchPDF({ session }) {
       ...form,
       how_it_works:  howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n'),
       target_audience: targetMarketChips.join(', '),
-      risks:         risksChips.map(r => `• ${r}`).join('\n'),
-      next_steps:    nextStepsChips.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+      risks:         risksChips.join('\n'),
+      next_steps:    nextStepsChips.join('\n'),
     }
     let bmSplit = (freeTierChips.length || paidTierChips.length)
       ? { free: freeTierChips, paid: paidTierChips }
