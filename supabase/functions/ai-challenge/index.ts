@@ -45,12 +45,14 @@ serve(async (req) => {
     }
 
     const data = await response.json()
-    const text = data.content?.[0]?.text
+    let text = data.content?.[0]?.text
     if (!text) {
       return new Response(JSON.stringify({ error: 'Empty response from Anthropic' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+    // Strip markdown code fences if present
+    text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
 
     return new Response(text, {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
