@@ -173,7 +173,6 @@ export function buildSnapshotHTML(form, idea) {
     ${q} .abar{height:4px;background:linear-gradient(90deg,#7b9ff7,#9b7ff7);flex-shrink:0}
     ${q} .cover{background:#0e0e1f;flex:1;padding:28px 22px 22px;display:flex;flex-direction:column;justify-content:space-between}
     ${q} .logo{font-family:'Outfit',sans-serif;font-size:14px;font-weight:300;color:#fff}
-    ${q} .logo b{background:linear-gradient(90deg,#7b9ff7,#9b7ff7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700}
     ${q} .cbadge{background:rgba(123,159,247,0.15);border:1px solid rgba(123,159,247,0.3);border-radius:20px;padding:3px 10px;font-size:8px;color:#7b9ff7;letter-spacing:2px;text-transform:uppercase}
     ${q} .cnav{display:flex;justify-content:space-between;align-items:center}
     ${q} .ccats{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
@@ -189,7 +188,6 @@ export function buildSnapshotHTML(form, idea) {
     ${q} .cpage{background:#fff;flex:1;display:flex;flex-direction:column}
     ${q} .phead{padding:11px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;flex-shrink:0}
     ${q} .logod{font-family:'Outfit',sans-serif;font-size:12px;font-weight:300;color:#0e0e1f}
-    ${q} .logod b{background:linear-gradient(90deg,#7b9ff7,#9b7ff7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700}
     ${q} .pnum{font-size:9px;color:#ccc}
     ${q} .pbody{padding:14px 18px;display:flex;flex-direction:column;gap:13px;flex:1;overflow:hidden}
     ${q} .shead{display:flex;align-items:center;gap:9px;flex-shrink:0}
@@ -234,10 +232,10 @@ export function buildSnapshotHTML(form, idea) {
     ${q} .bm-model-title{font-family:'Outfit',sans-serif;font-weight:400;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#7b9ff7;margin:14px 0 8px 0;padding-bottom:5px;border-bottom:1px solid rgba(123,159,247,0.2)}
     ${q} .bm-model-title:first-child{margin-top:0}
   `
-  const ph = (n) => `<div class="phead"><div class="logod">Eurek<b>AI</b>dea</div><div class="pnum">Page ${n}</div></div>`
+  const ph = (n) => `<div class="phead"><div class="logod"><svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 0 260 40" style="display:block"><defs><linearGradient id="aiGradLogo" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#7b9ff7"/><stop offset="100%" stop-color="#9b7ff7"/></linearGradient></defs><text font-family="Outfit, Helvetica, Arial, sans-serif" font-weight="300" font-size="32" y="32"><tspan fill="#0e0e1f">Eurek</tspan><tspan fill="url(#aiGradLogo)">AI</tspan><tspan fill="#0e0e1f">dea</tspan></text></svg></div><div class="pnum">Page ${n}</div></div>`
   const pf = `<div class="pfooter"><div class="pf">CONFIDENTIAL</div><div class="pf">myeurekaidea.com</div></div>`
 
-  const cover = `<div class="page"><div class="abar"></div><div class="cover"><div><div class="cnav"><div class="logo">Eurek<b>AI</b>dea</div><div class="cbadge">CONFIDENTIAL</div></div><div class="ccats">${cats.map(c=>`<div class="cat">${escH(c)}</div>`).join('')}</div></div><div class="cmid"><div class="ctitle">${escH(idea.title)}</div><div class="ctagline">${escH(form.tagline)}</div><div class="cdiv"></div><div class="cmeta"><div><div class="mlabel">DATE</div><div class="mval">${escH(dateStr)}</div></div><div><div class="mlabel">MARKET SIZE</div><div class="mval">${escH(marketBoxes[0].v)}</div></div><div><div class="mlabel">LOOKING FOR</div><div class="mval">${escH(idea.looking_for||'Investors')}</div></div><div><div class="mlabel">STATUS</div><div class="mval">Confidential</div></div></div></div>${idea.blockchain_hash?`<div class="chash">${escH(idea.blockchain_hash)}</div>`:''}</div></div>`
+  const cover = `<div class="page"><div class="abar"></div><div class="cover"><div><div class="cnav"><div class="logo"><svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 0 260 40" style="display:block"><defs><linearGradient id="aiGradLogo" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#7b9ff7"/><stop offset="100%" stop-color="#9b7ff7"/></linearGradient></defs><text font-family="Outfit, Helvetica, Arial, sans-serif" font-weight="300" font-size="32" y="32"><tspan fill="#ffffff">Eurek</tspan><tspan fill="url(#aiGradLogo)">AI</tspan><tspan fill="#ffffff">dea</tspan></text></svg></div><div class="cbadge">CONFIDENTIAL</div></div><div class="ccats">${cats.map(c=>`<div class="cat">${escH(c)}</div>`).join('')}</div></div><div class="cmid"><div class="ctitle">${escH(idea.title)}</div><div class="ctagline">${escH(form.tagline)}</div><div class="cdiv"></div><div class="cmeta"><div><div class="mlabel">DATE</div><div class="mval">${escH(dateStr)}</div></div><div><div class="mlabel">MARKET SIZE</div><div class="mval">${escH(marketBoxes[0].v)}</div></div><div><div class="mlabel">LOOKING FOR</div><div class="mval">${escH(idea.looking_for||'Investors')}</div></div><div><div class="mlabel">STATUS</div><div class="mval">Confidential</div></div></div></div>${idea.blockchain_hash?`<div class="chash">${escH(idea.blockchain_hash)}</div>`:''}</div></div>`
 
   const stepsHTML = steps.length===1
     ? `<div class="stext">${escH(steps[0])}</div>`
@@ -298,7 +296,7 @@ export function buildSnapshotHTML(form, idea) {
   }
   if (cur.length) buckets.push(cur)
 
-  const darkFooter = `<div class="dfooter"><div class="logo">Eurek<b>AI</b>dea</div><div class="dfbadge">myeurekaidea.com</div></div>`
+  const darkFooter = `<div class="dfooter"><div class="logo"><svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 0 260 40" style="display:block"><defs><linearGradient id="aiGradLogo" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#7b9ff7"/><stop offset="100%" stop-color="#9b7ff7"/></linearGradient></defs><text font-family="Outfit, Helvetica, Arial, sans-serif" font-weight="300" font-size="32" y="32"><tspan fill="#ffffff">Eurek</tspan><tspan fill="url(#aiGradLogo)">AI</tspan><tspan fill="#ffffff">dea</tspan></text></svg></div><div class="dfbadge">myeurekaidea.com</div></div>`
   const contentPages = buckets.map((htmls, i) => {
     const foot = i===buckets.length-1 ? darkFooter : pf
     return `<div class="page"><div class="abar"></div><div class="cpage">${ph(i+2)}<div class="pbody">${htmls.join('<div class="divider"></div>')}</div>${foot}</div><div class="abar"></div></div>`
