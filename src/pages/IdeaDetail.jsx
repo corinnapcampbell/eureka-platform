@@ -534,6 +534,29 @@ export default function IdeaDetail({ session }) {
     setPublishing(null)
   }
 
+  function handleScorecardClick(field) {
+    const scrollTo = (id) => setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 60)
+    const fieldMap = {
+      title: () => { scrollTo('section-title'); startEdit('title') },
+      problem: () => { scrollTo('section-problem'); startEdit('problem') },
+      solution: () => { scrollTo('section-solution'); startEdit('solution') },
+      how_it_works: () => { scrollTo('section-how_it_works'); startEdit('how_it_works') },
+      key_details: () => { scrollTo('section-key-details'); setEditing(true) },
+      business_model: () => { scrollTo('section-business_model'); startEdit('business_model') },
+      tagline: () => setEditing(true),
+      target_audience: () => setEditing(true),
+      market_size: () => setEditing(true),
+      competitive_advantage: () => setEditing(true),
+      risks: () => setEditing(true),
+      next_steps: () => setEditing(true),
+      pdf_published: () => scrollTo('section-pitch-docs'),
+      deck_published: () => scrollTo('section-pitch-docs'),
+    }
+    fieldMap[field]?.()
+  }
+
   if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f' }}>
       <div className="spinner" />
@@ -590,7 +613,7 @@ export default function IdeaDetail({ session }) {
           </div>
 
           {/* Title */}
-          <div style={{ marginBottom: '0.5rem' }}>
+          <div id="section-title" style={{ marginBottom: '0.5rem' }}>
             {inlineEdit.title !== undefined ? (
               <>
                 <input
@@ -622,7 +645,7 @@ export default function IdeaDetail({ session }) {
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.22)', marginBottom: '1.75rem' }}>Submitted {date}</p>
 
           {/* Build action buttons */}
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               onClick={() => navigate(`/pitch/${id}`)}
               style={{
@@ -643,6 +666,7 @@ export default function IdeaDetail({ session }) {
             >
               📊 Build Pitch Deck
             </button>
+            {isOwner && <Scorecard idea={idea} onClickMissing={handleScorecardClick} />}
           </div>
         </div>
       </div>
@@ -650,12 +674,10 @@ export default function IdeaDetail({ session }) {
       {/* White content area */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
 
-        {isOwner && <Scorecard idea={idea} />}
-
         {/* Card 1: Problem & Solution */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
           {(idea.problem || isOwner) && (
-            <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
+            <div id="section-problem" style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 16 }}>⚡</span>
@@ -681,7 +703,7 @@ export default function IdeaDetail({ session }) {
           )}
 
           {(idea.solution || isOwner) && (
-            <div style={{ background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', borderRadius: 15, padding: 1.5 }}>
+            <div id="section-solution" style={{ background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', borderRadius: 15, padding: 1.5 }}>
               <div style={{ background: '#fff', borderRadius: 13, padding: '1.5rem', height: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -711,7 +733,7 @@ export default function IdeaDetail({ session }) {
 
         {/* Card 2: Key Details */}
         {(idea.market_size || idea.terms || (idea.category || []).length > 0 || idea.asking_price) && (
-          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <div id="section-key-details" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Key Details</p>
               {isOwner && <button onClick={() => setEditing(true)} style={pencilBtnLightStyle} title="Edit key details">✏️</button>}
@@ -738,7 +760,7 @@ export default function IdeaDetail({ session }) {
 
         {/* Card 3: How It Works (conditional) */}
         {(idea.how_it_works || isOwner) && (
-          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <div id="section-how_it_works" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>How It Works</p>
               {isOwner && inlineEdit.how_it_works === undefined && <button onClick={() => startEdit('how_it_works')} style={pencilBtnLightStyle} title="Edit how it works">✏️</button>}
@@ -774,7 +796,7 @@ export default function IdeaDetail({ session }) {
 
         {/* Card 4: Business Model (conditional) */}
         {(idea.business_model || isOwner) && (
-          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <div id="section-business_model" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Business Model</p>
               {isOwner && inlineEdit.business_model === undefined && <button onClick={() => startEdit('business_model')} style={pencilBtnLightStyle} title="Edit business model">✏️</button>}
@@ -825,7 +847,7 @@ export default function IdeaDetail({ session }) {
         )}
 
         {/* Pitch Documents — publish controls */}
-        <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <div id="section-pitch-docs" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.25rem' }}>
             <span style={{ fontSize: 16 }}>📄</span>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Pitch Documents</p>

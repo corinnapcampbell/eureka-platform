@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
-const RADIUS = 52
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+const R = 31
+const CIRCUMFERENCE = 2 * Math.PI * R
 
 function isBMFilled(raw) {
   if (!raw) return false
@@ -44,8 +44,10 @@ function ringColor(pct) {
   return '#ef4444'
 }
 
-export default function Scorecard({ idea }) {
+export default function Scorecard({ idea, onClickMissing }) {
   const [animated, setAnimated] = useState(false)
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef(null)
   const timerRef = useRef(null)
 
   useEffect(() => {
@@ -53,20 +55,25 @@ export default function Scorecard({ idea }) {
     return () => clearTimeout(timerRef.current)
   }, [])
 
+  useEffect(() => {
+    if (!open) return
+    function handler(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
   let earned = 0
   const missing = []
 
   for (const c of CRITERIA) {
     let done = false
-    if (c.check) {
-      done = c.check(idea)
-    } else if (c.custom) {
-      done = c.custom(idea[c.key])
-    } else {
-      done = hasValue(idea[c.key])
-    }
+    if (c.check)       done = c.check(idea)
+    else if (c.custom) done = c.custom(idea[c.key])
+    else               done = hasValue(idea[c.key])
     if (done) earned += c.pts
-    else missing.push(c.label)
+    else missing.push({ label: c.label, field: c.key })
   }
 
   const pct = Math.round((earned / TOTAL_PTS) * 100)
@@ -74,34 +81,30 @@ export default function Scorecard({ idea }) {
   const offset = animated ? CIRCUMFERENCE * (1 - pct / 100) : CIRCUMFERENCE
 
   return (
-    <div style={{
-      background: '#0e0e1f',
-      border: '1px solid #1a1a3a',
-      borderRadius: 16,
-      padding: '1.25rem 1.5rem',
-      marginBottom: '1.25rem',
-      fontFamily: "'Outfit', sans-serif",
-      fontWeight: 300,
-    }}>
-      <p style={{
-        fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-        letterSpacing: '1px', color: 'rgba(255,255,255,0.3)', marginBottom: '1.1rem',
-      }}>
-        Idea Completeness
-      </p>
+    <div ref={wrapRef} style={{ position: 'relative', flexShrink: 0 }}>
 
-      <div style={{ display: 'flex', gap: '1.75rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-
-        {/* Progress ring */}
-        <div style={{ flexShrink: 0, position: 'relative', width: 120, height: 120 }}>
-          <svg width="120" height="120" style={{ transform: 'rotate(-90deg)', display: 'block' }}>
-            <circle cx="60" cy="60" r={RADIUS} fill="none" stroke="#1a1a2e" strokeWidth="10" />
+      {/* Compact ring trigger */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-label={`Idea completeness: ${pct}%. Click to see missing items.`}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+        }}
+      >
+        <span style={{
+          fontSize: 9, color: 'rgba(255,255,255,0.35)',
+          letterSpacing: '0.08em', textTransform: 'uppercase',
+          fontFamily: "'Outfit', sans-serif", fontWeight: 400, whiteSpace: 'nowrap',
+        }}>
+          Idea Completeness
+        </span>
+        <div style={{ position: 'relative', width: 72, height: 72 }}>
+          <svg width="72" height="72" style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+            <circle cx="36" cy="36" r={R} fill="none" stroke="#1a1a2e" strokeWidth="7" />
             <circle
-              cx="60" cy="60" r={RADIUS}
-              fill="none"
-              stroke={color}
-              strokeWidth="10"
-              strokeLinecap="round"
+              cx="36" cy="36" r={R}
+              fill="none" stroke={color} strokeWidth="7" strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={offset}
               style={{ transition: 'stroke-dashoffset 1s ease, stroke 0.5s ease' }}
@@ -111,43 +114,65 @@ export default function Scorecard({ idea }) {
             position: 'absolute', inset: 0,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           }}>
-            <span style={{ fontSize: 26, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{pct}%</span>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', marginTop: 4 }}>Complete</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1, fontFamily: "'Outfit', sans-serif" }}>
+              {pct}%
+            </span>
+            <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', fontFamily: "'Outfit', sans-serif", marginTop: 2 }}>
+              done
+            </span>
           </div>
         </div>
+      </button>
 
-        {/* Checklist */}
-        <div style={{ flex: 1, minWidth: 160 }}>
+      {/* Dropdown checklist */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+          background: '#0e0e1f', border: '1px solid #1a1a3a', borderRadius: 12,
+          padding: '1rem 1.25rem', minWidth: 240, zIndex: 200,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.55)',
+          fontFamily: "'Outfit', sans-serif",
+        }}>
           {pct === 100 ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 6 }}>
-              <span style={{ fontSize: 20 }}>✅</span>
-              <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 500 }}>
-                Your idea page is complete!
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>✅</span>
+              <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 500 }}>Your idea page is complete!</span>
             </div>
           ) : (
             <>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', marginBottom: 9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Missing
+              <p style={{
+                fontSize: 9, color: 'rgba(255,255,255,0.22)',
+                textTransform: 'uppercase', letterSpacing: '0.8px',
+                marginBottom: 10, fontWeight: 500,
+              }}>
+                Missing {missing.length} item{missing.length !== 1 ? 's' : ''}
               </p>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {missing.map((label, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{
-                      width: 6, height: 6, borderRadius: '50%',
-                      background: '#ef4444', flexShrink: 0, display: 'inline-block',
-                    }} />
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>
-                      {label}
-                    </span>
+                {missing.map((item, i) => (
+                  <li key={i}>
+                    <button
+                      onClick={() => { setOpen(false); onClickMissing?.(item.field) }}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        width: '100%', textAlign: 'left',
+                      }}
+                    >
+                      <span style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: '#ef4444', flexShrink: 0, display: 'inline-block',
+                      }} />
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 300, lineHeight: 1.4 }}>
+                        {item.label}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
             </>
           )}
         </div>
-
-      </div>
+      )}
     </div>
   )
 }
