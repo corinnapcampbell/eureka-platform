@@ -225,7 +225,7 @@ export default function SharedIdea() {
 
   // ─── PHASE 1: TEASER / NDA ───────────────────────────────────────────────
   if (stage === 'nda') return (
-    <div style={{ minHeight: '100vh', background: '#0e0e1f', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: '#0e0e1f', position: 'relative', overflow: 'hidden', width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}>
       {authSession && (
         <a href="/dashboard" style={{ position: 'fixed', top: 14, right: 16, zIndex: 999, background: 'rgba(123,159,247,0.12)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
       )}
@@ -238,7 +238,7 @@ export default function SharedIdea() {
       <div style={{ position: 'absolute', bottom: -100, left: -100, width: 320, height: 320, borderRadius: '50%', border: '1px solid rgba(155,127,247,0.06)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -40, left: -40, width: 180, height: 180, borderRadius: '50%', border: '1px solid rgba(155,127,247,0.05)', pointerEvents: 'none' }} />
 
-      <div style={{ maxWidth: 540, margin: '0 auto', padding: '3.5rem 1.25rem 3rem', position: 'relative' }}>
+      <div style={{ maxWidth: 540, margin: '0 auto', padding: '3.5rem 1.25rem 3rem', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
@@ -249,7 +249,7 @@ export default function SharedIdea() {
 
         {/* Title */}
         <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(22px, 5vw, 48px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.75rem', letterSpacing: '-0.5px', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(20px, 4.5vw, 42px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.75rem', letterSpacing: '-0.5px', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
             {idea.title}
           </h1>
           {idea.target_audience && (
@@ -346,7 +346,7 @@ export default function SharedIdea() {
 
   return (
     <>
-    <div style={{ minHeight: '100vh', background: '#f5f5f3', width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f3', width: '100%', maxWidth: '100vw', overflowX: 'hidden', boxSizing: 'border-box', position: 'relative' }}>
       {authSession && (
         <a href="/dashboard" style={{ position: 'fixed', top: 14, right: 16, zIndex: 999, background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
       )}
@@ -354,7 +354,7 @@ export default function SharedIdea() {
       <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
 
       {/* Dark header */}
-      <div style={{ background: '#0e0e1f', paddingBottom: '2.5rem', overflowX: 'hidden', boxSizing: 'border-box' }}>
+      <div style={{ background: '#0e0e1f', paddingBottom: '2.5rem', overflowX: 'hidden', boxSizing: 'border-box', width: '100%', position: 'relative' }}>
         <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.25rem 0' }}>
 
           {/* Nav row */}
@@ -379,7 +379,7 @@ export default function SharedIdea() {
           </div>
 
           {/* Title */}
-          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(22px, 5vw, 48px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
+          <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(20px, 4.5vw, 42px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
             {idea.title}
           </h1>
           {idea.target_audience && (
@@ -392,7 +392,7 @@ export default function SharedIdea() {
       </div>
 
       {/* White content area */}
-      <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem', width: '100%', boxSizing: 'border-box' }}>
 
         {/* Card 1: Problem & Solution */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
