@@ -144,27 +144,27 @@ function buildSnapshotHTML(form, idea) {
   const sH = (icon, label) => `<div class="shead"><div class="sicon">${icon}</div><div class="slabel">${label}</div></div>`
 
   const sections = [
-    { h: 120 + Math.ceil((form.problem||'').length/100)*20,
+    { h: 80 + Math.ceil((form.problem||'').length/100)*15,
       html: `${sH('⚡','THE PROBLEM')}<div class="stext">${_esc(form.problem)}</div>` },
-    { h: 140 + Math.ceil((form.solution||'').length/100)*20,
+    { h: 100 + Math.ceil((form.solution||'').length/100)*15,
       html: `<div class="hlight"><div class="hlabel">💡 THE SOLUTION</div><div class="htext">${_esc(form.solution)}</div></div>` },
-    { h: 100 + steps.length*60,
+    { h: 80 + steps.length*50,
       html: `${sH('⚙️','HOW IT WORKS')}${stepsHTML}` },
-    { h: 120,
+    { h: 100,
       html: `${sH('📈','MARKET SIZE')}<div class="bmet">${marketBoxes.map(b=>`<div class="bm"><div class="bmv">${_esc(b.v)}</div><div class="bml">${_esc(b.l)}</div></div>`).join('')}</div><div class="stext" style="font-size:11px;color:#888;margin-top:2px">${_esc(form.market_size)}</div>` },
-    { h: 80 + Math.ceil((audienceTags.length||1)/5)*40,
+    { h: 70 + Math.ceil((audienceTags.length||1)/3)*35,
       html: `${sH('🎯','TARGET MARKET')}${tagsHTML}` },
-    { h: 100 + (freeItems.length+paidItems.length)*30,
+    { h: 80 + freeItems.length*40 + paidItems.length*40,
       html: `${sH('💰','BUSINESS MODEL')}<div class="twocards"><div class="card bl"><div class="cicon">🆓</div><div class="clabel">FREE TIER</div><div class="ctext">${freeHTML}</div></div><div class="card pu"><div class="cicon">⭐</div><div class="clabel">PAID TIER</div><div class="ctext">${paidHTML}</div></div></div>` },
-    { h: 120 + Math.ceil((form.competitive_advantage||'').length/100)*20,
+    { h: 80 + Math.ceil((form.competitive_advantage||'').length/100)*15,
       html: `${sH('🏆','COMPETITIVE ADVANTAGE')}<div class="stext">${_esc(form.competitive_advantage)}</div>` },
-    { h: 80 + risks.length*50,
+    { h: 70 + risks.length*45,
       html: `${sH('⚠️','RISKS &amp; CHALLENGES')}<div class="risks">${risks.map(r=>`<div class="risk"><div class="rdot"></div><div class="rtxt">${_esc(r)}</div></div>`).join('')}</div>` },
-    { h: 80 + nextSteps.length*50,
+    { h: 70 + nextSteps.length*45,
       html: `${sH('🚀','NEXT STEPS')}<div class="tl">${nextSteps.map(s=>`<div class="tli"><div class="tldot"></div><div><div class="tltitle">${_esc(s)}</div></div></div>`).join('')}</div>` },
   ].filter(s=>s.html)
 
-  const PAGE_H = 560
+  const PAGE_H = 547
   const buckets = []
   let cur = [], curH = 0
   for (const {h, html} of sections) {
