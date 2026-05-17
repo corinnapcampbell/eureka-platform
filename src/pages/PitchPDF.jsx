@@ -643,6 +643,8 @@ export default function PitchPDF({ session }) {
       risks:           risksChips.join('\n'),
       next_steps:      nextStepsChips.join('\n'),
     }
+    console.log('DEBUG bmValue at generate:', JSON.stringify(bmValue))
+    console.log('DEBUG form.business_model:', form.business_model)
     const html = buildPreviewHTML(formWithChips, idea, session?.user?.email, bmValue)
     setPreviewHTML(html)
     setGenerating(false)
