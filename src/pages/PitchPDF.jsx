@@ -581,43 +581,44 @@ export default function PitchPDF({ session }) {
       console.log('navigator.canShare:', typeof navigator.canShare)
       console.log('navigator.share:', typeof navigator.share)
       if (navigator.canShare) {
-        // Parse individual page HTML strings from previewHTML
-        const parser = new DOMParser()
-        const doc = parser.parseFromString(previewHTML, 'text/html')
-        const pageEls = doc.querySelectorAll('.page')
-        if (!pageEls.length) return
+        const wrapper = document.createElement('div')
+        wrapper.style.cssText = [
+          'position:fixed',
+          'left:-9999px',
+          'top:0',
+          'width:794px',
+          'overflow:visible',
+          'z-index:-1',
+        ].join(';')
+        wrapper.innerHTML = previewHTML
+        document.body.appendChild(wrapper)
 
+        const pageEls = wrapper.querySelectorAll('.page')
         const files = []
+
         for (let i = 0; i < pageEls.length; i++) {
-          // Create offscreen container appended directly to body
-          const wrapper = document.createElement('div')
-          wrapper.style.cssText = [
-            'position:fixed',
-            'left:-9999px',
-            'top:0',
-            'width:794px',
-            'height:1123px',
-            'overflow:visible',
-            'z-index:-1',
-            'background:#ffffff',
-          ].join(';')
-          wrapper.appendChild(pageEls[i].cloneNode(true))
-          document.body.appendChild(wrapper)
+          const pageEl = pageEls[i]
+          const rect = pageEl.getBoundingClientRect()
+          const offsetTop = pageEl.offsetTop
 
           const canvas = await html2canvas(wrapper, {
             scale: 2,
             useCORS: true,
             logging: false,
             width: 794,
-            height: 1123,
+            height: Math.round(rect.height) || 1123,
             windowWidth: 794,
-            windowHeight: 1123,
+            windowHeight: Math.round(rect.height) || 1123,
+            x: 0,
+            y: offsetTop,
+            scrollY: -offsetTop,
           })
-          document.body.removeChild(wrapper)
 
           const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
           files.push(new File([blob], `${idea?.title || 'pitch'}-page-${i + 1}.jpg`, { type: 'image/jpeg' }))
         }
+
+        document.body.removeChild(wrapper)
 
         const shareData = { files, title: idea?.title || 'Pitch' }
         if (navigator.canShare(shareData)) {
