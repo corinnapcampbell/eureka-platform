@@ -232,7 +232,7 @@ export default function DeckViewer() {
           zIndex: 1000,
         }}
       >
-        {generatingPDF ? '…Generating' : isMobile ? '⬇ Save to Photos' : '⬇ Download PDF'}
+        {generatingPDF ? '…Generating' : '⬇ Save to Photos'}
       </button>
     </div>
   )
