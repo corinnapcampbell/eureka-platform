@@ -55,7 +55,7 @@ export default function DeckViewer() {
     if (!slides) return
     setGeneratingPDF(true)
 
-    if (isMobile && navigator.canShare) {
+    if (navigator.canShare) {
       try {
         const files = await Promise.all(slides.map(async (slide, idx) => {
           const canvas = document.createElement('canvas')

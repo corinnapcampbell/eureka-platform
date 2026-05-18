@@ -576,7 +576,7 @@ export default function PitchPDF({ session }) {
     if (!pages.length) return
     setDownloading(true)
     try {
-      if (isMobile && navigator.canShare) {
+      if (navigator.canShare) {
         const files = await Promise.all(
           Array.from(pages).map(async (page, i) => {
             const canvas = await html2canvas(page, { scale: 2, useCORS: true, logging: false })
