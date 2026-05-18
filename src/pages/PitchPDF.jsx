@@ -357,6 +357,7 @@ export default function PitchPDF({ session }) {
   const [generating,       setGenerating]       = useState(false)
   const [savingProgress,   setSavingProgress]   = useState(false)
   const previewRef = useRef(null)
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent)
 
   const [bmValue,           setBmValue]           = useState(null)
 
@@ -575,14 +576,28 @@ export default function PitchPDF({ session }) {
     if (!pages.length) return
     setDownloading(true)
     try {
-      const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
-      for (let i = 0; i < pages.length; i++) {
-        const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false })
-        const imgData = canvas.toDataURL('image/jpeg', 0.95)
-        if (i > 0) pdf.addPage([375, 667], 'portrait')
-        pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
+      if (isMobile && navigator.canShare) {
+        const files = await Promise.all(
+          Array.from(pages).map(async (page, i) => {
+            const canvas = await html2canvas(page, { scale: 2, useCORS: true, logging: false })
+            const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
+            return new File([blob], `${idea?.title || 'pitch'}-page-${i + 1}.jpg`, { type: 'image/jpeg' })
+          })
+        )
+        const shareData = { files, title: idea?.title || 'Pitch' }
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData)
+        }
+      } else {
+        const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
+        for (let i = 0; i < pages.length; i++) {
+          const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false })
+          const imgData = canvas.toDataURL('image/jpeg', 0.95)
+          if (i > 0) pdf.addPage([375, 667], 'portrait')
+          pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
+        }
+        pdf.save(`${idea?.title || 'pitch'}.pdf`)
       }
-      pdf.save(`${idea?.title || 'pitch'}.pdf`)
     } catch (err) {
       console.error('Download error:', err)
     }

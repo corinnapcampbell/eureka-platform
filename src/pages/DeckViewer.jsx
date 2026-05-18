@@ -17,6 +17,7 @@ export default function DeckViewer() {
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [ideaTitle, setIdeaTitle] = useState('')
   const touchStart = useRef(null)
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setAuthSession(session))
@@ -50,9 +51,57 @@ export default function DeckViewer() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
 
-  function downloadDeckPDF() {
+  async function downloadDeckPDF() {
     if (!slides) return
     setGeneratingPDF(true)
+
+    if (isMobile && navigator.canShare) {
+      try {
+        const files = await Promise.all(slides.map(async (slide, idx) => {
+          const canvas = document.createElement('canvas')
+          canvas.width = 960; canvas.height = 540
+          const ctx = canvas.getContext('2d')
+          const dark = slide.type === 'cover' || slide.type === 'roadmap' || slide.type === 'closing'
+          ctx.fillStyle = dark ? '#0e0e1f' : '#f5f5f3'
+          ctx.fillRect(0, 0, 960, 540)
+          ctx.strokeStyle = '#7b9ff7'; ctx.lineWidth = 3
+          ctx.beginPath(); ctx.moveTo(0, 6); ctx.lineTo(960, 6); ctx.stroke()
+          ctx.beginPath(); ctx.moveTo(0, 534); ctx.lineTo(960, 534); ctx.stroke()
+          const tc = dark ? '#ffffff' : '#0e0e1f'
+          const mc = dark ? 'rgba(255,255,255,0.5)' : '#6b6b78'
+          const ml = 60; let y = 90
+          if (slide.type === 'cover') {
+            ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = tc; ctx.textAlign = 'center'
+            ctx.fillText(slide.title || '', 480, 240)
+            ctx.font = '24px sans-serif'; ctx.fillStyle = mc
+            ctx.fillText(slide.tagline || '', 480, 290)
+          } else {
+            ctx.font = 'bold 18px sans-serif'; ctx.fillStyle = '#7b9ff7'; ctx.textAlign = 'left'
+            ctx.fillText(slide.sectionLabel || '', ml, y); y += 40
+            ctx.font = 'bold 32px sans-serif'; ctx.fillStyle = tc
+            ctx.fillText(slide.headline || slide.title || '', ml, y); y += 50
+            ctx.font = '22px sans-serif'; ctx.fillStyle = mc
+            if (slide.bullets?.length) slide.bullets.forEach((b, i) => { ctx.fillText(`${i + 1}. ${b}`, ml, y); y += 36 })
+            if (slide.description) { ctx.fillText(slide.description, ml, y); y += 36 }
+            if (slide.type === 'closing') {
+              ctx.fillStyle = '#7b9ff7'; ctx.textAlign = 'center'
+              if (slide.email) { ctx.fillText(slide.email, 480, y); y += 36 }
+              if (slide.website) ctx.fillText(slide.website, 480, y)
+            }
+          }
+          ctx.font = '16px sans-serif'; ctx.fillStyle = 'rgba(120,120,130,0.8)'; ctx.textAlign = 'center'
+          ctx.fillText('Presented via EurekAIdea', 480, 524)
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
+          return new File([blob], `slide-${idx + 1}.jpg`, { type: 'image/jpeg' })
+        }))
+        const slug = ideaTitle.replace(/[^a-z0-9]+/gi, '-').toLowerCase().replace(/^-+|-+$/g, '') || 'deck'
+        const shareData = { files, title: ideaTitle || 'Deck' }
+        if (navigator.canShare(shareData)) await navigator.share(shareData)
+      } catch (e) { console.error('Share error:', e) }
+      setGeneratingPDF(false)
+      return
+    }
+
     try {
       const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: [297, 167] })
       const W = 297, H = 167, ml = 16
