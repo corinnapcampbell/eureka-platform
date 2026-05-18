@@ -580,7 +580,7 @@ export default function PitchPDF({ session }) {
     try {
       console.log('navigator.canShare:', typeof navigator.canShare)
       console.log('navigator.share:', typeof navigator.share)
-      if (navigator.canShare) {
+      if (navigator.canShare && (window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent))) {
         const wrapper = document.createElement('div')
         wrapper.id = 'pdf-preview'
         wrapper.style.cssText = [
