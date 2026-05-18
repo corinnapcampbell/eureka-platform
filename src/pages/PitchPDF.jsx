@@ -631,21 +631,18 @@ export default function PitchPDF({ session }) {
         wrapper.id = 'pdf-preview'
         wrapper.style.cssText = [
           'position:fixed',
-          'left:0',
+          'left:-9999px',
           'top:0',
           'width:375px',
           'overflow:visible',
-          'z-index:-9999',
-          'opacity:0',
-          'pointer-events:none',
+          'z-index:-1',
         ].join(';')
         const safeHTML = previewHTML.replace(/@import[^;]+;/g, '')
         wrapper.innerHTML = safeHTML
         document.body.appendChild(wrapper)
-        await new Promise(r => setTimeout(r, 300))
 
         const pageEls = wrapper.querySelectorAll('.page')
-        const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
+        const files = []
 
         for (let i = 0; i < pageEls.length; i++) {
           const pageEl = pageEls[i]
@@ -662,13 +659,15 @@ export default function PitchPDF({ session }) {
             y: offsetTop,
             scrollY: -offsetTop,
           })
-          const imgData = canvas.toDataURL('image/jpeg', 0.95)
-          if (i > 0) pdf.addPage([375, 667], 'portrait')
-          pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
+          files.push(new File([blob], `${idea?.title || 'pitch'}-page-${i + 1}.jpg`, { type: 'image/jpeg' }))
         }
 
         document.body.removeChild(wrapper)
-        pdf.save(`${idea?.title || 'pitch'}.pdf`)
+        const shareData = { files, title: idea?.title || 'Pitch' }
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData)
+        }
       }
     } catch (err) { console.error('Download error:', err.name, err.message, err) }
     setDownloading(false)
