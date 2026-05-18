@@ -582,15 +582,18 @@ export default function PitchPDF({ session }) {
       console.log('navigator.share:', typeof navigator.share)
       if (navigator.canShare) {
         const wrapper = document.createElement('div')
+        wrapper.id = 'pdf-preview'
         wrapper.style.cssText = [
           'position:fixed',
           'left:-9999px',
           'top:0',
-          'width:794px',
+          'width:375px',
           'overflow:visible',
           'z-index:-1',
         ].join(';')
-        wrapper.innerHTML = previewHTML
+        // Strip @import to prevent html2canvas crash on mobile Safari
+        const safeHTML = previewHTML.replace(/@import[^;]+;/g, '')
+        wrapper.innerHTML = safeHTML
         document.body.appendChild(wrapper)
 
         const pageEls = wrapper.querySelectorAll('.page')
@@ -598,17 +601,16 @@ export default function PitchPDF({ session }) {
 
         for (let i = 0; i < pageEls.length; i++) {
           const pageEl = pageEls[i]
-          const rect = pageEl.getBoundingClientRect()
           const offsetTop = pageEl.offsetTop
 
           const canvas = await html2canvas(wrapper, {
             scale: 2,
             useCORS: true,
             logging: false,
-            width: 794,
-            height: Math.round(rect.height) || 1123,
-            windowWidth: 794,
-            windowHeight: Math.round(rect.height) || 1123,
+            width: 375,
+            height: 667,
+            windowWidth: 375,
+            windowHeight: 667,
             x: 0,
             y: offsetTop,
             scrollY: -offsetTop,
