@@ -642,7 +642,7 @@ export default function PitchPDF({ session }) {
         document.body.appendChild(wrapper)
 
         const pageEls = wrapper.querySelectorAll('.page')
-        const files = []
+        const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
 
         for (let i = 0; i < pageEls.length; i++) {
           const pageEl = pageEls[i]
@@ -659,15 +659,13 @@ export default function PitchPDF({ session }) {
             y: offsetTop,
             scrollY: -offsetTop,
           })
-          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
-          files.push(new File([blob], `${idea?.title || 'pitch'}-page-${i + 1}.jpg`, { type: 'image/jpeg' }))
+          const imgData = canvas.toDataURL('image/jpeg', 0.95)
+          if (i > 0) pdf.addPage([375, 667], 'portrait')
+          pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
         }
 
         document.body.removeChild(wrapper)
-        const shareData = { files, title: idea?.title || 'Pitch' }
-        if (navigator.canShare(shareData)) {
-          await navigator.share(shareData)
-        }
+        pdf.save(`${idea?.title || 'pitch'}.pdf`)
       }
     } catch (err) { console.error('Download error:', err.name, err.message, err) }
     setDownloading(false)
