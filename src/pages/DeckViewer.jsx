@@ -148,9 +148,7 @@ export default function DeckViewer() {
       )}
 
       <div style={{
-        width: '100%',
-        maxWidth: 'min(100vw, calc(100vh * 16 / 9))',
-        margin: '0 auto',
+        width: 'min(100vw, calc(100vh * 960 / 540))',
         flex: '0 0 auto',
       }}>
         {slides && (
