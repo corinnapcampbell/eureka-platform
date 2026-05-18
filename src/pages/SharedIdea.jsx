@@ -189,12 +189,12 @@ export default function SharedIdea() {
     const fresh = await fetchFreshIdea()
     const form = buildSnapshotForm(fresh)
     const inner = buildSnapshotHTML(form, fresh)
+    const safeInner = inner.replace(/@import\s+url\([^)]+\);?/g, '')
     const container = document.createElement('div')
     container.id = 'pdf-preview'
     container.style.cssText = 'position:fixed;left:-9999px;top:0;width:375px;z-index:-9999'
-    container.innerHTML = inner
+    container.innerHTML = safeInner
     document.body.appendChild(container)
-    await new Promise(r => setTimeout(r, 800))
     try {
       const pages = container.querySelectorAll('.page')
       const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
