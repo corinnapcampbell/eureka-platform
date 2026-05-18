@@ -53,6 +53,8 @@ export default function DeckViewer() {
 
   async function downloadDeckPDF() {
     if (!slides) return
+    console.log('downloadDeckPDF called, slides:', slides?.length)
+    console.log('navigator.canShare:', typeof navigator.canShare)
     setGeneratingPDF(true)
 
     if (navigator.canShare) {
