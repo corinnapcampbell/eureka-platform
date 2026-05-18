@@ -347,7 +347,7 @@ export default function SharedIdea() {
 
         {/* Tease expandable pill */}
         {(() => {
-          const teaseText = idea.tease || (idea.problem ? idea.problem.slice(0, 150) + '…' : null)
+          const teaseText = idea.tease || null
           if (!teaseText) return null
           return (
             <TeaseExpander teaseText={teaseText} targetAudience={idea.target_audience} category={idea.category} />
