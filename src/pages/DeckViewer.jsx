@@ -122,7 +122,7 @@ export default function DeckViewer() {
 
   return (
     <div
-      style={{ width: '100vw', height: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}
+      style={{ width: '100vw', height: '100vh', background: '#0e0e1f', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}
       onTouchStart={e => { touchStart.current = e.touches[0].clientX }}
       onTouchEnd={e => {
         if (touchStart.current === null) return
@@ -151,6 +151,7 @@ export default function DeckViewer() {
         width: '100%',
         maxWidth: 'min(100vw, calc(100vh * 16 / 9))',
         margin: '0 auto',
+        flex: '0 0 auto',
       }}>
         {slides && (
           <ScaledSlide
