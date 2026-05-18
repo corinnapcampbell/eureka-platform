@@ -129,20 +129,11 @@ export default function SharedIdea() {
       })
 
     if (insertError?.code === '23505') {
-      const { data: existing } = await supabase
-        .from('idea_access_log')
-        .select('view_count')
-        .eq('idea_id', idea.id)
-        .eq('viewer_email', email.trim())
-        .single()
-      await supabase
-        .from('idea_access_log')
-        .update({
-          last_viewed: now,
-          view_count: (existing?.view_count || 1) + 1,
-        })
-        .eq('idea_id', idea.id)
-        .eq('viewer_email', email.trim())
+      await supabase.rpc('increment_idea_view', {
+        p_idea_id: idea.id,
+        p_email: email.trim(),
+        p_time: now,
+      })
     } else if (insertError) {
       console.error('Access log error:', insertError.message)
     }
