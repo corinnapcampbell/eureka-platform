@@ -581,71 +581,44 @@ export default function PitchPDF({ session }) {
       console.log('navigator.canShare:', typeof navigator.canShare)
       console.log('navigator.share:', typeof navigator.share)
       if (navigator.canShare) {
-        const W = 750, H = 1334
-        const pageData = [
-          { label: 'COVER', title: idea?.title || '', sub: idea?.tagline || idea?.one_liner || '' },
-          { label: 'PROBLEM & SOLUTION', title: 'Problem', body: idea?.problem || '', title2: 'Solution', body2: idea?.solution || '' },
-          { label: 'MARKET', title: 'Target Market', body: (idea?.target_audience || ''), title2: 'Market Size', body2: idea?.market_size || '' },
-          { label: 'BUSINESS MODEL', title: 'Business Model', body: idea?.business_model || '' },
-          { label: 'NEXT STEPS', title: 'Next Steps', body: idea?.next_steps || '', title2: 'Risks', body2: idea?.risks || '' },
-        ]
-        const files = pageData.map((p, i) => {
-          const canvas = document.createElement('canvas')
-          canvas.width = W; canvas.height = H
-          const ctx = canvas.getContext('2d')
-          // background
-          ctx.fillStyle = i === 0 ? '#0e0e1f' : '#ffffff'
-          ctx.fillRect(0, 0, W, H)
-          // gradient accent bar top
-          const grad = ctx.createLinearGradient(0, 0, W, 0)
-          grad.addColorStop(0, '#7b9ff7'); grad.addColorStop(1, '#9b7ff7')
-          ctx.fillStyle = grad; ctx.fillRect(0, 0, W, 8)
-          // page number
-          ctx.font = '28px sans-serif'
-          ctx.fillStyle = i === 0 ? 'rgba(255,255,255,0.4)' : '#aaaaaa'
-          ctx.textAlign = 'right'
-          ctx.fillText(`${i + 1} / ${pageData.length}`, W - 50, 60)
-          ctx.textAlign = 'left'
-          if (i === 0) {
-            // cover
-            ctx.font = 'bold 72px sans-serif'; ctx.fillStyle = '#ffffff'
-            ctx.textAlign = 'center'
-            ctx.fillText(p.title, W / 2, H / 2 - 40)
-            ctx.font = '36px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)'
-            ctx.fillText(p.sub, W / 2, H / 2 + 40)
-            ctx.font = '24px sans-serif'; ctx.fillStyle = '#7b9ff7'
-            ctx.fillText('eurekAIdea', W / 2, H / 2 + 120)
-            ctx.textAlign = 'left'
-          } else {
-            let y = 80
-            ctx.font = 'bold 28px sans-serif'; ctx.fillStyle = '#7b9ff7'
-            ctx.fillText(p.label, 50, y); y += 60
-            if (p.title) {
-              ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = '#0e0e1f'
-              ctx.fillText(p.title, 50, y); y += 50
-              ctx.font = '30px sans-serif'; ctx.fillStyle = '#444444'
-              const lines = ctx.measureText(p.body).width > W - 100
-                ? p.body.match(/.{1,55}/g) || [p.body]
-                : [p.body]
-              lines.slice(0, 8).forEach(l => { ctx.fillText(l, 50, y); y += 40 })
-              y += 30
-            }
-            if (p.title2) {
-              ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = '#0e0e1f'
-              ctx.fillText(p.title2, 50, y); y += 50
-              ctx.font = '30px sans-serif'; ctx.fillStyle = '#444444'
-              const lines2 = p.body2.match(/.{1,55}/g) || [p.body2]
-              lines2.slice(0, 8).forEach(l => { ctx.fillText(l, 50, y); y += 40 })
-            }
-          }
-          // footer bar
-          ctx.fillStyle = grad; ctx.fillRect(0, H - 8, W, 8)
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
-          const arr = dataUrl.split(',')[1]
-          const bArr = Uint8Array.from(atob(arr), c => c.charCodeAt(0))
-          const blob = new Blob([bArr], { type: 'image/jpeg' })
-          return new File([blob], `${idea?.title || 'pitch'}-page-${i + 1}.jpg`, { type: 'image/jpeg' })
-        })
+        // Parse individual page HTML strings from previewHTML
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(previewHTML, 'text/html')
+        const pageEls = doc.querySelectorAll('.page')
+        if (!pageEls.length) return
+
+        const files = []
+        for (let i = 0; i < pageEls.length; i++) {
+          // Create offscreen container appended directly to body
+          const wrapper = document.createElement('div')
+          wrapper.style.cssText = [
+            'position:fixed',
+            'left:-9999px',
+            'top:0',
+            'width:794px',
+            'height:1123px',
+            'overflow:visible',
+            'z-index:-1',
+            'background:#ffffff',
+          ].join(';')
+          wrapper.appendChild(pageEls[i].cloneNode(true))
+          document.body.appendChild(wrapper)
+
+          const canvas = await html2canvas(wrapper, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            width: 794,
+            height: 1123,
+            windowWidth: 794,
+            windowHeight: 1123,
+          })
+          document.body.removeChild(wrapper)
+
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
+          files.push(new File([blob], `${idea?.title || 'pitch'}-page-${i + 1}.jpg`, { type: 'image/jpeg' }))
+        }
+
         const shareData = { files, title: idea?.title || 'Pitch' }
         if (navigator.canShare(shareData)) {
           await navigator.share(shareData)
