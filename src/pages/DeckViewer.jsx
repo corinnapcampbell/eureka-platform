@@ -215,6 +215,23 @@ export default function DeckViewer() {
       <div style={{ position: 'absolute', bottom: 14, right: 20, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif" }}>
         Presented via EurekAIdea · myeurekaidea.com
       </div>
+      <button
+        onClick={downloadDeckPDF}
+        disabled={generatingPDF}
+        style={{
+          position: 'fixed', bottom: 24, right: 24,
+          background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
+          color: '#fff', border: 'none', borderRadius: 50, padding: '13px 20px',
+          fontSize: 14, fontWeight: 600, cursor: generatingPDF ? 'not-allowed' : 'pointer',
+          boxShadow: '0 4px 20px rgba(123,159,247,0.45)',
+          opacity: generatingPDF ? 0.7 : 1,
+          display: 'flex', alignItems: 'center', gap: 6,
+          transition: 'opacity 0.15s',
+          zIndex: 1000,
+        }}
+      >
+        {generatingPDF ? '…Generating' : isMobile ? '⬇ Save to Photos' : '⬇ Download PDF'}
+      </button>
     </div>
   )
 }

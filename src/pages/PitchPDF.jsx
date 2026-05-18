@@ -873,7 +873,7 @@ export default function PitchPDF({ session }) {
             transition: 'opacity 0.15s',
           }}
         >
-          {downloading ? '…Generating' : '⬇ Download PDF'}
+          {downloading ? '…Generating' : isMobile ? '⬇ Save to Photos' : '⬇ Download PDF'}
         </button>
       )}
     </div>
