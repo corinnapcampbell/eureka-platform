@@ -199,7 +199,7 @@ export default function SharedIdea() {
       const pages = container.querySelectorAll('.page')
       const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
       for (let i = 0; i < pages.length; i++) {
-        const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false })
+        const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false, ignoreElements: (el) => el.offsetWidth === 0 || el.offsetHeight === 0 })
         const imgData = canvas.toDataURL('image/jpeg', 0.95)
         if (i > 0) pdf.addPage([375, 667], 'portrait')
         pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
