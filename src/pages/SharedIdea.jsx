@@ -19,6 +19,54 @@ function splitHowItWorks(text) {
   return [text.trim()]
 }
 
+function TeaseExpander({ teaseText, targetAudience, category }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ textAlign: 'center', margin: '1.25rem 0' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: 'rgba(123,159,247,0.12)',
+          border: '0.5px solid rgba(123,159,247,0.35)',
+          borderRadius: 50,
+          padding: '8px 20px',
+          fontSize: 13,
+          color: '#7b9ff7',
+          cursor: 'pointer',
+          fontWeight: 500,
+          letterSpacing: '0.2px',
+        }}
+      >
+        {open ? '✦ Hide preview' : '✦ Discover what this idea is about'}
+      </button>
+      {open && (
+        <div style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '0.5px solid rgba(255,255,255,0.1)',
+          borderRadius: 14,
+          padding: '1.25rem 1.5rem',
+          marginTop: '1rem',
+          textAlign: 'left',
+        }}>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.75, marginBottom: targetAudience || (category?.length > 0) ? 12 : 0 }}>
+            {teaseText}
+          </p>
+          {targetAudience && (
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 8 }}>Built for {targetAudience}</p>
+          )}
+          {category?.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              {category.map(c => (
+                <span key={c} style={{ fontSize: 11, background: 'rgba(123,159,247,0.15)', color: '#7b9ff7', borderRadius: 50, padding: '3px 10px' }}>{c}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function SharedIdea() {
   const { token } = useParams()
   const navigate = useNavigate()
@@ -297,13 +345,14 @@ export default function SharedIdea() {
           </div>
         </div>
 
-        {/* Protection badge */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.75rem' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.18)', borderRadius: 20, padding: '6px 16px' }}>
-            <span style={{ fontSize: 12 }}>🔒</span>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>This idea is protected by eurekAIdea</span>
-          </div>
-        </div>
+        {/* Tease expandable pill */}
+        {(() => {
+          const teaseText = idea.tease || (idea.problem ? idea.problem.slice(0, 150) + '…' : null)
+          if (!teaseText) return null
+          return (
+            <TeaseExpander teaseText={teaseText} targetAudience={idea.target_audience} category={idea.category} />
+          )
+        })()}
 
         {/* NDA form card */}
         <div style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.09)', borderRadius: 16, padding: '1.75rem' }}>
@@ -350,6 +399,14 @@ export default function SharedIdea() {
             By proceeding you agree this content is confidential and proprietary.<br />
             Your identity and access time will be logged.
           </p>
+        </div>
+
+        {/* Protection badge */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.75rem', marginTop: '1.25rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.18)', borderRadius: 20, padding: '6px 16px' }}>
+            <span style={{ fontSize: 12 }}>🔒</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>This idea is protected by eurekAIdea</span>
+          </div>
         </div>
 
         {/* Footer */}
