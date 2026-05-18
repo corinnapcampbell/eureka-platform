@@ -134,8 +134,6 @@ export default function SharedIdea() {
         p_email: email.trim(),
         p_time: now,
       })
-    } else if (insertError) {
-      console.error('Access log error:', insertError.message)
     }
 
     setStage('idea')
