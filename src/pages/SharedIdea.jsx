@@ -110,17 +110,41 @@ export default function SharedIdea() {
   }
 
   async function acceptNDA() {
-    if (!email) return
+    if (!email || accepting) return
     setAccepting(true)
 
-    const { error: logError } = await supabase.from('idea_access_log').insert({
-      idea_id: idea.id,
-      viewer_email: email,
-      ip_address: 'logged',
-      nda_accepted: true,
-      viewed_at: new Date().toISOString(),
-    })
-    if (logError) console.error('idea_access_log insert error:', logError.message, logError.code)
+    const now = new Date().toISOString()
+
+    const { error: insertError } = await supabase
+      .from('idea_access_log')
+      .insert({
+        idea_id: idea.id,
+        viewer_email: email,
+        ip_address: 'logged',
+        nda_accepted: true,
+        viewed_at: now,
+        last_viewed: now,
+        view_count: 1,
+      })
+
+    if (insertError?.code === '23505') {
+      const { data: existing } = await supabase
+        .from('idea_access_log')
+        .select('view_count')
+        .eq('idea_id', idea.id)
+        .eq('viewer_email', email)
+        .single()
+      await supabase
+        .from('idea_access_log')
+        .update({
+          last_viewed: now,
+          view_count: (existing?.view_count || 1) + 1,
+        })
+        .eq('idea_id', idea.id)
+        .eq('viewer_email', email)
+    } else if (insertError) {
+      console.error('Access log error:', insertError.message)
+    }
 
     setStage('idea')
     setAccepting(false)

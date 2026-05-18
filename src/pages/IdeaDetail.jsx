@@ -167,9 +167,9 @@ export default function IdeaDetail({ session }) {
     async function fetchLog() {
       const { data } = await supabase
         .from('idea_access_log')
-        .select('*')
+        .select('viewer_email, viewed_at, last_viewed, view_count')
         .eq('idea_id', id)
-        .order('viewed_at', { ascending: false })
+        .order('last_viewed', { ascending: false })
       setAccessLog(data || [])
       setLoadingLog(false)
     }
@@ -1046,16 +1046,18 @@ export default function IdeaDetail({ session }) {
               ) : (
                 <>
                   {accessLog.slice(0, 5).map((entry, i) => (
-                    <div key={entry.id || i} style={{ padding: '0.65rem 0', borderBottom: i < Math.min(accessLog.length, 5) - 1 ? '0.5px solid rgba(44,44,42,0.07)' : 'none' }}>
+                    <div key={entry.viewer_email || i} style={{ padding: '0.65rem 0', borderBottom: i < Math.min(accessLog.length, 5) - 1 ? '0.5px solid rgba(44,44,42,0.07)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>{entry.viewer_email || 'Anonymous'}</span>
-                        <span style={{ fontSize: 10, background: '#dcfce7', color: '#16a34a', borderRadius: 4, padding: '2px 7px', fontWeight: 500, flexShrink: 0 }}>NDA Accepted</span>
+                        <span style={{ fontSize: 10, background: '#dcfce7', color: '#16a34a', borderRadius: 4, padding: '2px 7px', fontWeight: 500, flexShrink: 0 }}>Views: {entry.view_count || 1}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 11, color: '#888780' }}>
-                          {entry.viewed_at ? new Date(entry.viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          First: {entry.viewed_at ? new Date(entry.viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                         </span>
-                        {entry.ip_address && <span style={{ fontSize: 10, color: '#b0b0a8' }}>{entry.ip_address}</span>}
+                        <span style={{ fontSize: 11, color: '#888780' }}>
+                          Last: {entry.last_viewed ? new Date(entry.last_viewed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -1118,7 +1120,7 @@ export default function IdeaDetail({ session }) {
             <div style={{ border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, overflow: 'auto', marginBottom: '1.5rem' }}>
               <div style={{ minWidth: 520 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1fr 1fr', background: '#f5f5f3', padding: '0.65rem 1rem', borderBottom: '0.5px solid rgba(44,44,42,0.1)' }}>
-                  {['Email', 'Date & Time', 'IP Address', 'NDA Status'].map(h => (
+                  {['Email', 'First Viewed', 'Last Viewed', 'Views'].map(h => (
                     <span key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888780' }}>{h}</span>
                   ))}
                 </div>
@@ -1126,15 +1128,15 @@ export default function IdeaDetail({ session }) {
                   <div style={{ padding: '2rem', textAlign: 'center', color: '#888780', fontSize: 13 }}>No access records yet.</div>
                 ) : (
                   accessLog.map((entry, i) => (
-                    <div key={entry.id || i} style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1fr 1fr', padding: '0.7rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center' }}>
+                    <div key={entry.viewer_email || i} style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1.6fr 0.5fr', padding: '0.7rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center' }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{entry.viewer_email || 'Anonymous'}</span>
                       <span style={{ fontSize: 12, color: '#555552' }}>
-                        {entry.viewed_at ? new Date(entry.viewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                        {entry.viewed_at ? new Date(entry.viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
-                      <span style={{ fontSize: 11, color: '#888780', fontFamily: 'monospace' }}>{entry.ip_address || '—'}</span>
-                      <span style={{ fontSize: 11, background: '#dcfce7', color: '#16a34a', borderRadius: 4, padding: '2px 7px', fontWeight: 500, display: 'inline-block', whiteSpace: 'nowrap' }}>
-                        {entry.nda_accepted ? 'NDA Accepted' : 'Pending'}
+                      <span style={{ fontSize: 12, color: '#555552' }}>
+                        {entry.last_viewed ? new Date(entry.last_viewed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>{entry.view_count || 1}</span>
                     </div>
                   ))
                 )}
