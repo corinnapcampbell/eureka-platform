@@ -193,6 +193,40 @@ export default function DeckBuilder({ session }) {
   async function handlePDF() {
     if (!slides || !slideRenderRef.current) return
     setGeneratingPDF(true)
+
+    if (navigator.canShare) {
+      try {
+        const container = slideRenderRef.current
+        container.style.cssText = 'position:fixed;left:0;top:0;z-index:-999;opacity:0;pointer-events:none;visibility:visible;'
+        await new Promise(r => setTimeout(r, 500))
+        const elements = container.querySelectorAll('.deck-slide-render')
+        const files = []
+        for (let i = 0; i < elements.length; i++) {
+          const canvas = await html2canvas(elements[i], {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            width: SLIDE_W,
+            height: SLIDE_H,
+            backgroundColor: '#0e0e1f',
+            logging: false,
+          })
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
+          files.push(new File([blob], `slide-${i + 1}.jpg`, { type: 'image/jpeg' }))
+        }
+        container.style.cssText = 'position:fixed;left:-9999px;top:0;pointer-events:none;z-index:-1;opacity:0;visibility:hidden;'
+        const shareData = { files, title: idea?.title || 'Deck' }
+        if (navigator.canShare(shareData)) await navigator.share(shareData)
+      } catch (e) {
+        console.error('Mobile share error:', e)
+        if (slideRenderRef.current) {
+          slideRenderRef.current.style.cssText = 'position:fixed;left:-9999px;top:0;pointer-events:none;z-index:-1;opacity:0;visibility:hidden;'
+        }
+      }
+      setGeneratingPDF(false)
+      return
+    }
+
     try {
       // Move container on-screen but invisible so browsers fully paint the slides
       const container = slideRenderRef.current
@@ -362,7 +396,7 @@ export default function DeckBuilder({ session }) {
         {saving && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem' }}>Saving…</div>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handlePDF} disabled={generatingPDF} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', cursor: 'pointer', fontWeight: 500, opacity: generatingPDF ? 0.5 : 1 }}>
-            {generatingPDF ? 'Generating PDF…' : '↓ Download PDF'}
+            {generatingPDF ? 'Generating PDF…' : navigator.canShare ? '⬇ Save to Photos' : '↓ Download PDF'}
           </button>
           <button onClick={() => setPresenting(true)} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: 14, color: '#fff', cursor: 'pointer', fontWeight: 500 }}>
             ▶ Present
