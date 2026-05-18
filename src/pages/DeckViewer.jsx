@@ -148,8 +148,9 @@ export default function DeckViewer() {
       )}
 
       <div style={{
-        width: '90vw',
-        maxWidth: '90vw',
+        width: '100%',
+        maxWidth: 'min(100vw, calc(100vh * 16 / 9))',
+        margin: '0 auto',
       }}>
         {slides && (
           <ScaledSlide
