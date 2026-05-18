@@ -656,63 +656,8 @@ export default function IdeaDetail({ session }) {
                 {isOwner && inlineEdit.tease === undefined && (
                   <button onClick={() => startEdit('tease')} style={pencilBtnLightStyle} title="Edit tease">✏️</button>
                 )}
-                {isOwner && (
-                  <button
-                    onClick={async () => {
-                      setTeaseSuggesting(true)
-                      setTeaseSuggestion(null)
-                      try {
-                        const res = await fetch('https://api.anthropic.com/v1/messages', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            model: 'claude-sonnet-4-20250514',
-                            max_tokens: 1000,
-                            messages: [{
-                              role: 'user',
-                              content: `You are helping an idea creator write a short investor tease — a 2-3 sentence teaser shown to investors BEFORE they sign an NDA. It should make them curious and excited without revealing the actual idea or solution. Focus on the problem being solved and who it helps. Do NOT mention the solution or how it works.
-
-Idea details:
-- Title: ${idea.title || ''}
-- Problem: ${idea.problem || ''}
-- Target audience: ${idea.target_audience || ''}
-- Category: ${(idea.category || []).join(', ')}
-- Market size: ${idea.market_size || ''}
-
-Write only the tease text, 2-3 sentences, no preamble, no quotes.`
-                            }]
-                          })
-                        })
-                        const data = await res.json()
-                        const text = data.content?.[0]?.text || ''
-                        setTeaseSuggestion(text.trim())
-                      } catch (e) { console.error('Tease AI error:', e) }
-                      setTeaseSuggesting(false)
-                    }}
-                    disabled={teaseSuggesting}
-                    style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '0.5px solid #7b9ff7', background: 'transparent', color: '#7b9ff7', cursor: teaseSuggesting ? 'not-allowed' : 'pointer', opacity: teaseSuggesting ? 0.5 : 1 }}
-                  >
-                    {teaseSuggesting ? '✦ Writing…' : '✦ AI Suggest'}
-                  </button>
-                )}
               </div>
             </div>
-
-            {teaseSuggestion && (
-              <div style={{ background: '#f0f4ff', borderRadius: 8, padding: '12px 14px', marginBottom: 12, position: 'relative' }}>
-                <p style={{ fontSize: 13, color: '#3B5273', lineHeight: 1.7, marginBottom: 10 }}>{teaseSuggestion}</p>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => { setInlineEdit(v => ({ ...v, tease: teaseSuggestion })); setTeaseSuggestion(null) }}
-                    style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: 'none', background: '#7b9ff7', color: '#fff', cursor: 'pointer' }}
-                  >Use this</button>
-                  <button
-                    onClick={() => setTeaseSuggestion(null)}
-                    style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '0.5px solid #ccc', background: 'transparent', color: '#888', cursor: 'pointer' }}
-                  >Dismiss</button>
-                </div>
-              </div>
-            )}
 
             {inlineEdit.tease !== undefined ? (
               <div>
@@ -731,7 +676,7 @@ Write only the tease text, 2-3 sentences, no preamble, no quotes.`
               </div>
             ) : (
               <p style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.7 }}>
-                {idea.tease || (isOwner ? <em style={{ opacity: 0.35, fontStyle: 'normal' }}>No investor tease yet — click ✏️ to add or use AI Suggest</em> : null)}
+                {idea.tease || (isOwner ? <em style={{ opacity: 0.35, fontStyle: 'normal' }}>No investor tease yet — click ✏️ to add</em> : null)}
               </p>
             )}
           </div>
