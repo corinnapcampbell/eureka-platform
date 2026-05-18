@@ -627,23 +627,44 @@ export default function PitchPDF({ session }) {
           await navigator.share(shareData)
         }
       } else {
-        console.log('entering desktop pdf branch')
+        const wrapper = document.createElement('div')
+        wrapper.id = 'pdf-preview'
+        wrapper.style.cssText = [
+          'position:fixed',
+          'left:-9999px',
+          'top:0',
+          'width:375px',
+          'overflow:visible',
+          'z-index:-1',
+        ].join(';')
+        const safeHTML = previewHTML.replace(/@import[^;]+;/g, '')
+        wrapper.innerHTML = safeHTML
+        document.body.appendChild(wrapper)
+
+        const pageEls = wrapper.querySelectorAll('.page')
         const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
-        for (let i = 0; i < pages.length; i++) {
-          const canvas = await html2canvas(pages[i], {
+
+        for (let i = 0; i < pageEls.length; i++) {
+          const pageEl = pageEls[i]
+          const offsetTop = pageEl.offsetTop
+          const canvas = await html2canvas(wrapper, {
             scale: 2,
             useCORS: true,
             logging: false,
-            onclone: (clonedDoc) => {
-              clonedDoc.querySelectorAll('style').forEach(s => {
-                s.textContent = s.textContent.replace(/@import[^;]+;/g, '')
-              })
-            }
+            width: 375,
+            height: 667,
+            windowWidth: 375,
+            windowHeight: 667,
+            x: 0,
+            y: offsetTop,
+            scrollY: -offsetTop,
           })
           const imgData = canvas.toDataURL('image/jpeg', 0.95)
           if (i > 0) pdf.addPage([375, 667], 'portrait')
           pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
         }
+
+        document.body.removeChild(wrapper)
         pdf.save(`${idea?.title || 'pitch'}.pdf`)
       }
     } catch (err) { console.error('Download error:', err.name, err.message, err) }
