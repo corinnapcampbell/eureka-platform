@@ -128,9 +128,6 @@ export default function SharedIdea() {
         view_count: 1,
       })
 
-    console.log('Insert result - error:', insertError)
-    console.log('Insert attempted with:', { idea_id: idea?.id, viewer_email: email?.trim() })
-
     if (insertError?.code === '23505') {
       const { data: existing } = await supabase
         .from('idea_access_log')
@@ -138,7 +135,6 @@ export default function SharedIdea() {
         .eq('idea_id', idea.id)
         .eq('viewer_email', email.trim())
         .single()
-      console.log('Update attempted - existing view_count:', existing?.view_count)
       await supabase
         .from('idea_access_log')
         .update({
