@@ -194,6 +194,7 @@ export default function SharedIdea() {
     container.style.cssText = 'position:fixed;left:-9999px;top:0;width:375px;z-index:-9999'
     container.innerHTML = inner
     document.body.appendChild(container)
+    await new Promise(r => setTimeout(r, 800))
     try {
       const pages = container.querySelectorAll('.page')
       const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
