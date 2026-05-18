@@ -532,13 +532,6 @@ export default function SharedIdea() {
                     >
                       {viewingSnapshotPDF ? '…' : 'View'}
                     </button>
-                    <button
-                      onClick={downloadSnapshotPDF}
-                      disabled={downloadingSnapshotPDF}
-                      style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.13)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', cursor: downloadingSnapshotPDF ? 'not-allowed' : 'pointer', fontWeight: 500, opacity: downloadingSnapshotPDF ? 0.6 : 1 }}
-                    >
-                      {downloadingSnapshotPDF ? '…' : '↓ Download'}
-                    </button>
                   </div>
                 </div>
               )}
@@ -557,14 +550,6 @@ export default function SharedIdea() {
                       onClick={() => window.open(`/deck/view/${deckInfo.share_token}`, '_blank')}
                       style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500 }}
                     >View</button>
-                    {deckInfo && (
-                      <a
-                        href={`/deck/view/${deckInfo.share_token}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ flex: 1, textAlign: 'center', background: 'rgba(123,159,247,0.13)', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 7, padding: '7px 0', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontWeight: 500 }}
-                      >↓ Download</a>
-                    )}
                   </div>
                 </div>
               )}
