@@ -1053,10 +1053,10 @@ export default function IdeaDetail({ session }) {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 11, color: '#888780' }}>
-                          First: {entry.viewed_at ? new Date(entry.viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          First visit: {entry.viewed_at ? new Date(entry.viewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                         </span>
                         <span style={{ fontSize: 11, color: '#888780' }}>
-                          Last: {entry.last_viewed ? new Date(entry.last_viewed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          Last visit: {entry.last_viewed ? new Date(entry.last_viewed).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                         </span>
                       </div>
                     </div>
@@ -1131,12 +1131,12 @@ export default function IdeaDetail({ session }) {
                     <div key={entry.viewer_email || i} style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1.6fr 0.5fr', padding: '0.7rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center' }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{entry.viewer_email || 'Anonymous'}</span>
                       <span style={{ fontSize: 12, color: '#555552' }}>
-                        {entry.viewed_at ? new Date(entry.viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                        First visit: {entry.viewed_at ? new Date(entry.viewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
                       <span style={{ fontSize: 12, color: '#555552' }}>
-                        {entry.last_viewed ? new Date(entry.last_viewed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                        Last visit: {entry.last_viewed ? new Date(entry.last_viewed).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>{entry.view_count || 1}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>Total visits: {entry.view_count || 1}</span>
                     </div>
                   ))
                 )}

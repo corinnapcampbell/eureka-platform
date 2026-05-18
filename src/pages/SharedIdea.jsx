@@ -120,7 +120,7 @@ export default function SharedIdea() {
       .from('idea_access_log')
       .insert({
         idea_id: idea.id,
-        viewer_email: email,
+        viewer_email: email.trim(),
         ip_address: 'logged',
         nda_accepted: true,
         viewed_at: now,
@@ -133,7 +133,7 @@ export default function SharedIdea() {
         .from('idea_access_log')
         .select('view_count')
         .eq('idea_id', idea.id)
-        .eq('viewer_email', email)
+        .eq('viewer_email', email.trim())
         .single()
       await supabase
         .from('idea_access_log')
@@ -142,7 +142,7 @@ export default function SharedIdea() {
           view_count: (existing?.view_count || 1) + 1,
         })
         .eq('idea_id', idea.id)
-        .eq('viewer_email', email)
+        .eq('viewer_email', email.trim())
     } else if (insertError) {
       console.error('Access log error:', insertError.message)
     }
