@@ -382,7 +382,7 @@ export default function DeckBuilder({ session }) {
           <div
             key={i}
             onClick={() => { setCurrent(i); setMobileView('editor') }}
-            style={{ background: '#1a1a2e', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '0.75rem', cursor: 'pointer' }}
+            style={{ background: '#1a1a2e', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '0.75rem', cursor: 'pointer', width: '100%' }}
           >
             {/* Header row: badge + title + arrow */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '0.75rem' }}>
@@ -420,12 +420,14 @@ export default function DeckBuilder({ session }) {
 
       {/* ── MOBILE EDITOR SLIDE (editor view only) ──────────────────────────── */}
       <div className="pb-mobile-only pb-editor-only" style={{ padding: '1.25rem 1rem 96px', background: '#1a1a2e', minHeight: 'calc(100vh - 56px)' }}>
-        <ScaledSlide
-          slide={slides[current]}
-          slideNum={current + 1}
-          onUpdate={updates => updateSlide(current, updates)}
-          containerStyle={{ boxShadow: '0 8px 50px rgba(0,0,0,0.55)', borderRadius: 8 }}
-        />
+        <div style={{ width: '100%', maxWidth: 900, margin: '0 auto' }}>
+          <ScaledSlide
+            slide={slides[current]}
+            slideNum={current + 1}
+            onUpdate={updates => updateSlide(current, updates)}
+            containerStyle={{ boxShadow: '0 8px 50px rgba(0,0,0,0.55)', borderRadius: 8 }}
+          />
+        </div>
         {slides[current]?.type === 'business' && isOwner && (
           <div style={{ marginTop: 24, background: '#131320', borderRadius: 12, padding: '1.25rem' }}>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 14 }}>Business Model Details</p>
