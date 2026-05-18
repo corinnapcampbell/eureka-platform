@@ -571,24 +571,35 @@ export default function PitchPDF({ session }) {
   }
 
   async function handleDownload() {
-    if (!previewRef.current) return
+    console.log('handleDownload called')
+    if (!previewRef.current) { console.log('no previewRef'); return }
     const pages = previewRef.current.querySelectorAll('.page')
-    if (!pages.length) return
+    console.log('pages found:', pages.length)
+    if (!pages.length) { console.log('no pages'); return }
     setDownloading(true)
     try {
+      console.log('navigator.canShare:', typeof navigator.canShare)
+      console.log('navigator.share:', typeof navigator.share)
       if (navigator.canShare) {
+        console.log('entering mobile share branch')
         const files = await Promise.all(
           Array.from(pages).map(async (page, i) => {
+            console.log('rendering page', i)
             const canvas = await html2canvas(page, { scale: 2, useCORS: true, logging: false })
             const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
             return new File([blob], `${idea?.title || 'pitch'}-page-${i + 1}.jpg`, { type: 'image/jpeg' })
           })
         )
+        console.log('files created:', files.length)
         const shareData = { files, title: idea?.title || 'Pitch' }
+        console.log('canShare result:', navigator.canShare(shareData))
         if (navigator.canShare(shareData)) {
+          console.log('calling navigator.share')
           await navigator.share(shareData)
+          console.log('share completed')
         }
       } else {
+        console.log('entering desktop pdf branch')
         const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
         for (let i = 0; i < pages.length; i++) {
           const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, logging: false })
@@ -598,9 +609,7 @@ export default function PitchPDF({ session }) {
         }
         pdf.save(`${idea?.title || 'pitch'}.pdf`)
       }
-    } catch (err) {
-      console.error('Download error:', err)
-    }
+    } catch (err) { console.error('Download error:', err.name, err.message, err) }
     setDownloading(false)
   }
 
