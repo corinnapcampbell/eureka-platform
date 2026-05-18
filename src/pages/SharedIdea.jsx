@@ -35,6 +35,7 @@ export default function SharedIdea() {
   const [showMobilePDF, setShowMobilePDF] = useState(false)
   const [mobilePDFContent, setMobilePDFContent] = useState('')
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  const isValidEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())
   const [isLandscape, setIsLandscape] = useState(window.matchMedia('(orientation: landscape)').matches)
   const [showMobileDeck, setShowMobileDeck] = useState(false)
   const [mobileDeckSlides, setMobileDeckSlides] = useState(null)
@@ -110,7 +111,7 @@ export default function SharedIdea() {
   }
 
   async function acceptNDA() {
-    if (!email || accepting) return
+    if (!email || !isValidEmail(email) || accepting) return
     setAccepting(true)
 
     const now = new Date().toISOString()
@@ -323,7 +324,7 @@ export default function SharedIdea() {
             <input
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value.trim())}
               placeholder="you@company.com"
               onKeyDown={e => e.key === 'Enter' && email && !accepting && acceptNDA()}
               style={{
@@ -332,18 +333,24 @@ export default function SharedIdea() {
                 boxSizing: 'border-box',
               }}
             />
+            {email && !isValidEmail(email) && (
+              <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4, fontFamily: "'Outfit', sans-serif" }}>
+                Please enter a valid email address
+              </p>
+            )}
           </div>
 
           <button
             onClick={acceptNDA}
-            disabled={!email || accepting}
+            disabled={!isValidEmail(email) || accepting}
             style={{
               width: '100%',
-              background: (!email || accepting) ? 'rgba(123,159,247,0.3)' : 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
+              background: (!isValidEmail(email) || accepting) ? 'rgba(123,159,247,0.3)' : 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
               color: '#fff', border: 'none', borderRadius: 10, padding: '14px',
               fontSize: 15, fontWeight: 600,
-              cursor: (!email || accepting) ? 'not-allowed' : 'pointer',
+              cursor: (!isValidEmail(email) || accepting) ? 'not-allowed' : 'pointer',
               letterSpacing: '0.2px',
+              opacity: (!isValidEmail(email) || accepting) ? 0.4 : 1,
             }}
           >
             {accepting ? 'Logging access...' : 'View Protected Idea — Accept NDA'}
