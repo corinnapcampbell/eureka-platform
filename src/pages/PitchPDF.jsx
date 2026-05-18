@@ -631,15 +631,18 @@ export default function PitchPDF({ session }) {
         wrapper.id = 'pdf-preview'
         wrapper.style.cssText = [
           'position:fixed',
-          'left:-9999px',
+          'left:0',
           'top:0',
           'width:375px',
           'overflow:visible',
-          'z-index:-1',
+          'z-index:-9999',
+          'opacity:0',
+          'pointer-events:none',
         ].join(';')
         const safeHTML = previewHTML.replace(/@import[^;]+;/g, '')
         wrapper.innerHTML = safeHTML
         document.body.appendChild(wrapper)
+        await new Promise(r => setTimeout(r, 300))
 
         const pageEls = wrapper.querySelectorAll('.page')
         const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
