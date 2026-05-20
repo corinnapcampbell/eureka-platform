@@ -7,6 +7,7 @@ export default function Dashboard({ session }) {
   const [ideas, setIdeas] = useState([])
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
   const navigate = useNavigate()
   const name = session.user.user_metadata?.full_name?.split(' ')[0] || 'there'
  
@@ -38,37 +39,34 @@ export default function Dashboard({ session }) {
         <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <Logo size={20} variant="dark" />
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span
             onClick={() => navigate('/dashboard')}
             style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}
           >My Ideas</span>
+
+          {/* Three dots menu */}
           <div style={{ position: 'relative' }}>
             <div
-              onClick={() => setMenuOpen(o => !o)}
+              onClick={() => { setMenuOpen(o => !o); setAvatarMenuOpen(false) }}
               style={{
-                width: 36, height: 36, borderRadius: '50%', cursor: 'pointer',
-                background: session.user.user_metadata?.avatar_url
-                  ? 'none'
-                  : 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 600, color: '#fff',
-                overflow: 'hidden', border: '2px solid rgba(123,159,247,0.35)',
-                flexShrink: 0,
+                width: 32, height: 32, borderRadius: 8, cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 4, background: menuOpen ? 'rgba(255,255,255,0.08)' : 'none',
+                border: '0.5px solid rgba(255,255,255,0.12)', transition: 'background 0.15s'
               }}
             >
-              {session.user.user_metadata?.avatar_url
-                ? <img src={session.user.user_metadata.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (session.user.user_metadata?.full_name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2) || session.user.email[0].toUpperCase())
-              }
+              {[0,1,2].map(i => (
+                <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--muted)' }} />
+              ))}
             </div>
             {menuOpen && (
               <>
                 <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
                 <div style={{
-                  position: 'absolute', top: 44, right: 0, zIndex: 100,
+                  position: 'absolute', top: 40, right: 0, zIndex: 100,
                   background: '#1a1a2e', border: '0.5px solid var(--border)',
-                  borderRadius: 12, padding: '8px', minWidth: 200,
+                  borderRadius: 12, padding: '8px', minWidth: 210,
                   boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                 }}>
                   <div style={{ padding: '8px 12px 10px', borderBottom: '0.5px solid var(--border)', marginBottom: 4 }}>
@@ -80,7 +78,7 @@ export default function Dashboard({ session }) {
                     background: 'none', border: 'none', borderRadius: 8,
                     padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
                   }}>👤 Profile</button>
-                  <button onClick={() => { navigate('/settings'); setMenuOpen(false) }} style={{
+                  <button style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     background: 'none', border: 'none', borderRadius: 8,
                     padding: '9px 12px', fontSize: 14, color: 'var(--muted)', cursor: 'not-allowed',
@@ -92,6 +90,47 @@ export default function Dashboard({ session }) {
                       padding: '9px 12px', fontSize: 14, color: '#f87171', cursor: 'pointer',
                     }}>Sign out</button>
                   </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Avatar circle with its own popover */}
+          <div style={{ position: 'relative' }}>
+            <div
+              onClick={() => { setAvatarMenuOpen(o => !o); setMenuOpen(false) }}
+              style={{
+                width: 36, height: 36, borderRadius: '50%', cursor: 'pointer',
+                background: session.user.user_metadata?.avatar_url ? 'none' : 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 600, color: '#fff',
+                overflow: 'hidden', border: '2px solid rgba(123,159,247,0.35)', flexShrink: 0,
+              }}
+            >
+              {session.user.user_metadata?.avatar_url
+                ? <img src={session.user.user_metadata.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (session.user.user_metadata?.full_name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2) || session.user.email[0].toUpperCase())
+              }
+            </div>
+            {avatarMenuOpen && (
+              <>
+                <div onClick={() => setAvatarMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
+                <div style={{
+                  position: 'absolute', top: 44, right: 0, zIndex: 100,
+                  background: '#1a1a2e', border: '0.5px solid var(--border)',
+                  borderRadius: 12, padding: '8px', minWidth: 190,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                }}>
+                  <button onClick={() => { navigate('/profile'); setAvatarMenuOpen(false) }} style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    background: 'none', border: 'none', borderRadius: 8,
+                    padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
+                  }}>🖼️ Edit picture</button>
+                  <button onClick={() => { navigate('/profile'); setAvatarMenuOpen(false) }} style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    background: 'none', border: 'none', borderRadius: 8,
+                    padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
+                  }}>👤 Profile settings</button>
                 </div>
               </>
             )}
