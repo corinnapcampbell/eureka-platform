@@ -673,25 +673,48 @@ export default function PitchPDF({ session }) {
   }
 
   async function handleDownloadDesktop() {
-    if (!previewRef.current) return
+    if (!previewHTML) return
     setDownloading(true)
     try {
-      const opt = {
-        margin: 0,
-        filename: `${idea?.title || 'pitch'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          ignoreElements: el => el.tagName === 'STYLE' && el.textContent.includes('@import'),
-        },
-        jsPDF: { unit: 'pt', format: [375, 667], orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'], after: '.page' },
-      }
-      await html2pdf().set(opt).from(previewRef.current).save()
-    } catch (err) { console.error('Desktop PDF error:', err.name, err.message, err) }
-    setDownloading(false)
+      const printWindow = window.open('', '_blank', 'width=800,height=1100')
+      printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${idea?.title || 'Pitch'}</title>
+<style>
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  @media print {
+    @page {
+      margin: 0;
+      size: 375pt 667pt portrait;
+    }
+    body { margin: 0; padding: 0; }
+    .page { page-break-after: always; break-after: page; }
+    .page:last-child { page-break-after: avoid; break-after: avoid; }
+  }
+  body { margin: 0; padding: 0; }
+</style>
+</head>
+<body>
+${previewHTML}
+</body>
+</html>`)
+      printWindow.document.close()
+      printWindow.focus()
+      setTimeout(() => {
+        printWindow.print()
+        printWindow.close()
+        setDownloading(false)
+      }, 1200)
+    } catch (err) {
+      console.error('Desktop PDF error:', err.name, err.message, err)
+      setDownloading(false)
+    }
   }
 
   if (loading) return (
