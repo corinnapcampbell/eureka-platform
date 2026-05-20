@@ -52,6 +52,11 @@ export default function DeckViewer() {
   }, [])
 
   async function downloadDeckPDF() {
+    const isChromeIOS = /CriOS/i.test(navigator.userAgent)
+    if (isChromeIOS) {
+      alert('To save to Photos, please open this page in Safari.')
+      return
+    }
     if (!slides) return
     console.log('downloadDeckPDF called, slides:', slides?.length)
     console.log('navigator.canShare:', typeof navigator.canShare)
