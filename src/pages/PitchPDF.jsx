@@ -572,6 +572,11 @@ export default function PitchPDF({ session }) {
   }
 
   async function handleDownload() {
+    const isChromeIOS = /CriOS/i.test(navigator.userAgent)
+    if (isChromeIOS) {
+      alert('To save to Photos, please open this page in Safari.')
+      return
+    }
     console.log('handleDownload called')
     if (!previewRef.current) { console.log('no previewRef'); return }
     const pages = previewRef.current.querySelectorAll('.page')
