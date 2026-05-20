@@ -673,49 +673,22 @@ export default function PitchPDF({ session }) {
 
   async function handleDownloadDesktop() {
     if (!previewRef.current) return
-    const pages = previewRef.current.querySelectorAll('.page')
-    if (!pages.length) return
+    const pageEls = previewRef.current.querySelectorAll('.page')
+    if (!pageEls.length) return
     setDownloading(true)
     try {
-      const wrapper = document.createElement('div')
-      wrapper.id = 'pdf-preview-desktop'
-      wrapper.style.cssText = [
-        'position:fixed',
-        'left:-9999px',
-        'top:0',
-        'width:375px',
-        'overflow:visible',
-        'z-index:-1',
-      ].join(';')
-      const safeHTML = previewHTML.replace(/@import[^;]+;/g, '')
-      wrapper.innerHTML = safeHTML
-      document.body.appendChild(wrapper)
-
-      const pageEls = wrapper.querySelectorAll('.page')
       const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
-
       for (let i = 0; i < pageEls.length; i++) {
-        const pageEl = pageEls[i]
-        const offsetTop = pageEl.offsetTop
-        const canvas = await html2canvas(wrapper, {
+        const canvas = await html2canvas(pageEls[i], {
           scale: 2,
           useCORS: true,
           logging: false,
-          width: 375,
-          height: 667,
-          windowWidth: 375,
-          windowHeight: 667,
-          x: 0,
-          y: offsetTop,
-          scrollY: -offsetTop,
           ignoreElements: el => el.tagName === 'STYLE' && el.textContent.includes('@import'),
         })
         const imgData = canvas.toDataURL('image/jpeg', 0.95)
         if (i > 0) pdf.addPage([375, 667], 'portrait')
         pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
       }
-
-      document.body.removeChild(wrapper)
       pdf.save(`${idea?.title || 'pitch'}.pdf`)
     } catch (err) { console.error('Desktop PDF error:', err.name, err.message, err) }
     setDownloading(false)
