@@ -13,6 +13,7 @@ import PitchPDF from './pages/PitchPDF'
 import PitchBuilder from './pages/PitchBuilder'
 import DeckBuilder from './pages/DeckBuilder'
 import DeckViewer from './pages/DeckViewer'
+import Profile from './pages/Profile'
  
 function ProtectedRoute({ session, children }) {
   if (!session) return <Navigate to="/auth" replace />
@@ -64,6 +65,7 @@ export default function App() {
       <Route path="/pitch/:ideaId" element={<PitchPDF session={session} />} />
       <Route path="/pitch-builder/:ideaId" element={<PitchBuilder session={session} />} />
       <Route path="/deck/:ideaId" element={<DeckBuilder session={session} />} />
+      <Route path="/profile" element={<ProtectedRoute session={session}><Profile session={session} /></ProtectedRoute>} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -38,6 +38,10 @@ export default function Dashboard({ session }) {
           <Logo size={20} variant="light" />
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span
+            onClick={() => navigate('/profile')}
+            style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline' }}
+          >Profile</span>
           <span style={{ fontSize: 13, color: 'var(--muted)' }}>{session.user.email}</span>
           <button onClick={signOut} style={{
             background: 'none', border: '0.5px solid var(--border)',
