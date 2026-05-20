@@ -676,7 +676,7 @@ export default function PitchPDF({ session }) {
     if (!previewHTML) return
     setDownloading(true)
     try {
-      const printWindow = window.open('', '_blank', 'width=800,height=1100')
+      const printWindow = window.open('', '_blank', 'width=420,height=720')
       printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
@@ -687,17 +687,38 @@ export default function PitchPDF({ session }) {
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-sizing: border-box;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 375px;
+    background: #fff;
   }
   @media print {
     @page {
       margin: 0;
-      size: 375pt 667pt portrait;
+      size: 375px 667px;
     }
-    body { margin: 0; padding: 0; }
-    .page { page-break-after: always; break-after: page; }
-    .page:last-child { page-break-after: avoid; break-after: avoid; }
+    html, body {
+      width: 375px;
+      margin: 0;
+      padding: 0;
+    }
+    #pdf-preview .page {
+      width: 375px !important;
+      height: 667px !important;
+      overflow: hidden !important;
+      page-break-after: always !important;
+      break-after: page !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    #pdf-preview .page:last-child {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
   }
-  body { margin: 0; padding: 0; }
 </style>
 </head>
 <body>
@@ -710,7 +731,7 @@ export default function PitchPDF({ session }) {
         printWindow.print()
         printWindow.close()
         setDownloading(false)
-      }, 1200)
+      }, 1500)
     } catch (err) {
       console.error('Desktop PDF error:', err.name, err.message, err)
       setDownloading(false)
