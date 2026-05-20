@@ -357,6 +357,7 @@ export default function PitchPDF({ session }) {
   const [downloading,      setDownloading]      = useState(false)
   const [generating,       setGenerating]       = useState(false)
   const [savingProgress,   setSavingProgress]   = useState(false)
+  const [chromeIOSWarning, setChromeIOSWarning] = useState(false)
   const previewRef = useRef(null)
   const isMobile = /Mobi|Android/i.test(navigator.userAgent)
 
@@ -574,7 +575,7 @@ export default function PitchPDF({ session }) {
   async function handleDownload() {
     const isChromeIOS = /CriOS/i.test(navigator.userAgent)
     if (isChromeIOS) {
-      alert('To save to Photos, please open this page in Safari.')
+      setChromeIOSWarning(true)
       return
     }
     console.log('handleDownload called')
@@ -758,6 +759,19 @@ export default function PitchPDF({ session }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
+      {chromeIOSWarning && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+          background: '#0e0e1f', color: '#fff', textAlign: 'center',
+          padding: '14px 20px', fontSize: 14, fontWeight: 500,
+        }}>
+          To save to Photos, please open this page in Safari.
+          <button onClick={() => setChromeIOSWarning(false)} style={{
+            marginLeft: 12, background: 'none', border: '1px solid rgba(255,255,255,0.4)',
+            color: '#fff', borderRadius: 6, padding: '2px 10px', cursor: 'pointer', fontSize: 13,
+          }}>✕</button>
+        </div>
+      )}
       {/* Gradient accent bar */}
       <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
 
