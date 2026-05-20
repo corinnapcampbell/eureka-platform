@@ -673,22 +673,34 @@ export default function PitchPDF({ session }) {
 
   async function handleDownloadDesktop() {
     if (!previewRef.current) return
-    const pageEls = previewRef.current.querySelectorAll('.page')
-    if (!pageEls.length) return
     setDownloading(true)
     try {
+      const container = previewRef.current
+      const fullCanvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        scrollY: -window.scrollY,
+        ignoreElements: el => el.tagName === 'STYLE' && el.textContent.includes('@import'),
+      })
+
+      const pageW = fullCanvas.width
+      const pageH = Math.round((667 / 375) * pageW)
+      const totalPages = Math.ceil(fullCanvas.height / pageH)
+
       const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
-      for (let i = 0; i < pageEls.length; i++) {
-        const canvas = await html2canvas(pageEls[i], {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          ignoreElements: el => el.tagName === 'STYLE' && el.textContent.includes('@import'),
-        })
-        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+
+      for (let i = 0; i < totalPages; i++) {
+        const sliceCanvas = document.createElement('canvas')
+        sliceCanvas.width = pageW
+        sliceCanvas.height = pageH
+        const ctx = sliceCanvas.getContext('2d')
+        ctx.drawImage(fullCanvas, 0, i * pageH, pageW, pageH, 0, 0, pageW, pageH)
+        const imgData = sliceCanvas.toDataURL('image/jpeg', 0.95)
         if (i > 0) pdf.addPage([375, 667], 'portrait')
         pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
       }
+
       pdf.save(`${idea?.title || 'pitch'}.pdf`)
     } catch (err) { console.error('Desktop PDF error:', err.name, err.message, err) }
     setDownloading(false)
