@@ -6,6 +6,7 @@ import Logo from '../components/Logo'
 export default function Dashboard({ session }) {
   const [ideas, setIdeas] = useState([])
   const [loading, setLoading] = useState(true)
+  const [menuOpen, setMenuOpen] = useState(false)
   const navigate = useNavigate()
   const name = session.user.user_metadata?.full_name?.split(' ')[0] || 'there'
  
@@ -32,21 +33,69 @@ export default function Dashboard({ session }) {
       <nav style={{
         maxWidth: 960, margin: '0 auto', padding: '1.25rem 2rem',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderBottom: '0.5px solid var(--border)'
+        borderBottom: '0.5px solid var(--border)', position: 'relative'
       }}>
         <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <Logo size={20} variant="light" />
+          <Logo size={20} variant="dark" />
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <span
-            onClick={() => navigate('/profile')}
-            style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer', textDecoration: 'underline' }}
-          >Profile</span>
-          <span style={{ fontSize: 13, color: 'var(--muted)' }}>{session.user.email}</span>
-          <button onClick={signOut} style={{
-            background: 'none', border: '0.5px solid var(--border)',
-            borderRadius: 6, padding: '6px 14px', fontSize: 13, color: 'var(--muted)'
-          }}>Sign out</button>
+            onClick={() => navigate('/dashboard')}
+            style={{ fontSize: 13, color: 'var(--muted)', cursor: 'pointer' }}
+          >My Ideas</span>
+          <div style={{ position: 'relative' }}>
+            <div
+              onClick={() => setMenuOpen(o => !o)}
+              style={{
+                width: 36, height: 36, borderRadius: '50%', cursor: 'pointer',
+                background: session.user.user_metadata?.avatar_url
+                  ? 'none'
+                  : 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 600, color: '#fff',
+                overflow: 'hidden', border: '2px solid rgba(123,159,247,0.35)',
+                flexShrink: 0,
+              }}
+            >
+              {session.user.user_metadata?.avatar_url
+                ? <img src={session.user.user_metadata.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (session.user.user_metadata?.full_name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2) || session.user.email[0].toUpperCase())
+              }
+            </div>
+            {menuOpen && (
+              <>
+                <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
+                <div style={{
+                  position: 'absolute', top: 44, right: 0, zIndex: 100,
+                  background: '#1a1a2e', border: '0.5px solid var(--border)',
+                  borderRadius: 12, padding: '8px', minWidth: 200,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                }}>
+                  <div style={{ padding: '8px 12px 10px', borderBottom: '0.5px solid var(--border)', marginBottom: 4 }}>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Signed in as</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 13, color: '#fff', wordBreak: 'break-all' }}>{session.user.email}</p>
+                  </div>
+                  <button onClick={() => { navigate('/profile'); setMenuOpen(false) }} style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    background: 'none', border: 'none', borderRadius: 8,
+                    padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
+                  }}>👤 Profile</button>
+                  <button onClick={() => { navigate('/settings'); setMenuOpen(false) }} style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    background: 'none', border: 'none', borderRadius: 8,
+                    padding: '9px 12px', fontSize: 14, color: 'var(--muted)', cursor: 'not-allowed',
+                  }}>⚙️ Settings <span style={{ fontSize: 11 }}>(coming soon)</span></button>
+                  <div style={{ borderTop: '0.5px solid var(--border)', marginTop: 4, paddingTop: 4 }}>
+                    <button onClick={() => { signOut(); setMenuOpen(false) }} style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      background: 'none', border: 'none', borderRadius: 8,
+                      padding: '9px 12px', fontSize: 14, color: '#f87171', cursor: 'pointer',
+                    }}>Sign out</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </nav>
  
