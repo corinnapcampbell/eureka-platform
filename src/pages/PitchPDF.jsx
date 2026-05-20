@@ -548,7 +548,7 @@ export default function PitchPDF({ session }) {
     const html = buildPreviewHTML(formWithChips, idea, session?.user?.email, bmValue)
     setPreviewHTML(html)
     setGenerating(false)
-    setStage('preview')
+    isMobile ? setStage('preview') : setStage('preview-desktop')
   }
 
   async function handlePublish() {
@@ -668,6 +668,56 @@ export default function PitchPDF({ session }) {
         pdf.save(`${idea?.title || 'pitch'}.pdf`)
       }
     } catch (err) { console.error('Download error:', err.name, err.message, err) }
+    setDownloading(false)
+  }
+
+  async function handleDownloadDesktop() {
+    if (!previewRef.current) return
+    const pages = previewRef.current.querySelectorAll('.page')
+    if (!pages.length) return
+    setDownloading(true)
+    try {
+      const wrapper = document.createElement('div')
+      wrapper.id = 'pdf-preview-desktop'
+      wrapper.style.cssText = [
+        'position:fixed',
+        'left:-9999px',
+        'top:0',
+        'width:375px',
+        'overflow:visible',
+        'z-index:-1',
+      ].join(';')
+      const safeHTML = previewHTML.replace(/@import[^;]+;/g, '')
+      wrapper.innerHTML = safeHTML
+      document.body.appendChild(wrapper)
+
+      const pageEls = wrapper.querySelectorAll('.page')
+      const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
+
+      for (let i = 0; i < pageEls.length; i++) {
+        const pageEl = pageEls[i]
+        const offsetTop = pageEl.offsetTop
+        const canvas = await html2canvas(wrapper, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          width: 375,
+          height: 667,
+          windowWidth: 375,
+          windowHeight: 667,
+          x: 0,
+          y: offsetTop,
+          scrollY: -offsetTop,
+          ignoreElements: el => el.tagName === 'STYLE' && el.textContent.includes('@import'),
+        })
+        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+        if (i > 0) pdf.addPage([375, 667], 'portrait')
+        pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
+      }
+
+      document.body.removeChild(wrapper)
+      pdf.save(`${idea?.title || 'pitch'}.pdf`)
+    } catch (err) { console.error('Desktop PDF error:', err.name, err.message, err) }
     setDownloading(false)
   }
 
@@ -924,6 +974,50 @@ export default function PitchPDF({ session }) {
         </div>
       )}
 
+      {stage === 'preview-desktop' && (
+        <div style={{ maxWidth: 760, margin: '0 auto', padding: '2rem 1.25rem 6rem' }}>
+          <div
+            ref={previewRef}
+            id="pdf-preview"
+            dangerouslySetInnerHTML={{ __html: previewHTML }}
+            style={{ overflowX: 'auto' }}
+          />
+
+          <div style={{ display: 'flex', gap: 12, marginTop: '1.75rem' }}>
+            <button
+              onClick={() => setStage('form')}
+              style={{
+                flex: 1, background: '#fff', border: '0.5px solid rgba(44,44,42,0.15)',
+                borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 600,
+                color: '#2c2c2a', cursor: 'pointer',
+              }}
+            >
+              ✏️  Edit
+            </button>
+            <button
+              onClick={handlePublish}
+              disabled={publishing || publishSuccess}
+              style={{
+                flex: 1, background: publishSuccess
+                  ? 'linear-gradient(90deg, #5a9f7a, #4a8f6a)'
+                  : 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
+                color: '#fff', border: 'none', borderRadius: 12, padding: '14px',
+                fontSize: 15, fontWeight: 600, cursor: publishing || publishSuccess ? 'not-allowed' : 'pointer',
+                opacity: publishing ? 0.7 : 1,
+              }}
+            >
+              {publishing ? '…Publishing' : publishSuccess ? '✅ Published!' : '✅ Publish'}
+            </button>
+          </div>
+
+          {publishSuccess && (
+            <p style={{ color: '#5a9f7a', fontSize: 13, marginTop: 10, textAlign: 'center' }}>
+              Your pitch PDF is now visible to investors
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Floating download button */}
       {stage === 'preview' && (
         <button
@@ -941,6 +1035,25 @@ export default function PitchPDF({ session }) {
           }}
         >
           {downloading ? '…Generating' : isMobile ? '⬇ Save to Photos' : '⬇ Download PDF'}
+        </button>
+      )}
+
+      {stage === 'preview-desktop' && (
+        <button
+          onClick={handleDownloadDesktop}
+          disabled={downloading}
+          style={{
+            position: 'fixed', bottom: 24, right: 24,
+            background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
+            color: '#fff', border: 'none', borderRadius: 50, padding: '13px 20px',
+            fontSize: 14, fontWeight: 600, cursor: downloading ? 'not-allowed' : 'pointer',
+            boxShadow: '0 4px 20px rgba(123,159,247,0.45)',
+            opacity: downloading ? 0.7 : 1,
+            display: 'flex', alignItems: 'center', gap: 6,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          {downloading ? '…Generating' : '⬇ Download PDF'}
         </button>
       )}
     </div>
