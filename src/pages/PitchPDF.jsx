@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
+import html2pdf from 'html2pdf.js'
 import Logo from '../components/Logo'
 import BusinessModelSection, { extractBMChips, serializeBMValue } from '../components/BusinessModelSection'
 import { parseBMValue, buildBMHtml, escH } from '../utils/businessModel'
@@ -675,33 +676,20 @@ export default function PitchPDF({ session }) {
     if (!previewRef.current) return
     setDownloading(true)
     try {
-      const container = previewRef.current
-      const fullCanvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        scrollY: -window.scrollY,
-        ignoreElements: el => el.tagName === 'STYLE' && el.textContent.includes('@import'),
-      })
-
-      const pageW = fullCanvas.width
-      const pageH = Math.round((667 / 375) * pageW)
-      const totalPages = Math.ceil(fullCanvas.height / pageH)
-
-      const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
-
-      for (let i = 0; i < totalPages; i++) {
-        const sliceCanvas = document.createElement('canvas')
-        sliceCanvas.width = pageW
-        sliceCanvas.height = pageH
-        const ctx = sliceCanvas.getContext('2d')
-        ctx.drawImage(fullCanvas, 0, i * pageH, pageW, pageH, 0, 0, pageW, pageH)
-        const imgData = sliceCanvas.toDataURL('image/jpeg', 0.95)
-        if (i > 0) pdf.addPage([375, 667], 'portrait')
-        pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
+      const opt = {
+        margin: 0,
+        filename: `${idea?.title || 'pitch'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          ignoreElements: el => el.tagName === 'STYLE' && el.textContent.includes('@import'),
+        },
+        jsPDF: { unit: 'pt', format: [375, 667], orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], after: '.page' },
       }
-
-      pdf.save(`${idea?.title || 'pitch'}.pdf`)
+      await html2pdf().set(opt).from(previewRef.current).save()
     } catch (err) { console.error('Desktop PDF error:', err.name, err.message, err) }
     setDownloading(false)
   }
