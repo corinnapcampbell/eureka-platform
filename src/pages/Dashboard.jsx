@@ -37,7 +37,7 @@ export default function Dashboard({ session }) {
         borderBottom: '0.5px solid var(--border)', position: 'relative'
       }}>
         <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <Logo size={20} variant="dark" />
+          <Logo size={20} variant="light" />
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span
@@ -53,7 +53,7 @@ export default function Dashboard({ session }) {
                 width: 32, height: 32, borderRadius: 8, cursor: 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 gap: 4, background: menuOpen ? 'rgba(255,255,255,0.08)' : 'none',
-                border: '0.5px solid rgba(255,255,255,0.12)', transition: 'background 0.15s'
+                border: '0.5px solid var(--border)', transition: 'background 0.15s'
               }}
             >
               {[0,1,2].map(i => (
@@ -65,18 +65,18 @@ export default function Dashboard({ session }) {
                 <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
                 <div style={{
                   position: 'absolute', top: 40, right: 0, zIndex: 100,
-                  background: '#1a1a2e', border: '0.5px solid var(--border)',
+                  background: '#fff', border: '0.5px solid var(--border)',
                   borderRadius: 12, padding: '8px', minWidth: 210,
                   boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                 }}>
                   <div style={{ padding: '8px 12px 10px', borderBottom: '0.5px solid var(--border)', marginBottom: 4 }}>
                     <p style={{ margin: 0, fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Signed in as</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 13, color: '#fff', wordBreak: 'break-all' }}>{session.user.email}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink)', wordBreak: 'break-all' }}>{session.user.email}</p>
                   </div>
                   <button onClick={() => { navigate('/profile'); setMenuOpen(false) }} style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     background: 'none', border: 'none', borderRadius: 8,
-                    padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
+                    padding: '9px 12px', fontSize: 14, color: 'var(--ink)', cursor: 'pointer',
                   }}>👤 Profile</button>
                   <button style={{
                     display: 'block', width: '100%', textAlign: 'left',
@@ -117,19 +117,19 @@ export default function Dashboard({ session }) {
                 <div onClick={() => setAvatarMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
                 <div style={{
                   position: 'absolute', top: 44, right: 0, zIndex: 100,
-                  background: '#1a1a2e', border: '0.5px solid var(--border)',
+                  background: '#fff', border: '0.5px solid var(--border)',
                   borderRadius: 12, padding: '8px', minWidth: 190,
                   boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                 }}>
                   <button onClick={() => { navigate('/profile'); setAvatarMenuOpen(false) }} style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     background: 'none', border: 'none', borderRadius: 8,
-                    padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
+                    padding: '9px 12px', fontSize: 14, color: 'var(--ink)', cursor: 'pointer',
                   }}>🖼️ Edit picture</button>
                   <button onClick={() => { navigate('/profile'); setAvatarMenuOpen(false) }} style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     background: 'none', border: 'none', borderRadius: 8,
-                    padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
+                    padding: '9px 12px', fontSize: 14, color: 'var(--ink)', cursor: 'pointer',
                   }}>👤 Profile settings</button>
                 </div>
               </>
