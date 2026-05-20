@@ -701,7 +701,7 @@ export default function PitchPDF({ session }) {
 </style>
 </head>
 <body>
-${previewHTML}
+<div id="pdf-preview">${previewHTML}</div>
 </body>
 </html>`)
       printWindow.document.close()
