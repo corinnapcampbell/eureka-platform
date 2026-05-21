@@ -14,9 +14,7 @@ export default function DeckViewer() {
   const [current, setCurrent] = useState(0)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [generatingPDF, setGeneratingPDF] = useState(false)
   const [ideaTitle, setIdeaTitle] = useState('')
-  const [chromeIOSWarning, setChromeIOSWarning] = useState(false)
   const touchStart = useRef(null)
   const isMobile = /Mobi|Android/i.test(navigator.userAgent)
 
@@ -52,115 +50,6 @@ export default function DeckViewer() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
 
-  async function downloadDeckPDF() {
-    const isChromeIOS = /CriOS/i.test(navigator.userAgent)
-    if (isChromeIOS) {
-      setChromeIOSWarning(true)
-      return
-    }
-    if (!slides) return
-    console.log('downloadDeckPDF called, slides:', slides?.length)
-    console.log('navigator.canShare:', typeof navigator.canShare)
-    setGeneratingPDF(true)
-
-    if (navigator.canShare) {
-      try {
-        const files = await Promise.all(slides.map(async (slide, idx) => {
-          const canvas = document.createElement('canvas')
-          canvas.width = 960; canvas.height = 540
-          const ctx = canvas.getContext('2d')
-          const dark = slide.type === 'cover' || slide.type === 'roadmap' || slide.type === 'closing'
-          ctx.fillStyle = dark ? '#0e0e1f' : '#f5f5f3'
-          ctx.fillRect(0, 0, 960, 540)
-          ctx.strokeStyle = '#7b9ff7'; ctx.lineWidth = 3
-          ctx.beginPath(); ctx.moveTo(0, 6); ctx.lineTo(960, 6); ctx.stroke()
-          ctx.beginPath(); ctx.moveTo(0, 534); ctx.lineTo(960, 534); ctx.stroke()
-          const tc = dark ? '#ffffff' : '#0e0e1f'
-          const mc = dark ? 'rgba(255,255,255,0.5)' : '#6b6b78'
-          const ml = 60; let y = 90
-          if (slide.type === 'cover') {
-            ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = tc; ctx.textAlign = 'center'
-            ctx.fillText(slide.title || '', 480, 240)
-            ctx.font = '24px sans-serif'; ctx.fillStyle = mc
-            ctx.fillText(slide.tagline || '', 480, 290)
-          } else {
-            ctx.font = 'bold 18px sans-serif'; ctx.fillStyle = '#7b9ff7'; ctx.textAlign = 'left'
-            ctx.fillText(slide.sectionLabel || '', ml, y); y += 40
-            ctx.font = 'bold 32px sans-serif'; ctx.fillStyle = tc
-            ctx.fillText(slide.headline || slide.title || '', ml, y); y += 50
-            ctx.font = '22px sans-serif'; ctx.fillStyle = mc
-            if (slide.bullets?.length) slide.bullets.forEach((b, i) => { ctx.fillText(`${i + 1}. ${b}`, ml, y); y += 36 })
-            if (slide.description) { ctx.fillText(slide.description, ml, y); y += 36 }
-            if (slide.type === 'closing') {
-              ctx.fillStyle = '#7b9ff7'; ctx.textAlign = 'center'
-              if (slide.email) { ctx.fillText(slide.email, 480, y); y += 36 }
-              if (slide.website) ctx.fillText(slide.website, 480, y)
-            }
-          }
-          ctx.font = '16px sans-serif'; ctx.fillStyle = 'rgba(120,120,130,0.8)'; ctx.textAlign = 'center'
-          ctx.fillText('Presented via EurekAIdea', 480, 524)
-          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92))
-          return new File([blob], `slide-${idx + 1}.jpg`, { type: 'image/jpeg' })
-        }))
-        const slug = ideaTitle.replace(/[^a-z0-9]+/gi, '-').toLowerCase().replace(/^-+|-+$/g, '') || 'deck'
-        const shareData = { files, title: ideaTitle || 'Deck' }
-        if (navigator.canShare(shareData)) await navigator.share(shareData)
-      } catch (e) { console.error('Share error:', e) }
-      setGeneratingPDF(false)
-      return
-    }
-
-    try {
-      const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: [297, 167] })
-      const W = 297, H = 167, ml = 16
-      const navy = [14, 14, 31], accent = [123, 159, 247]
-      slides.forEach((slide, idx) => {
-        if (idx > 0) doc.addPage()
-        const dark = slide.type === 'cover' || slide.type === 'roadmap' || slide.type === 'closing'
-        if (dark) { doc.setFillColor(...navy); doc.rect(0, 0, W, H, 'F') }
-        doc.setDrawColor(...accent); doc.setLineWidth(0.8)
-        doc.line(0, 1.5, W, 1.5); doc.line(0, H - 1.5, W, H - 1.5)
-        const tc = dark ? [255, 255, 255] : navy
-        const mc = dark ? [120, 120, 150] : [100, 100, 110]
-        let y = 24
-        if (slide.type === 'cover') {
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(...tc)
-          doc.text(slide.title || '', W / 2, 72, { align: 'center', maxWidth: W - 60 })
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(...mc)
-          doc.text(slide.tagline || '', W / 2, 88, { align: 'center', maxWidth: W - 80 })
-        } else {
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...accent)
-          doc.text(slide.sectionLabel || '', ml, y); y += 8
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(...tc)
-          const tLines = doc.splitTextToSize(slide.headline || slide.title || '', W - ml * 2)
-          doc.text(tLines, ml, y); y += tLines.length * 6 + 6
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...mc)
-          if (slide.bullets?.length) slide.bullets.forEach((b, i) => {
-            const ls = doc.splitTextToSize(`${i + 1}. ${b}`, W - ml * 2)
-            doc.text(ls, ml, y); y += ls.length * 5 + 3
-          })
-          if (slide.description) {
-            const ls = doc.splitTextToSize(slide.description, W - ml * 2)
-            doc.text(ls, ml, y); y += ls.length * 5 + 4
-          }
-          if (slide.type === 'closing') {
-            doc.setTextColor(...accent)
-            if (slide.email) { doc.text(slide.email, W / 2, y, { align: 'center' }); y += 8 }
-            if (slide.website) doc.text(slide.website, W / 2, y, { align: 'center' })
-          }
-        }
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(120, 120, 130)
-        doc.text('Presented via EurekAIdea', W / 2, H - 6, { align: 'center' })
-        doc.text(`${idx + 1} / ${slides.length}`, W - ml, H - 6, { align: 'right' })
-      })
-      const slug = ideaTitle.replace(/[^a-z0-9]+/gi, '-').toLowerCase().replace(/^-+|-+$/g, '') || 'deck'
-      doc.save(`${slug}-deck.pdf`)
-    } catch (e) {
-      console.error('PDF error:', e)
-    }
-    setGeneratingPDF(false)
-  }
-
   if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
       <div className="spinner" style={{ width: 28, height: 28, borderTopColor: '#7b9ff7' }} />
@@ -188,19 +77,6 @@ export default function DeckViewer() {
         touchStart.current = null
       }}
     >
-      {chromeIOSWarning && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-          background: '#0e0e1f', color: '#fff', textAlign: 'center',
-          padding: '14px 20px', fontSize: 14, fontWeight: 500,
-        }}>
-          To save to Photos, please open this page in Safari.
-          <button onClick={() => setChromeIOSWarning(false)} style={{
-            marginLeft: 12, background: 'none', border: '1px solid rgba(255,255,255,0.4)',
-            color: '#fff', borderRadius: 6, padding: '2px 10px', cursor: 'pointer', fontSize: 13,
-          }}>✕</button>
-        </div>
-      )}
       {authSession && (
         <a href="/dashboard" style={{ position: 'absolute', top: 14, right: 16, zIndex: 100, background: 'rgba(123,159,247,0.12)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
       )}
@@ -236,23 +112,6 @@ export default function DeckViewer() {
       <div style={{ position: 'absolute', bottom: 14, right: 20, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontFamily: "'DM Sans', sans-serif" }}>
         Presented via EurekAIdea · myeurekaidea.com
       </div>
-      <button
-        onClick={downloadDeckPDF}
-        disabled={generatingPDF}
-        style={{
-          position: 'fixed', bottom: 24, right: 24,
-          background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
-          color: '#fff', border: 'none', borderRadius: 50, padding: '13px 20px',
-          fontSize: 14, fontWeight: 600, cursor: generatingPDF ? 'not-allowed' : 'pointer',
-          boxShadow: '0 4px 20px rgba(123,159,247,0.45)',
-          opacity: generatingPDF ? 0.7 : 1,
-          display: 'flex', alignItems: 'center', gap: 6,
-          transition: 'opacity 0.15s',
-          zIndex: 1000,
-        }}
-      >
-        {generatingPDF ? '…Generating' : '⬇ Save to Photos'}
-      </button>
     </div>
   )
 }

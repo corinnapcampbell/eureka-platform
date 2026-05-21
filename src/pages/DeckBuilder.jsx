@@ -31,6 +31,7 @@ function getSlideExcerpt(slide) {
 }
 
 export default function DeckBuilder({ session }) {
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
   const { ideaId } = useParams()
   const navigate = useNavigate()
   const [idea, setIdea] = useState(null)
@@ -195,7 +196,7 @@ export default function DeckBuilder({ session }) {
     if (!slides || !slideRenderRef.current) return
     setGeneratingPDF(true)
 
-    if (navigator.canShare) {
+    if (isMobile) {
       try {
         const container = slideRenderRef.current
         container.style.cssText = 'position:fixed;left:0;top:0;z-index:-999;opacity:0;pointer-events:none;visibility:visible;'
