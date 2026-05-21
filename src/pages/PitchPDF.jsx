@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import html2pdf from 'html2pdf.js'
 import Logo from '../components/Logo'
+import NavBar from '../components/NavBar'
 import BusinessModelSection, { extractBMChips, serializeBMValue } from '../components/BusinessModelSection'
 import { parseBMValue, buildBMHtml, escH } from '../utils/businessModel'
 
@@ -778,23 +779,13 @@ export default function PitchPDF({ session }) {
       {/* Dark header */}
       <div style={{ background: '#0e0e1f', padding: '1.25rem 1.5rem 1.75rem' }}>
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <button
-              onClick={() => navigate(`/idea/${ideaId}`)}
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}
-            >
-              ← Back to idea
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-                <Logo size={15} variant="dark" />
-              </span>
-              {session && (
-                <button onClick={() => navigate('/dashboard')} title="My Dashboard" style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {(session?.user?.user_metadata?.full_name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)) || (session?.user?.email?.[0]?.toUpperCase() || '?')}
-                </button>
-              )}
-            </div>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <NavBar
+              session={session}
+              leftContent={
+                <button onClick={() => navigate(`/idea/${ideaId}`)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer', padding: 0 }}>← Back to idea</button>
+              }
+            />
           </div>
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 26, color: '#fff', marginBottom: '0.3rem', letterSpacing: '-0.3px' }}>
             {stage === 'form' ? 'Build Your Pitch PDF' : 'Preview Your Pitch PDF'}

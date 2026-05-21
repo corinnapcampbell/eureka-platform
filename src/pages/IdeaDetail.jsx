@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
+import NavBar from '../components/NavBar'
 import { dedupeArray } from '../utils/generatePDF'
 import { buildSnapshotHTML } from '../utils/businessModel'
 import BusinessModelSection, { parseBMValue, serializeBMValue } from '../components/BusinessModelSection'
@@ -408,18 +409,16 @@ export default function IdeaDetail({ session }) {
       <div style={{ background: '#0e0e1f', paddingBottom: '2.5rem' }}>
         <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem 1.25rem 0' }}>
 
-          {/* Nav row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: 8 }}>
-            <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-              <Logo size={20} variant="dark" />
-            </span>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <button onClick={() => setEditing(true)} style={btnPrimary}>Edit idea</button>
-              <button onClick={() => navigate('/dashboard')} style={btnGhost}>← Back to vault</button>
-              <button onClick={() => navigate('/dashboard')} title="My Dashboard" style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {(session?.user?.user_metadata?.full_name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)) || (session?.user?.email?.[0]?.toUpperCase() || '?')}
-              </button>
-            </div>
+          <div style={{ marginBottom: '2rem' }}>
+            <NavBar
+              session={session}
+              rightExtra={
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button onClick={() => setEditing(true)} style={btnPrimary}>Edit idea</button>
+                  <button onClick={() => navigate('/dashboard')} style={btnGhost}>← Back to vault</button>
+                </div>
+              }
+            />
           </div>
 
           {/* Categories + protection badge */}

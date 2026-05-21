@@ -5,6 +5,7 @@ import { buildDefaultSlides, ScaledSlide, Thumbnail, SLIDE_NAMES, SLIDE_W, SLIDE
 import BusinessModelSection, { parseBMValue, extractBMChips, serializeBMValue } from '../components/BusinessModelSection'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import NavBar from '../components/NavBar'
 
 const SLIDES_COUNT = 8
 const NAVY = '#0e0e1f'
@@ -297,31 +298,22 @@ export default function DeckBuilder({ session }) {
 
         {/* Top bar */}
         <div style={{ background: NAVY, borderBottom: '0.5px solid rgba(255,255,255,0.07)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, zIndex: 10 }}>
-          <button onClick={() => navigate(`/idea/${ideaId}`)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer', padding: '4px 0', flexShrink: 0 }}>
-            ← Back
-          </button>
-          <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', fontWeight: 400 }}>
-              Deck Builder — {SLIDE_NAMES[current]}
-            </span>
-            {saving && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginLeft: 10 }}>Saving…</span>}
-          </div>
-          <button onClick={handlePDF} disabled={generatingPDF} style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: 'rgba(255,255,255,0.65)', cursor: 'pointer', flexShrink: 0, opacity: generatingPDF ? 0.5 : 1 }}>
-            {generatingPDF ? 'Generating PDF…' : '↓ PDF'}
-          </button>
-          <button onClick={() => setPresenting(true)} style={{ background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
-            ▶ Present
-          </button>
-          <button onClick={saveProgress} disabled={savingProgress} style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: 'rgba(255,255,255,0.55)', cursor: savingProgress ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: savingProgress ? 0.6 : 1 }}>
-            {savingProgress ? 'Saving...' : '💾 Save Progress'}
-          </button>
-          <button onClick={handleShare} style={{ background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#7b9ff7', cursor: 'pointer', flexShrink: 0 }}>
-            Share Deck
-          </button>
-          <button onClick={() => navigate('/dashboard')} title="My Dashboard" style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {(session?.user?.user_metadata?.full_name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)) || (session?.user?.email?.[0]?.toUpperCase() || '?')}
-          </button>
+          <NavBar
+            session={session}
+            leftContent={
+              <button onClick={() => navigate(`/idea/${ideaId}`)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer', padding: '4px 0' }}>← Back</button>
+            }
+            rightExtra={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>Deck Builder — {SLIDE_NAMES[current]}</span>
+                {saving && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Saving…</span>}
+                <button onClick={handlePDF} disabled={generatingPDF} style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: 'rgba(255,255,255,0.65)', cursor: 'pointer', opacity: generatingPDF ? 0.5 : 1 }}>{generatingPDF ? 'Generating PDF…' : '↓ PDF'}</button>
+                <button onClick={() => setPresenting(true)} style={{ background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#fff', cursor: 'pointer' }}>▶ Present</button>
+                <button onClick={saveProgress} disabled={savingProgress} style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: 'rgba(255,255,255,0.55)', cursor: savingProgress ? 'not-allowed' : 'pointer', opacity: savingProgress ? 0.6 : 1 }}>{savingProgress ? 'Saving...' : '💾 Save Progress'}</button>
+                <button onClick={handleShare} style={{ background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#7b9ff7', cursor: 'pointer' }}>Share Deck</button>
+              </div>
+            }
+          />
         </div>
 
         {/* Body: sidebar + slide */}

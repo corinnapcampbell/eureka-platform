@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import Logo from '../components/Logo'
+import NavBar from '../components/NavBar'
 
 const CATEGORIES = ['SaaS', 'Marketplace', 'FinTech', 'HealthTech', 'EdTech', 'AI / ML', 'Hardware', 'Consumer', 'B2B', 'Sustainability', 'Other']
 
@@ -137,9 +138,13 @@ export default function SubmitIdea({ session }) {
     <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
       {/* Header */}
       <div style={{ background: 'var(--ink)', padding: '0' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Logo size={20} variant="dark" />
-          <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>← Back to vault</button>
+        <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem 2rem' }}>
+          <NavBar
+            session={session}
+            rightExtra={
+              <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer' }}>← Back to vault</button>
+            }
+          />
         </div>
         {/* Progress */}
         <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 2rem 1.5rem', display: 'flex', gap: 8 }}>
