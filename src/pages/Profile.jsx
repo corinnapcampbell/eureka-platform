@@ -113,11 +113,11 @@ export default function Profile({ session }) {
                     background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 8,
                     padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
                   }}>👤 Profile</button>
-                  <button style={{
+                  <button onClick={() => { navigate('/settings'); setMenuOpen(false) }} style={{
                     display: 'block', width: '100%', textAlign: 'left',
                     background: 'none', border: 'none', borderRadius: 8,
-                    padding: '9px 12px', fontSize: 14, color: 'var(--muted)', cursor: 'not-allowed',
-                  }}>⚙️ Settings <span style={{ fontSize: 11 }}>(coming soon)</span></button>
+                    padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer',
+                  }}>⚙️ Settings</button>
                   <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.08)', marginTop: 4, paddingTop: 4 }}>
                     <button onClick={() => { signOut(); setMenuOpen(false) }} style={{
                       display: 'block', width: '100%', textAlign: 'left',
