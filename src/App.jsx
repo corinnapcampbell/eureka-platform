@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard'
 import SubmitIdea from './pages/SubmitIdea'
 import IdeaDetail from './pages/IdeaDetail'
 import SharedIdea from './pages/SharedIdea'
+import TradeSecrets from './pages/legal/TradeSecrets'
+import NDA from './pages/legal/NDA'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import Terms from './pages/Terms'
 import PitchPDF from './pages/PitchPDF'
@@ -71,6 +73,8 @@ export default function App() {
       <Route path="/profile" element={<ProtectedRoute session={session}><Profile session={session} /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute session={session}><Settings session={session} /></ProtectedRoute>} />
       <Route path="/pricing" element={<Pricing session={session} />} />
+      <Route path="/legal/trade-secrets" element={<TradeSecrets />} />
+      <Route path="/legal/nda" element={<NDA />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<NotFound session={session} />} />

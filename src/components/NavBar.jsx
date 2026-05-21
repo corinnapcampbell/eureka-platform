@@ -63,6 +63,11 @@ export default function NavBar({ session, leftContent = null, rightExtra = null 
                 <button onClick={() => { navigate('/profile'); setMenuOpen(false) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderRadius: 8, padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer' }}>👤 Profile</button>
                 <button onClick={() => { navigate('/settings'); setMenuOpen(false) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderRadius: 8, padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer' }}>⚙️ Settings</button>
                 <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.08)', marginTop: 4, paddingTop: 4 }}>
+                  <p style={{ margin: '4px 12px 4px', fontSize: 10, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Legal</p>
+                  <button onClick={() => { navigate('/legal/trade-secrets'); setMenuOpen(false) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderRadius: 8, padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer' }}>📜 Trade Secrets Act</button>
+                  <button onClick={() => { navigate('/legal/nda'); setMenuOpen(false) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderRadius: 8, padding: '9px 12px', fontSize: 14, color: '#fff', cursor: 'pointer' }}>🤝 NDA</button>
+                </div>
+                <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.08)', marginTop: 4, paddingTop: 4 }}>
                   <button onClick={() => { signOut(); setMenuOpen(false) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderRadius: 8, padding: '9px 12px', fontSize: 14, color: '#f87171', cursor: 'pointer' }}>Sign out</button>
                 </div>
               </div>
