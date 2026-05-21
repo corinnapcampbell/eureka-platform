@@ -678,6 +678,7 @@ export default function IdeaDetail({ session }) {
                 {idea.tease || (isOwner ? <em style={{ opacity: 0.35, fontStyle: 'normal' }}>No investor tease yet — click ✏️ to add</em> : null)}
               </p>
             )}
+            <AIChallenge sectionKey="tease" sectionLabel="Investor Tease" content={idea.tease} isPaid={isPaid} />
           </div>
         )}
 
