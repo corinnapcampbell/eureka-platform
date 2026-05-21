@@ -14,6 +14,7 @@ import PitchBuilder from './pages/PitchBuilder'
 import DeckBuilder from './pages/DeckBuilder'
 import DeckViewer from './pages/DeckViewer'
 import Profile from './pages/Profile'
+import Pricing from './pages/Pricing'
 import Settings from './pages/Settings'
  
 function ProtectedRoute({ session, children }) {
@@ -68,6 +69,7 @@ export default function App() {
       <Route path="/deck/:ideaId" element={<DeckBuilder session={session} />} />
       <Route path="/profile" element={<ProtectedRoute session={session}><Profile session={session} /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute session={session}><Settings session={session} /></ProtectedRoute>} />
+      <Route path="/pricing" element={<Pricing session={session} />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" replace />} />
