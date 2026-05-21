@@ -8,6 +8,8 @@ export default function Dashboard({ session }) {
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [onboardingStep, setOnboardingStep] = useState(0)
   const navigate = useNavigate()
   const name = session.user.user_metadata?.full_name?.split(' ')[0] || 'there'
  
@@ -21,15 +23,94 @@ export default function Dashboard({ session }) {
       setLoading(false)
     }
     fetchIdeas()
+    const meta = session.user.user_metadata || {}
+    if (!meta.onboarding_complete) setShowOnboarding(true)
   }, [])
  
   async function signOut() {
     await supabase.auth.signOut()
   }
- 
+
+  async function completeOnboarding() {
+    setShowOnboarding(false)
+    await supabase.auth.updateUser({ data: { onboarding_complete: true } })
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
- 
+
+      {showOnboarding && (() => {
+        const steps = [
+          {
+            icon: '💡',
+            title: 'Welcome to eurekAIdea',
+            body: 'The protected vault where ideas become investable. Submit your ideas, protect them instantly with blockchain timestamps, and present them to investors — all in one place.',
+          },
+          {
+            icon: '🔐',
+            title: 'Your ideas are protected',
+            body: 'Every idea you submit gets an instant blockchain timestamp — proof it existed at that moment. Share via NDA-gated links so only verified viewers can see your work.',
+          },
+          {
+            icon: '📄',
+            title: 'Build your pitch',
+            body: 'Use our AI-assisted Pitch PDF and Deck Builder to turn your idea into a professional investor-ready presentation. Generate, preview, and share in minutes.',
+          },
+          {
+            icon: '📊',
+            title: 'Get your Investor Scorecard',
+            body: 'Every idea gets an AI-evaluated score across feasibility, market timing, originality, revenue potential and more — helping you understand how investors see your idea.',
+          },
+          {
+            icon: '🚀',
+            title: "You're ready to go",
+            body: 'Submit your first idea and start building. Your ideas are safe, protected, and ready to be discovered.',
+          },
+        ]
+        const step = steps[onboardingStep]
+        const isLast = onboardingStep === steps.length - 1
+        return (
+          <>
+            {/* Backdrop */}
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,14,31,0.85)', zIndex: 1000, backdropFilter: 'blur(4px)' }} />
+            {/* Modal */}
+            <div style={{ position: 'fixed', inset: 0, zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+              <div style={{ background: '#0e0e1f', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '2.5rem', maxWidth: 480, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+                {/* Step dots */}
+                <div style={{ display: 'flex', gap: 6, marginBottom: '2rem', justifyContent: 'center' }}>
+                  {steps.map((_, i) => (
+                    <div key={i} style={{ width: i === onboardingStep ? 20 : 6, height: 6, borderRadius: 3, background: i === onboardingStep ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.15)', transition: 'all 0.2s' }} />
+                  ))}
+                </div>
+                {/* Content */}
+                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                  <div style={{ fontSize: 48, marginBottom: '1.25rem' }}>{step.icon}</div>
+                  <h2 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: '0 0 1rem', letterSpacing: '-0.3px' }}>{step.title}</h2>
+                  <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: 0 }}>{step.body}</p>
+                </div>
+                {/* Actions */}
+                {isLast ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <button onClick={() => { completeOnboarding(); navigate('/submit') }} style={{ width: '100%', background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', border: 'none', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>✨ Submit your first idea</button>
+                    <button onClick={completeOnboarding} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Explore dashboard</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <button onClick={completeOnboarding} style={{ background: 'none', border: 'none', fontSize: 13, color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: 0 }}>Skip</button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {onboardingStep > 0 && (
+                        <button onClick={() => setOnboardingStep(s => s - 1)} style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 20px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>← Back</button>
+                      )}
+                      <button onClick={() => setOnboardingStep(s => s + 1)} style={{ background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Next →</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )
+      })()}
+
       {/* Nav */}
       <nav style={{
         maxWidth: 960, margin: '0 auto', padding: '1.25rem 2rem',

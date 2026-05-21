@@ -194,6 +194,18 @@ export default function Settings({ session }) {
           </div>
           {deleteError && <p style={{ color: '#f87171', fontSize: 13, margin: '0 0 1rem' }}>{deleteError}</p>}
           <button onClick={handleDeleteAccount} disabled={deleting || deleteInput !== 'DELETE'} style={{ background: deleteInput === 'DELETE' ? '#f87171' : 'rgba(248,113,113,0.2)', border: 'none', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: deleteInput === 'DELETE' ? 'pointer' : 'not-allowed', opacity: deleting ? 0.7 : 1 }}>{deleting ? 'Deleting…' : 'Delete Account'}</button>
+          {import.meta.env.DEV && (
+            <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '0.5px solid rgba(248,113,113,0.15)' }}>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', margin: '0 0 0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Dev only</p>
+              <button
+                onClick={async () => {
+                  await supabase.auth.updateUser({ data: { onboarding_complete: false } })
+                  alert('Onboarding reset — reload the dashboard to see it again.')
+                }}
+                style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+              >Reset onboarding</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
