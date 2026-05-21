@@ -16,6 +16,7 @@ import DeckViewer from './pages/DeckViewer'
 import Profile from './pages/Profile'
 import Pricing from './pages/Pricing'
 import Settings from './pages/Settings'
+import NotFound from './pages/NotFound'
  
 function ProtectedRoute({ session, children }) {
   if (!session) return <Navigate to="/auth" replace />
@@ -72,7 +73,7 @@ export default function App() {
       <Route path="/pricing" element={<Pricing session={session} />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound session={session} />} />
     </Routes>
   )
 }
