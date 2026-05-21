@@ -259,6 +259,37 @@ export default function Profile({ session }) {
             }}
           >{saving ? 'Saving…' : 'Save Changes'}</button>
         </div>
+
+        {/* My Plan */}
+        <div style={{
+          background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.08)',
+          borderRadius: 16, padding: '2rem', marginTop: '1.5rem'
+        }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 1.25rem' }}>📋 My Plan</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <span style={{ background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 14px', fontSize: 13, fontWeight: 600, color: '#fff' }}>Free</span>
+                <span style={{ fontSize: 13, color: '#4ade80' }}>● Active</span>
+              </div>
+              <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Unlimited ideas, blockchain timestamp, NDA sharing, basic PDF & deck, AI Scorecard, Blueprint 2D.</p>
+            </div>
+          </div>
+          <div style={{ marginTop: '1.5rem', padding: '1.25rem', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+              <div>
+                <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#fff' }}>✦ Pro</p>
+                <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>3D Blueprint, AI Scorecard reports, unlimited AI Challenge, pre-publish editor & more.</p>
+              </div>
+              <button
+                onClick={() => navigate('/pricing')}
+                style={{ background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', flexShrink: 0, opacity: 0.5, cursor: 'not-allowed' }}
+                disabled
+              >Coming soon</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   )
