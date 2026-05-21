@@ -8,7 +8,6 @@ const FREE_FEATURES = [
   { label: 'NDA-gated sharing', included: true },
   { label: 'Basic pitch PDF', included: true },
   { label: 'Basic deck builder', included: true },
-  { label: 'Marketplace listing', included: true },
   { label: 'AI Investor Scorecard (view)', included: true },
   { label: 'Blueprint — 2D basic', included: true },
   { label: 'AI Challenge (limited)', included: true },
@@ -27,7 +26,6 @@ const PRO_FEATURES = [
   { label: 'AI Challenge unlimited', included: true },
   { label: 'Pre-publish editor (fonts, colors, layout)', included: true },
   { label: 'Custom branding on PDF & deck', included: true },
-  { label: 'Priority marketplace ranking', included: true },
   { label: 'Idea visibility controls', included: true },
 ]
 
