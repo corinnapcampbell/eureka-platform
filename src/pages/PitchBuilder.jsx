@@ -106,9 +106,14 @@ export default function PitchBuilder({ session }) {
   async function getSuggestion(sectionKey) {
     setLoadingSuggestion(l => ({ ...l, [sectionKey]: true }))
     try {
-      const res = await fetch('/api/generate-pitch-section', {
+      const { data: { session: aiSession } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pitch-section`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${aiSession?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
         body: JSON.stringify({
           section_name: sectionKey,
           existing_sections: pitchRef.current,

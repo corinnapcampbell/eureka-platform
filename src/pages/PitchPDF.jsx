@@ -492,14 +492,15 @@ export default function PitchPDF({ session }) {
   async function aiSuggest(fieldKey) {
     setSuggesting(fieldKey)
     try {
-      const res = await fetch('/api/improve-pitch-field', {
+      const { data: { session: aiSession } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/improve-pitch-field`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idea: { ...idea, ...form },
-          field: fieldKey,
-          currentValue: form[fieldKey],
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${aiSession?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ idea: { ...idea, ...form }, field: fieldKey, currentValue: form[fieldKey] }),
       })
       if (res.ok) {
         const { improved } = await res.json()
