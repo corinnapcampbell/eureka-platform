@@ -492,7 +492,7 @@ export default function PitchPDF({ session }) {
   async function aiSuggest(fieldKey) {
     setSuggesting(fieldKey)
     try {
-      const res = await fetch('/api/functions/improve-pitch-field', {
+      const res = await fetch('/api/improve-pitch-field', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

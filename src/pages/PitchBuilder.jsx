@@ -106,7 +106,7 @@ export default function PitchBuilder({ session }) {
   async function getSuggestion(sectionKey) {
     setLoadingSuggestion(l => ({ ...l, [sectionKey]: true }))
     try {
-      const res = await fetch('/api/functions/generate-pitch-section', {
+      const res = await fetch('/api/generate-pitch-section', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
