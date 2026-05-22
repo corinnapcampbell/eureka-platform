@@ -351,6 +351,7 @@ export default function PitchPDF({ session }) {
   const [form,        setForm]        = useState({})
   const [loading,     setLoading]     = useState(true)
   const [suggesting,  setSuggesting]  = useState(null)
+  const [aiSuggestions, setAiSuggestions] = useState({})
   const [stage,       setStage]       = useState('form')
   const [previewHTML, setPreviewHTML] = useState('')
   const [publishing,  setPublishing]  = useState(false)
@@ -504,7 +505,7 @@ export default function PitchPDF({ session }) {
       })
       if (res.ok) {
         const { improved } = await res.json()
-        if (improved) setForm(f => ({ ...f, [fieldKey]: improved }))
+        if (improved) setAiSuggestions(s => ({ ...s, [fieldKey]: improved }))
       }
     } catch (e) {
       console.error('AI suggest error:', e)
@@ -840,6 +841,25 @@ export default function PitchPDF({ session }) {
                   background: '#fafaf8', outline: 'none',
                 }}
               />
+              {aiSuggestions[key] && (
+                <div style={{ marginTop: '0.75rem', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 10, padding: '1rem 1.25rem' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 0.5rem' }}>AI Suggestion — review before using</p>
+                  <p style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, margin: '0 0 0.75rem', fontStyle: 'italic' }}>{aiSuggestions[key]}</p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => {
+                        setForm(f => ({ ...f, [key]: aiSuggestions[key] }))
+                        setAiSuggestions(s => { const n = { ...s }; delete n[key]; return n })
+                      }}
+                      style={{ background: '#2c2c2a', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+                    >Use this suggestion</button>
+                    <button
+                      onClick={() => setAiSuggestions(s => { const n = { ...s }; delete n[key]; return n })}
+                      style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#888', cursor: 'pointer' }}
+                    >Dismiss</button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
 
