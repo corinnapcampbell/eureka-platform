@@ -185,6 +185,21 @@ export default function SharedIdea() {
       })
     }
     setStage('idea')
+    // Fire-and-forget confirmation emails — first visit only
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        idea_id: idea.id,
+        user_id: idea.user_id,
+        idea_title: idea.title,
+        viewer_name: name.trim(),
+        viewer_email: email.trim(),
+      }),
+    }).catch(err => console.error('Email notification failed:', err))
     setAccepting(false)
   }
 
