@@ -833,94 +833,182 @@ export default function IdeaDetail({ session }) {
         )}
 
         {/* Team */}
-        {(idea.team || isOwner) && (
-          <div id="section-team" style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 16 }}>👥</span>
-                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>The Team</span>
+        {(idea.team || isOwner) && (() => {
+          let teamData = null
+          try { teamData = idea.team ? JSON.parse(idea.team) : null } catch {}
+          const editing = inlineEdit.team !== undefined
+          const editVal = editing ? inlineEdit.team : { name: '', role: '', bio: '', origin: '' }
+          return (
+            <div id="section-team" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>The Team</p>
+                {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, team: teamData || { name: '', role: '', bio: '', origin: '' } }))} style={pencilBtnLightStyle} title="Edit team">✏️</button>}
               </div>
-              {isOwner && inlineEdit.team === undefined && <button onClick={() => startEdit('team')} style={pencilBtnDarkStyle} title="Edit team">✏️</button>}
-            </div>
-            {inlineEdit.team !== undefined ? (
-              <div>
-                <textarea
-                  value={inlineEdit.team}
-                  onChange={e => setInlineEdit(s => ({ ...s, team: e.target.value }))}
-                  style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
-                />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveInlineField('team')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
-                  <button onClick={() => cancelEdit('team')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
+              {editing ? (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+                    <input value={editVal.name || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, name: e.target.value } }))} placeholder="Full name" autoFocus style={inlineTextareaStyle} />
+                    <input value={editVal.role || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, role: e.target.value } }))} placeholder="Role / title" style={inlineTextareaStyle} />
+                    <textarea value={editVal.bio || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, bio: e.target.value } }))} placeholder="Background and relevant experience" rows={3} style={inlineTextareaStyle} />
+                    <textarea value={editVal.origin || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, origin: e.target.value } }))} placeholder="Origin story — why you built this" rows={3} style={inlineTextareaStyle} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => saveInlineField('team')} disabled={inlineSaving === 'team'} style={inlineSaveBtnStyle}>{inlineSaving === 'team' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('team')} style={inlineCancelBtnStyle}>Cancel</button>
+                  </div>
+                </>
+              ) : teamData ? (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: '1rem' }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#7b9ff7,#9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: "'Outfit', sans-serif" }}>{(teamData.name || '?')[0].toUpperCase()}</span>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>{teamData.name}</p>
+                      <p style={{ fontSize: 12, color: '#888780', margin: '2px 0 0', fontFamily: "'Outfit', sans-serif" }}>{teamData.role}</p>
+                    </div>
+                  </div>
+                  {teamData.bio && <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a', marginBottom: teamData.origin ? '1rem' : 0 }}>{teamData.bio}</p>}
+                  {teamData.origin && (
+                    <div style={{ borderLeft: '3px solid #7b9ff7', paddingLeft: 12, marginTop: 8 }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#7b9ff7', marginBottom: 4 }}>Origin Story</p>
+                      <p style={{ fontSize: 13, lineHeight: 1.7, color: '#555', fontStyle: 'italic', margin: 0 }}>{teamData.origin}</p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <p style={{ fontSize: 14, color: idea.team ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.25)', lineHeight: 1.7, margin: 0, fontFamily: "'Outfit', sans-serif", fontStyle: idea.team ? 'normal' : 'italic' }}>
-                {idea.team || (isOwner ? 'Add your team background and relevant experience…' : 'No team information provided.')}
-              </p>
-            )}
-          </div>
-        )}
+              ) : (
+                <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to introduce your team</p>
+              )}
+              {savedField === 'team' && !editing && <span style={savedConfirmStyle}>Saved ✓</span>}
+            </div>
+          )
+        })()}
 
         {/* Customer Validation */}
-        {(idea.customer_validation || isOwner) && (
-          <div id="section-customer_validation" style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 16 }}>✅</span>
-                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>Customer Validation</span>
+        {(idea.customer_validation || isOwner) && (() => {
+          let cvData = null
+          try { cvData = idea.customer_validation ? JSON.parse(idea.customer_validation) : null } catch {}
+          const editing = inlineEdit.customer_validation !== undefined
+          const editVal = editing ? inlineEdit.customer_validation : { waitlist: '', interviews: '', pilots: '', stage: '' }
+          return (
+            <div id="section-customer_validation" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Customer Validation</p>
+                {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, customer_validation: cvData || { waitlist: '', interviews: '', pilots: '', stage: '' } }))} style={pencilBtnLightStyle} title="Edit customer validation">✏️</button>}
               </div>
-              {isOwner && inlineEdit.customer_validation === undefined && <button onClick={() => startEdit('customer_validation')} style={pencilBtnDarkStyle} title="Edit customer validation">✏️</button>}
-            </div>
-            {inlineEdit.customer_validation !== undefined ? (
-              <div>
-                <textarea
-                  value={inlineEdit.customer_validation}
-                  onChange={e => setInlineEdit(s => ({ ...s, customer_validation: e.target.value }))}
-                  style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
-                />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveInlineField('customer_validation')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
-                  <button onClick={() => cancelEdit('customer_validation')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
+              {editing ? (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                    <div>
+                      <p style={{ fontSize: 11, color: '#888780', marginBottom: 4, fontWeight: 600 }}>Waitlist signups</p>
+                      <input type="number" value={editVal.waitlist || ''} onChange={e => setInlineEdit(v => ({ ...v, customer_validation: { ...v.customer_validation, waitlist: e.target.value } }))} placeholder="0" autoFocus style={inlineTextareaStyle} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 11, color: '#888780', marginBottom: 4, fontWeight: 600 }}>User interviews</p>
+                      <input type="number" value={editVal.interviews || ''} onChange={e => setInlineEdit(v => ({ ...v, customer_validation: { ...v.customer_validation, interviews: e.target.value } }))} placeholder="0" style={inlineTextareaStyle} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 11, color: '#888780', marginBottom: 4, fontWeight: 600 }}>Paid pilots</p>
+                      <input type="number" value={editVal.pilots || ''} onChange={e => setInlineEdit(v => ({ ...v, customer_validation: { ...v.customer_validation, pilots: e.target.value } }))} placeholder="0" style={inlineTextareaStyle} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 11, color: '#888780', marginBottom: 4, fontWeight: 600 }}>Stage</p>
+                      <select value={editVal.stage || ''} onChange={e => setInlineEdit(v => ({ ...v, customer_validation: { ...v.customer_validation, stage: e.target.value } }))} style={{ ...inlineTextareaStyle, height: 38 }}>
+                        <option value="">Select stage</option>
+                        <option value="Idea">Idea</option>
+                        <option value="Pre-launch">Pre-launch</option>
+                        <option value="Beta">Beta</option>
+                        <option value="Live">Live</option>
+                        <option value="Revenue">Revenue</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => saveInlineField('customer_validation')} disabled={inlineSaving === 'customer_validation'} style={inlineSaveBtnStyle}>{inlineSaving === 'customer_validation' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('customer_validation')} style={inlineCancelBtnStyle}>Cancel</button>
+                  </div>
+                </>
+              ) : cvData ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                  {[
+                    { label: 'Waitlist', value: cvData.waitlist || '0', suffix: '' },
+                    { label: 'Interviews', value: cvData.interviews || '0', suffix: '' },
+                    { label: 'Pilots', value: cvData.pilots || '0', suffix: '' },
+                    { label: 'Stage', value: cvData.stage || '—', suffix: '' },
+                  ].map(stat => (
+                    <div key={stat.label} style={{ background: 'rgba(123,159,247,0.06)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 22, fontWeight: 700, color: '#2c2c2a', margin: 0, fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>{stat.value}</p>
+                      <p style={{ fontSize: 10, color: '#888780', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>{stat.label}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ) : (
-              <p style={{ fontSize: 14, color: idea.customer_validation ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.25)', lineHeight: 1.7, margin: 0, fontFamily: "'Outfit', sans-serif", fontStyle: idea.customer_validation ? 'normal' : 'italic' }}>
-                {idea.customer_validation || (isOwner ? 'Add waitlist numbers, user interviews, pilot users, or early feedback…' : 'No customer validation data provided.')}
-              </p>
-            )}
-          </div>
-        )}
+              ) : (
+                <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to add validation data</p>
+              )}
+              {savedField === 'customer_validation' && !editing && <span style={savedConfirmStyle}>Saved ✓</span>}
+            </div>
+          )
+        })()}
 
-        {/* Traction */}
-        {(idea.traction || isOwner) && (
-          <div id="section-traction" style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 16 }}>🚀</span>
-                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>Traction & Next Milestones</span>
+        {/* Traction & Next Milestones */}
+        {(idea.traction || isOwner) && (() => {
+          let trData = null
+          try { trData = idea.traction ? JSON.parse(idea.traction) : null } catch {}
+          const editing = inlineEdit.traction !== undefined
+          const editVal = editing ? inlineEdit.traction : { milestones: [] }
+          const emptyMilestone = { label: '', date: '', status: 'upcoming' }
+          return (
+            <div id="section-traction" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Traction & Next Milestones</p>
+                {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, traction: trData || { milestones: [{ ...emptyMilestone }] } }))} style={pencilBtnLightStyle} title="Edit traction">✏️</button>}
               </div>
-              {isOwner && inlineEdit.traction === undefined && <button onClick={() => startEdit('traction')} style={pencilBtnDarkStyle} title="Edit traction">✏️</button>}
-            </div>
-            {inlineEdit.traction !== undefined ? (
-              <div>
-                <textarea
-                  value={inlineEdit.traction}
-                  onChange={e => setInlineEdit(s => ({ ...s, traction: e.target.value }))}
-                  style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
-                />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveInlineField('traction')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
-                  <button onClick={() => cancelEdit('traction')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
+              {editing ? (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                    {(editVal.milestones || []).map((m, i) => (
+                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 130px 110px 32px', gap: 8, alignItems: 'center' }}>
+                        <input value={m.label || ''} onChange={e => { const ms = [...editVal.milestones]; ms[i] = { ...ms[i], label: e.target.value }; setInlineEdit(v => ({ ...v, traction: { ...v.traction, milestones: ms } })) }} placeholder="Milestone description" autoFocus={i === 0} style={inlineTextareaStyle} />
+                        <input type="date" value={m.date || ''} onChange={e => { const ms = [...editVal.milestones]; ms[i] = { ...ms[i], date: e.target.value }; setInlineEdit(v => ({ ...v, traction: { ...v.traction, milestones: ms } })) }} style={inlineTextareaStyle} />
+                        <select value={m.status || 'upcoming'} onChange={e => { const ms = [...editVal.milestones]; ms[i] = { ...ms[i], status: e.target.value }; setInlineEdit(v => ({ ...v, traction: { ...v.traction, milestones: ms } })) }} style={{ ...inlineTextareaStyle, height: 38 }}>
+                          <option value="done">✅ Done</option>
+                          <option value="in-progress">🔄 In Progress</option>
+                          <option value="upcoming">⏳ Upcoming</option>
+                        </select>
+                        <button onClick={() => { const ms = editVal.milestones.filter((_, j) => j !== i); setInlineEdit(v => ({ ...v, traction: { ...v.traction, milestones: ms } })) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#ccc', padding: 0 }}>×</button>
+                      </div>
+                    ))}
+                    <button onClick={() => setInlineEdit(v => ({ ...v, traction: { ...v.traction, milestones: [...(v.traction.milestones || []), { ...emptyMilestone }] } }))} style={{ background: 'none', border: '1px dashed #ddd', borderRadius: 8, padding: '6px 12px', fontSize: 12, color: '#888780', cursor: 'pointer', marginTop: 4, width: 'fit-content' }}>+ Add milestone</button>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => saveInlineField('traction')} disabled={inlineSaving === 'traction'} style={inlineSaveBtnStyle}>{inlineSaving === 'traction' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('traction')} style={inlineCancelBtnStyle}>Cancel</button>
+                  </div>
+                </>
+              ) : trData && trData.milestones && trData.milestones.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {trData.milestones.map((m, i) => {
+                    const colors = { done: '#22c55e', 'in-progress': '#7b9ff7', upcoming: '#d1d5db' }
+                    const color = colors[m.status] || '#d1d5db'
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingBottom: i < trData.milestones.length - 1 ? 16 : 0, position: 'relative' }}>
+                        {i < trData.milestones.length - 1 && <div style={{ position: 'absolute', left: 7, top: 16, width: 2, height: 'calc(100% - 8px)', background: '#f0f0ee' }} />}
+                        <div style={{ width: 16, height: 16, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 3, zIndex: 1 }} />
+                        <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <p style={{ fontSize: 14, color: '#2c2c2a', margin: 0, lineHeight: 1.5 }}>{m.label}</p>
+                          {m.date && <span style={{ fontSize: 11, color: '#888780', background: '#f5f5f3', borderRadius: 6, padding: '2px 8px', flexShrink: 0, marginLeft: 12 }}>{new Date(m.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-              </div>
-            ) : (
-              <p style={{ fontSize: 14, color: idea.traction ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.25)', lineHeight: 1.7, margin: 0, fontFamily: "'Outfit', sans-serif", fontStyle: idea.traction ? 'normal' : 'italic' }}>
-                {idea.traction || (isOwner ? 'Add milestones, timelines, and progress to date…' : 'No traction data provided.')}
-              </p>
-            )}
-          </div>
-        )}
+              ) : (
+                <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to add milestones</p>
+              )}
+              {savedField === 'traction' && !editing && <span style={savedConfirmStyle}>Saved ✓</span>}
+            </div>
+          )
+        })()}
 
         {/* Card 8: AI Executive Summary (collapsed) */}
         {idea.ai_profile && (

@@ -66,9 +66,9 @@ Market size: ${idea.market_size || ''}
 Competitive advantage: ${idea.competitive_advantage || ''}
 Risks: ${idea.risks || ''}
 Next steps: ${idea.next_steps || ''}
-Team: ${idea.team || ''}
-Customer validation: ${idea.customer_validation || ''}
-Traction & milestones: ${idea.traction || ''}
+Team: ${idea.team ? (() => { try { const t = JSON.parse(idea.team); return `${t.name || ''}, ${t.role || ''}. ${t.bio || ''} ${t.origin || ''}` } catch { return idea.team } })() : ''}
+Customer validation: ${idea.customer_validation ? (() => { try { const c = JSON.parse(idea.customer_validation); return `Waitlist: ${c.waitlist || 0}, Interviews: ${c.interviews || 0}, Pilots: ${c.pilots || 0}, Stage: ${c.stage || 'unknown'}` } catch { return idea.customer_validation } })() : ''}
+Traction & milestones: ${idea.traction ? (() => { try { const tr = JSON.parse(idea.traction); return (tr.milestones || []).map(m => `${m.label} (${m.status}, ${m.date || 'no date'})`).join('; ') } catch { return idea.traction } })() : ''}
 
 Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
 {
