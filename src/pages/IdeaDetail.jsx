@@ -850,7 +850,7 @@ export default function IdeaDetail({ session }) {
                   style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
                 />
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveEdit('team')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => saveInlineField('team')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
                   <button onClick={() => cancelEdit('team')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
@@ -880,7 +880,7 @@ export default function IdeaDetail({ session }) {
                   style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
                 />
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveEdit('customer_validation')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => saveInlineField('customer_validation')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
                   <button onClick={() => cancelEdit('customer_validation')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
@@ -910,7 +910,7 @@ export default function IdeaDetail({ session }) {
                   style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
                 />
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveEdit('traction')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => saveInlineField('traction')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
                   <button onClick={() => cancelEdit('traction')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </div>
