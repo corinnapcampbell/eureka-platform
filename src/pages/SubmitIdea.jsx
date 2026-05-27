@@ -98,6 +98,7 @@ export default function SubmitIdea({ session }) {
       visibility: form.visibility,
       ai_profile: form.ai_profile,
       blockchain_hash: hash,
+      owner_email: session.user.email,
     }).select().single()
 
     setSaving(false)

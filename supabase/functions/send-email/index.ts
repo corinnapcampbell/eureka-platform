@@ -9,17 +9,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { idea_id, user_id, idea_title, viewer_name, viewer_email } = await req.json()
+    const { idea_id, user_id, idea_title, viewer_name, viewer_email, owner_email } = await req.json()
 
-    // Look up owner email server-side using service role
-    const secretKeys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '[]')
-    const serviceKey = Array.isArray(secretKeys) ? secretKeys[0]?.secret : secretKeys
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      serviceKey
-    )
-    const { data: { user: owner }, error: userError } = await supabaseAdmin.auth.admin.getUserById(user_id)
-    if (userError || !owner?.email) throw new Error('Could not find owner email')
+    if (!owner_email) throw new Error('No owner email provided')
 
     const resendKey = Deno.env.get('RESEND_API_KEY')!
     const fromAddress = 'eurekAIdea <noreply@myeurekaidea.com>'
@@ -30,12 +22,12 @@ Deno.serve(async (req) => {
       headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: fromAddress,
-        to: owner.email,
+        to: owner_email,
         subject: `${viewer_name} just accessed your idea on eurekAIdea`,
         html: `
-          <div style="font-family: 'Outfit', sans-serif; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8f0;">
+          <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8f0;">
             <div style="background: #0e0e1f; padding: 32px 40px; text-align: center;">
-              <span style="font-size: 24px; font-weight: 300; color: #ffffff; letter-spacing: -0.5px;">Eurek<span style="background: linear-gradient(135deg, #7b9ff7, #9b7ff7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI</span>dea</span>
+              <span style="font-size: 24px; font-weight: 300; color: #ffffff; letter-spacing: -0.5px;">Eurek<span style="color: #9b7ff7;">AI</span>dea</span>
             </div>
             <div style="padding: 40px;">
               <h2 style="color: #0e0e1f; font-size: 20px; font-weight: 600; margin: 0 0 16px;">Your idea was just viewed 👀</h2>
@@ -67,9 +59,9 @@ Deno.serve(async (req) => {
         to: viewer_email,
         subject: `You accessed "${idea_title}" on eurekAIdea`,
         html: `
-          <div style="font-family: 'Outfit', sans-serif; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8f0;">
+          <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8f0;">
             <div style="background: #0e0e1f; padding: 32px 40px; text-align: center;">
-              <span style="font-size: 24px; font-weight: 300; color: #ffffff; letter-spacing: -0.5px;">Eurek<span style="background: linear-gradient(135deg, #7b9ff7, #9b7ff7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI</span>dea</span>
+              <span style="font-size: 24px; font-weight: 300; color: #ffffff; letter-spacing: -0.5px;">Eurek<span style="color: #9b7ff7;">AI</span>dea</span>
             </div>
             <div style="padding: 40px;">
               <h2 style="color: #0e0e1f; font-size: 20px; font-weight: 600; margin: 0 0 16px;">You're in, ${viewer_name} 🔐</h2>
