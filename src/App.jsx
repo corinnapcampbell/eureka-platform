@@ -18,6 +18,7 @@ import DeckViewer from './pages/DeckViewer'
 import Profile from './pages/Profile'
 import Pricing from './pages/Pricing'
 import Settings from './pages/Settings'
+import Notifications from './pages/Notifications'
 import NotFound from './pages/NotFound'
  
 function ProtectedRoute({ session, children }) {
@@ -77,6 +78,7 @@ export default function App() {
       <Route path="/legal/nda" element={<NDA />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="/notifications" element={<Notifications session={session} />} />
       <Route path="*" element={<NotFound session={session} />} />
     </Routes>
   )

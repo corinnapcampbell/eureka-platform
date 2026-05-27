@@ -200,6 +200,20 @@ export default function SharedIdea() {
         viewer_email: email.trim(),
       }),
     }).catch(err => console.error('Email notification failed:', err))
+    // Create notification for idea owner
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        user_id: idea.user_id,
+        type: 'idea_viewed',
+        title: '👀 Your idea was viewed',
+        message: `${name.trim()} (${email.trim()}) accepted the NDA and accessed "${idea.title}"`,
+      }),
+    }).catch(err => console.error('Notification creation failed:', err))
     setAccepting(false)
   }
 

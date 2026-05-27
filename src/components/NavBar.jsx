@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Logo from './Logo'
 import { supabase } from '../supabase'
@@ -7,6 +7,9 @@ export default function NavBar({ session, leftContent = null, rightExtra = null 
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
+  const [bellOpen, setBellOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
 
   const user = session?.user
   const meta = user?.user_metadata || {}
@@ -14,6 +17,35 @@ export default function NavBar({ session, leftContent = null, rightExtra = null 
     ? meta.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     : (user?.email?.[0]?.toUpperCase() || '?')
   const avatarUrl = meta.avatar_url || ''
+
+  useEffect(() => {
+    if (!session) return
+    async function fetchNotifications() {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id, title, message, read, created_at')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      if (data) {
+        setNotifications(data)
+        setUnreadCount(data.filter(n => !n.read).length)
+      }
+    }
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [session])
+
+  async function markAllRead() {
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', session.user.id)
+      .eq('read', false)
+    setNotifications(n => n.map(x => ({ ...x, read: true })))
+    setUnreadCount(0)
+  }
 
   async function signOut() { await supabase.auth.signOut() }
 
@@ -30,6 +62,65 @@ export default function NavBar({ session, leftContent = null, rightExtra = null 
       {/* Right: page actions + three-dots + avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {rightExtra}
+
+        {session && (
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => { setBellOpen(o => !o); setMenuOpen(false); setAvatarMenuOpen(false) }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', position: 'relative', display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: 2, right: 2,
+                  background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
+                  color: '#fff', fontSize: 10, fontWeight: 700,
+                  borderRadius: '50%', width: 16, height: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+              )}
+            </button>
+            {bellOpen && (
+              <div style={{
+                position: 'absolute', right: 0, top: '110%',
+                background: '#16162a', border: '1px solid #2a2a3a',
+                borderRadius: 12, width: 320, zIndex: 1000,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+              }}>
+                <div style={{ padding: '14px 16px', borderBottom: '1px solid #2a2a3a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 600, fontSize: 14, color: '#fff' }}>Notifications</span>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllRead} style={{ background: 'none', border: 'none', color: '#7b9ff7', fontSize: 12, cursor: 'pointer' }}>
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+                  {notifications.length === 0 ? (
+                    <p style={{ color: '#888', fontSize: 14, textAlign: 'center', padding: '24px 16px' }}>No notifications yet</p>
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n.id} style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid #1e1e2e',
+                        background: n.read ? 'transparent' : 'rgba(123,159,247,0.06)'
+                      }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: n.read ? '#aaa' : '#fff', margin: '0 0 2px' }}>{n.title}</p>
+                        <p style={{ fontSize: 12, color: '#666', margin: 0 }}>{n.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div style={{ padding: '10px 16px', borderTop: '1px solid #2a2a3a', textAlign: 'center' }}>
+                  <a href="/notifications" style={{ color: '#7b9ff7', fontSize: 13, textDecoration: 'none' }}>See all notifications</a>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Three dots */}
         <div style={{ position: 'relative' }}>
