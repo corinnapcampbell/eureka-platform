@@ -832,6 +832,96 @@ export default function IdeaDetail({ session }) {
           </div>
         )}
 
+        {/* Team */}
+        {(idea.team || isOwner) && (
+          <div id="section-team" style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>👥</span>
+                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>The Team</span>
+              </div>
+              {isOwner && inlineEdit.team === undefined && <button onClick={() => startEdit('team')} style={pencilBtnDarkStyle} title="Edit team">✏️</button>}
+            </div>
+            {inlineEdit.team !== undefined ? (
+              <div>
+                <textarea
+                  value={inlineEdit.team}
+                  onChange={e => setInlineEdit(s => ({ ...s, team: e.target.value }))}
+                  style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveEdit('team')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => cancelEdit('team')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: 14, color: idea.team ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.25)', lineHeight: 1.7, margin: 0, fontFamily: "'Outfit', sans-serif", fontStyle: idea.team ? 'normal' : 'italic' }}>
+                {idea.team || (isOwner ? 'Add your team background and relevant experience…' : 'No team information provided.')}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Customer Validation */}
+        {(idea.customer_validation || isOwner) && (
+          <div id="section-customer_validation" style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>✅</span>
+                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>Customer Validation</span>
+              </div>
+              {isOwner && inlineEdit.customer_validation === undefined && <button onClick={() => startEdit('customer_validation')} style={pencilBtnDarkStyle} title="Edit customer validation">✏️</button>}
+            </div>
+            {inlineEdit.customer_validation !== undefined ? (
+              <div>
+                <textarea
+                  value={inlineEdit.customer_validation}
+                  onChange={e => setInlineEdit(s => ({ ...s, customer_validation: e.target.value }))}
+                  style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveEdit('customer_validation')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => cancelEdit('customer_validation')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: 14, color: idea.customer_validation ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.25)', lineHeight: 1.7, margin: 0, fontFamily: "'Outfit', sans-serif", fontStyle: idea.customer_validation ? 'normal' : 'italic' }}>
+                {idea.customer_validation || (isOwner ? 'Add waitlist numbers, user interviews, pilot users, or early feedback…' : 'No customer validation data provided.')}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Traction */}
+        {(idea.traction || isOwner) && (
+          <div id="section-traction" style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>🚀</span>
+                <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'rgba(255,255,255,0.35)' }}>Traction & Next Milestones</span>
+              </div>
+              {isOwner && inlineEdit.traction === undefined && <button onClick={() => startEdit('traction')} style={pencilBtnDarkStyle} title="Edit traction">✏️</button>}
+            </div>
+            {inlineEdit.traction !== undefined ? (
+              <div>
+                <textarea
+                  value={inlineEdit.traction}
+                  onChange={e => setInlineEdit(s => ({ ...s, traction: e.target.value }))}
+                  style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#fff', fontFamily: "'Outfit', sans-serif", resize: 'vertical', boxSizing: 'border-box' }}
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveEdit('traction')} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Save</button>
+                  <button onClick={() => cancelEdit('traction')} style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 13, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: 14, color: idea.traction ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.25)', lineHeight: 1.7, margin: 0, fontFamily: "'Outfit', sans-serif", fontStyle: idea.traction ? 'normal' : 'italic' }}>
+                {idea.traction || (isOwner ? 'Add milestones, timelines, and progress to date…' : 'No traction data provided.')}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Card 8: AI Executive Summary (collapsed) */}
         {idea.ai_profile && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, marginBottom: '1.25rem', overflow: 'hidden' }}>

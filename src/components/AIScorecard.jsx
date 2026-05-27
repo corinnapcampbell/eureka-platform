@@ -66,6 +66,9 @@ Market size: ${idea.market_size || ''}
 Competitive advantage: ${idea.competitive_advantage || ''}
 Risks: ${idea.risks || ''}
 Next steps: ${idea.next_steps || ''}
+Team: ${idea.team || ''}
+Customer validation: ${idea.customer_validation || ''}
+Traction & milestones: ${idea.traction || ''}
 
 Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
 {
