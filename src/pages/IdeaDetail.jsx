@@ -7,6 +7,7 @@ import { dedupeArray } from '../utils/generatePDF'
 import { buildSnapshotHTML } from '../utils/businessModel'
 import BusinessModelSection, { parseBMValue, serializeBMValue } from '../components/BusinessModelSection'
 import Scorecard from '../components/Scorecard'
+import AIScorecard from '../components/AIScorecard'
 import AIChallenge from '../components/AIChallenge'
 
 function splitHowItWorks(text) {
@@ -550,6 +551,8 @@ export default function IdeaDetail({ session }) {
 
       {/* White content area */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
+
+        {isOwner && <AIScorecard idea={idea} ideaId={id} isPaid={false} />}
 
         {/* Card 1: Problem & Solution */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>

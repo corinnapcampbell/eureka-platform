@@ -5,6 +5,7 @@ import Logo from '../components/Logo'
 import { generateIdeaPDF, dedupeArray } from '../utils/generatePDF'
 import { parseBMValue, buildBMHtml, buildSnapshotHTML } from '../utils/businessModel'
 import { ScaledSlide } from '../components/DeckSlides'
+import AIScorecard from '../components/AIScorecard'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 
@@ -695,6 +696,8 @@ export default function SharedIdea() {
             )}
           </div>
         )}
+
+        <AIScorecard idea={idea} ideaId={idea.id} isPaid={false} readOnly={true} />
 
         {/* Footer */}
         <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem 1.75rem', textAlign: 'center' }}>
