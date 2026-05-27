@@ -11,9 +11,11 @@ Deno.serve(async (req) => {
   try {
     const { user_id, type, title, message } = await req.json()
 
+    const secretKeys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '[]')
+    const serviceKey = Array.isArray(secretKeys) ? secretKeys[0]?.secret : secretKeys
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SECRET_KEYS')!
+      serviceKey
     )
 
     const { error } = await supabaseAdmin

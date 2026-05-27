@@ -12,9 +12,11 @@ Deno.serve(async (req) => {
     const { idea_id, user_id, idea_title, viewer_name, viewer_email } = await req.json()
 
     // Look up owner email server-side using service role
+    const secretKeys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '[]')
+    const serviceKey = Array.isArray(secretKeys) ? secretKeys[0]?.secret : secretKeys
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      serviceKey
     )
     const { data: { user: owner }, error: userError } = await supabaseAdmin.auth.admin.getUserById(user_id)
     if (userError || !owner?.email) throw new Error('Could not find owner email')
