@@ -83,6 +83,7 @@ Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
 Keys must be exactly: originality, problem_clarity, solution_fit, feasibility, market_size, market_timing, competition_level, revenue_potential, business_model, go_to_market, team_fit, next_steps, ip_defensibility, scalability, regulatory_risk, customer_validation, capital_efficiency, impact.
 Score 1 = very weak, 10 = exceptional. Be honest and direct.`
 
+      console.log('API key present:', !!apiKey, 'length:', apiKey?.length)
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
