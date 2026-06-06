@@ -92,8 +92,8 @@ export default function Landing() {
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <div style={{ display: 'inline-block', background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 20, padding: '5px 16px', fontSize: 12, color: '#7b9ff7', fontWeight: 500, marginBottom: '1rem', letterSpacing: '0.3px' }}>PRICING</div>
-            <h2 style={{ fontSize: 32, fontWeight: 700, color: '#fff', margin: '0 0 0.75rem', letterSpacing: '-0.3px' }}>Simple, transparent pricing</h2>
-            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Start free. Upgrade when you're ready.</p>
+            <h2 style={{ fontSize: 32, fontWeight: 700, color: '#fff', margin: '0 0 0.75rem', letterSpacing: '-0.3px' }}>Simple pricing. Serious protection.</h2>
+            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Start free. Protect what matters. Go Pro when you're ready.</p>
           </div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
             {/* Free card */}

@@ -75,7 +75,7 @@ export default function Pricing({ session }) {
       </div>
 
       {/* Pricing cards */}
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 2rem 6rem', display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 2rem 6rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1.5rem', alignItems: 'flex-start' }}>
 
         {/* Free card */}
         <div style={{ flex: '1 1 340px', maxWidth: 400, background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '2rem', display: 'flex', flexDirection: 'column' }}>
