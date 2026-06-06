@@ -437,32 +437,21 @@ export default function PitchPDF({ session }) {
 
   useEffect(() => {
     if (!idea?.id || !idea?.problem) return
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-    if (!apiKey) return
     const loadSuggestions = async () => {
       setLoadingSuggestions(true)
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 1000,
-            messages: [{
-              role: 'user',
-              content: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}. Team: ${idea.team || ''}. Customer validation: ${idea.customer_validation || ''}. Traction: ${idea.traction || ''}. Generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]}`,
-            }],
-          }),
-        })
-        const data = await res.json()
-        const text = data.content?.[0]?.text || '{}'
-        const clean = text.replace(/```json|```/g, '').trim()
-        const parsed = JSON.parse(clean)
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pitch-suggestion`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ prompt: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}. Team: ${idea.team || ''}. Customer validation: ${idea.customer_validation || ''}. Traction: ${idea.traction || ''}. Generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]}` }),
+          }
+        )
+        const parsed = await res.json()
         setSuggestions({
           howItWorks:   parsed.howItWorks   || [],
           targetMarket: parsed.targetMarket || [],

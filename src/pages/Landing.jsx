@@ -35,11 +35,11 @@ export default function Landing() {
         </div>
  
         <h1 className="serif animate-fadeUp" style={{ fontSize: 56, lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: '1.25rem', animationDelay: '0.1s' }}>
-          Store, protect, share<br />and present your ideas<br /><em style={{ color: 'var(--gold)' }}>to the world</em>
+          To make your idea real,<br />you have to share it.<br /><em style={{ color: 'var(--gold)' }}>eurekAIdea makes sure sharing it doesn't mean losing it.</em>
         </h1>
- 
+
         <p className="animate-fadeUp" style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 480, marginBottom: '2.5rem', animationDelay: '0.2s' }}>
-          Eureka is a safe vault for your ideas. Every idea you submit is cryptographically timestamped and protected the moment it's saved — giving you a beautiful, professional way to share them on your terms.
+          Every idea you submit is timestamped and legally protected the moment it's saved — giving you a safe, professional way to share it with exactly who you choose.
         </p>
  
         <div className="animate-fadeUp" style={{ display: 'flex', gap: 12, animationDelay: '0.3s' }}>
@@ -49,7 +49,15 @@ export default function Landing() {
           }}>Submit your first idea →</button>
         </div>
       </div>
- 
+
+      {/* Why we built this */}
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 2rem 4rem' }}>
+        <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '1rem' }}>Why we built this</p>
+        <p style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 600 }}>
+          In college, I pitched a scooter-sharing concept to Enel, one of Europe's largest energy companies. Three months later, they launched it. No NDA. No timestamp. No recourse. eurekAIdea exists so that never happens to anyone again.
+        </p>
+      </div>
+
       {/* Protection section */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 2rem 6rem' }}>
         <div style={{

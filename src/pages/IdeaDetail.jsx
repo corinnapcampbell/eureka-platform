@@ -120,6 +120,8 @@ export default function IdeaDetail({ session }) {
   const [isPaid, setIsPaid] = useState(true) // hardcoded true for testing; wire to real tier later
   const [teaseSuggesting, setTeaseSuggesting] = useState(false)
   const [teaseSuggestion, setTeaseSuggestion] = useState(null)
+  const [publishingScore, setPublishingScore] = useState(false)
+  const [scorecardKey, setScorecardKey] = useState(0)
 
   const startEditRef = useRef(null)
 
@@ -376,6 +378,72 @@ export default function IdeaDetail({ session }) {
     setPublishing(null)
   }
 
+  async function publishAndScore() {
+    setPublishingScore(true)
+    try {
+      const newCount = (idea.publish_count || 0) + 1
+      await supabase.from('ideas').update({ is_published: true, publish_count: newCount }).eq('id', id)
+      const prompt = `You are an expert startup evaluator. Score this idea on 18 dimensions, each 1-10.
+
+Idea:
+Title: ${idea.title || ''}
+Problem: ${idea.problem || ''}
+Solution: ${idea.solution || ''}
+How it works: ${idea.how_it_works || ''}
+Business model: ${idea.business_model ? JSON.stringify(idea.business_model) : ''}
+Tagline: ${idea.tagline || ''}
+Target audience: ${idea.target_audience || ''}
+Market size: ${idea.market_size || ''}
+Competitive advantage: ${idea.competitive_advantage || ''}
+Risks: ${idea.risks || ''}
+Next steps: ${idea.next_steps || ''}
+Team: ${idea.team ? (() => { try { const t = JSON.parse(idea.team); return `${t.name || ''}, ${t.role || ''}. ${t.bio || ''} ${t.origin || ''}` } catch { return idea.team } })() : ''}
+Customer validation: ${idea.customer_validation ? (() => { try { const c = JSON.parse(idea.customer_validation); return `Waitlist: ${c.waitlist || 0}, Interviews: ${c.interviews || 0}, Pilots: ${c.pilots || 0}, Stage: ${c.stage || 'unknown'}` } catch { return idea.customer_validation } })() : ''}
+Traction & milestones: ${idea.traction ? (() => { try { const tr = JSON.parse(idea.traction); return (tr.milestones || []).map(m => `${m.label} (${m.status}, ${m.date || 'no date'})`).join('; ') } catch { return idea.traction } })() : ''}
+
+Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
+{
+  "scores": [
+    {
+      "key": "originality",
+      "score": 7,
+      "rationale": "One sentence describing what this score reflects.",
+      "issues": "One sentence describing the main weakness or gap that hurt this score.",
+      "suggestion": "One specific actionable improvement the owner could make."
+    }
+  ]
+}
+
+Keys must be exactly: originality, problem_clarity, solution_fit, feasibility, market_size, market_timing, competition_level, revenue_potential, business_model, go_to_market, team_fit, next_steps, ip_defensibility, scalability, regulatory_risk, customer_validation, capital_efficiency, impact.
+Score 1 = very weak, 10 = exceptional. Be honest and direct.`
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-scorecard`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ prompt }),
+        }
+      )
+      const parsed = await res.json()
+      const DIM_WEIGHTS = {originality:0.06,problem_clarity:0.06,solution_fit:0.06,feasibility:0.06,market_size:0.06,market_timing:0.06,competition_level:0.05,revenue_potential:0.06,business_model:0.06,go_to_market:0.05,team_fit:0.05,next_steps:0.05,ip_defensibility:0.05,scalability:0.06,regulatory_risk:0.05,customer_validation:0.05,capital_efficiency:0.05,impact:0.04}
+      const overall = parsed.scores.reduce((acc, s) => acc + (DIM_WEIGHTS[s.key] || 0) * s.score, 0)
+      const hashFields = ['title','problem','solution','how_it_works','business_model','tagline','target_audience','market_size','competitive_advantage','risks','next_steps']
+      const idea_hash = hashFields.map(f => String(idea[f] || '')).join('|').length
+      const result = { scores: parsed.scores, overall: Math.round(overall * 10) / 10, generated_at: new Date().toISOString(), idea_hash }
+      await supabase.from('ideas').update({ ai_scorecard: result }).eq('id', id)
+      const { data: fresh } = await supabase.from('ideas').select('*').eq('id', id).single()
+      if (fresh) setIdea(fresh)
+      setScorecardKey(k => k + 1)
+    } catch (e) {
+      console.error('Publish & score failed:', e)
+    } finally {
+      setPublishingScore(false)
+    }
+  }
+
   if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f' }}>
       <div className="spinner" />
@@ -457,6 +525,9 @@ export default function IdeaDetail({ session }) {
                 <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(28px, 5vw, 40px)', color: '#fff', lineHeight: 1.15, letterSpacing: '-0.5px' }}>
                   {idea.title}
                 </h1>
+                {isOwner && !idea.is_published && (
+                  <span style={{ fontSize: 11, background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.3)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '3px 10px', fontWeight: 500, alignSelf: 'center', flexShrink: 0 }}>Draft</span>
+                )}
                 {isOwner && <button onClick={() => startEdit('title')} style={pencilBtnDarkStyle} title="Edit title">✏️</button>}
                 {savedField === 'title' && <span style={savedConfirmDarkStyle}>Saved ✓</span>}
               </div>
@@ -552,7 +623,42 @@ export default function IdeaDetail({ session }) {
       {/* White content area */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
 
-        {isOwner && <AIScorecard idea={idea} ideaId={id} isPaid={false} />}
+        {isOwner && (
+          <>
+            {((idea.publish_count || 0) < 3 || !idea.is_published) ? (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <button
+                  onClick={publishAndScore}
+                  disabled={publishingScore}
+                  style={{
+                    background: publishingScore ? 'rgba(123,159,247,0.4)' : 'linear-gradient(90deg,#7b9ff7,#9b7ff7)',
+                    border: 'none', borderRadius: 10, padding: '11px 22px',
+                    fontSize: 13, fontWeight: 600, color: '#fff',
+                    cursor: publishingScore ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {publishingScore ? 'Publishing & scoring…' : '✨ Publish & Score'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
+                <button
+                  onClick={() => {}}
+                  style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}
+                >
+                  $0.99 Re-publish
+                </button>
+                <button
+                  onClick={() => {}}
+                  style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+                >
+                  Upgrade to Pro
+                </button>
+              </div>
+            )}
+            <AIScorecard key={scorecardKey} idea={idea} ideaId={id} isPaid={false} readOnly={true} />
+          </>
+        )}
 
         {/* Card 1: Problem & Solution */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>

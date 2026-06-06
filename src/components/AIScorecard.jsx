@@ -51,7 +51,6 @@ export default function AIScorecard({ idea, ideaId, isPaid = false, readOnly = f
     setLoading(true)
     setError(null)
     try {
-      const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
       const prompt = `You are an expert startup evaluator. Score this idea on 18 dimensions, each 1-10.
 
 Idea:
@@ -86,23 +85,18 @@ Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
 Keys must be exactly: originality, problem_clarity, solution_fit, feasibility, market_size, market_timing, competition_level, revenue_potential, business_model, go_to_market, team_fit, next_steps, ip_defensibility, scalability, regulatory_risk, customer_validation, capital_efficiency, impact.
 Score 1 = very weak, 10 = exceptional. Be honest and direct.`
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 4000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
-      const data = await res.json()
-      const text = data.content[0].text.replace(/```json|```/g, '').trim()
-      const parsed = JSON.parse(text)
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-scorecard`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ prompt }),
+        }
+      )
+      const parsed = await res.json()
 
       const overall = DIMENSIONS.reduce((acc, d) => {
         const s = parsed.scores.find(x => x.key === d.key)
