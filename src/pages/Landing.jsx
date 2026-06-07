@@ -96,38 +96,65 @@ export default function Landing() {
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Start free. Protect what matters. Go Pro when you're ready.</p>
           </div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
+
             {/* Free card */}
-            <div style={{ flex: '1 1 320px', maxWidth: 380, background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '2rem' }}>
-              <p style={{ margin: '0 0 0.4rem', fontSize: 13, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>Free</p>
+            <div style={{ flex: '1 1 260px', maxWidth: 320, background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '2rem' }}>
+              <p style={{ margin: '0 0 0.4rem', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>Free</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: 38, fontWeight: 700, color: '#fff' }}>$0</span>
+                <span style={{ fontSize: 36, fontWeight: 700, color: '#fff' }}>$0</span>
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>/forever</span>
               </div>
-              <p style={{ margin: '0 0 1.5rem', fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Everything you need to protect and pitch your ideas.</p>
-              <button onClick={() => window.location.href='/auth?signup=true'} style={{ width: '100%', background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer', marginBottom: '1.5rem' }}>Get started free</button>
-              {['Unlimited idea submissions', 'Blockchain timestamp', 'NDA-gated sharing', 'Basic pitch PDF & deck', 'AI Investor Scorecard', 'Blueprint — 2D basic', 'AI Challenge (limited)'].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                  <span style={{ color: '#4ade80', fontSize: 13, flexShrink: 0 }}>✓</span>
+              <p style={{ margin: '0 0 1.25rem', fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>Everything you need to protect and pitch your ideas.</p>
+              <button onClick={() => window.location.href = '/auth?signup=true'} style={{ width: '100%', background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '11px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', marginBottom: '1.25rem' }}>Get started free</button>
+              {['Unlimited idea submissions', 'Blockchain timestamp', 'AI Scorecard on publish', '3 free re-publishes', 'Basic pitch PDF'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                  <span style={{ color: '#4ade80', fontSize: 13 }}>✓</span>
                   <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{f}</span>
                 </div>
               ))}
+              {['NDA-gated sharing', 'AI Challenge', 'Score Insights'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>✕</span>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>{f}</span>
+                </div>
+              ))}
             </div>
-            {/* Pro card */}
-            <div style={{ flex: '1 1 320px', maxWidth: 380, background: 'rgba(123,159,247,0.05)', border: '1.5px solid rgba(123,159,247,0.35)', borderRadius: 20, padding: '2rem', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: 20, right: 20, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 600, color: '#fff' }}>POPULAR</div>
-              <p style={{ margin: '0 0 0.4rem', fontSize: 13, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>Pro</p>
+
+            {/* Protection Pack card */}
+            <div style={{ flex: '1 1 260px', maxWidth: 320, background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '2rem' }}>
+              <p style={{ margin: '0 0 0.4rem', fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>Protection Pack</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: 38, fontWeight: 700, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Coming soon</span>
+                <span style={{ fontSize: 36, fontWeight: 700, color: '#fff' }}>$4.99</span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>/per idea</span>
               </div>
-              <p style={{ margin: '0 0 1.5rem', fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>The full toolkit for serious inventors and creators.</p>
-              <button disabled style={{ width: '100%', background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 12, padding: '12px', fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed', marginBottom: '1.5rem' }}>Coming soon</button>
-              {['Everything in Free', 'Blueprint — 3D interactive', 'AI Scorecard improvement reports', 'AI Challenge unlimited', 'Pre-publish editor', 'Custom branding', 'Idea visibility controls'].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                  <span style={{ color: '#7b9ff7', fontSize: 13, flexShrink: 0 }}>✓</span>
+              <p style={{ margin: '0 0 1.25rem', fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>One-time payment per idea.</p>
+              <button onClick={() => window.location.href = '/pricing'} style={{ width: '100%', background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '11px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', marginBottom: '1.25rem' }}>Protect an idea</button>
+              {['Everything in Free', 'NDA share link (permanent)', 'Timestamp certificate PDF', 'Verified marketplace badge', 'Score Insights — $2.99 add-on'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                  <span style={{ color: '#4ade80', fontSize: 13 }}>✓</span>
                   <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{f}</span>
                 </div>
               ))}
             </div>
+
+            {/* Pro card */}
+            <div style={{ flex: '1 1 260px', maxWidth: 320, background: 'rgba(123,159,247,0.05)', border: '1.5px solid rgba(123,159,247,0.35)', borderRadius: 20, padding: '2rem', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 20, right: 20, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 600, color: '#fff' }}>POPULAR</div>
+              <p style={{ margin: '0 0 0.4rem', fontSize: 11, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>Pro</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: 36, fontWeight: 700, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>$12</span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>/month</span>
+              </div>
+              <p style={{ margin: '0 0 1.25rem', fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>The full toolkit for serious inventors and creators.</p>
+              <button onClick={() => window.location.href = '/pricing'} style={{ width: '100%', background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', border: 'none', borderRadius: 12, padding: '11px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', marginBottom: '1.25rem' }}>Upgrade to Pro</button>
+              {['Everything in Free + Protection', 'Unlimited re-publishes', 'Score Insights included', 'AI Challenge', 'Advanced pitch deck + PDF', 'Priority marketplace ranking', 'Blueprint tool'].map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                  <span style={{ color: '#7b9ff7', fontSize: 13 }}>✓</span>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{f}</span>
+                </div>
+              ))}
+            </div>
+
           </div>
           <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>
             Full pricing details at <span onClick={() => window.location.href='/pricing'} style={{ color: '#7b9ff7', cursor: 'pointer', textDecoration: 'underline' }}>/pricing</span>
