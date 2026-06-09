@@ -896,9 +896,10 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             onChange={async (val) => {
               const { error } = await supabase
                 .from('ideas')
-                .update({ competitive_landscape: val })
+                .update({ competitive_landscape: typeof val === 'string' ? val : JSON.stringify(val) })
                 .eq('id', id)
-              if (!error) setIdea(prev => ({ ...prev, competitive_landscape: val }))
+              if (error) { console.error('competitive_landscape save error:', error); return }
+              setIdea(prev => ({ ...prev, competitive_landscape: val }))
             }}
             isOwner={isOwner}
             isPaid={isPaid}
