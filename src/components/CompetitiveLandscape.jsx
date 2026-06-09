@@ -48,7 +48,9 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
   const matrixRef = useRef(null)
   const draggingRef = useRef(null)
 
+  const isSaving = useRef(false)
   useEffect(() => {
+    if (isSaving.current) return
     const p = parseValue(value)
     if (!p) return
     if (p.format) setFormat(p.format)
@@ -64,9 +66,11 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
   }
 
   async function handleSave() {
+    isSaving.current = true
     setSaving(true)
     await onChange({ format, table: tableData, matrix: matrixData, gap: gapData })
     setSaving(false)
+    isSaving.current = false
   }
 
   function addColumn() {
