@@ -14,7 +14,14 @@ function parseValue(v) {
 }
 
 function TableReadOnly({ data }) {
-  if (!data || !data.columns || data.columns.length === 0) return <p style={{ fontSize: 13, color: '#888' }}>No competitor data added yet.</p>
+  if (!data || (!data.columns?.length && !data.competitors?.length)) return <p style={{ fontSize: 13, color: '#888' }}>No competitor data added yet.</p>
+  if (!data.columns?.length) return (
+    <div>
+      {(data.competitors || []).map((c, i) => (
+        <div key={i} style={{ padding: '6px 0', borderBottom: '0.5px solid rgba(44,44,42,0.06)', fontSize: 13, color: '#2c2c2a' }}>{c.name}</div>
+      ))}
+    </div>
+  )
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -224,6 +231,10 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
 
   if (!isOwner) {
     if (!parsed) return null
+    const hasData = (parsed.format === 'table' && parsed.table?.competitors?.length > 0) ||
+      (parsed.format === 'matrix' && parsed.matrix?.competitors?.length > 0) ||
+      (parsed.format === 'gap' && parsed.gap?.competitors?.length > 0)
+    if (!hasData) return null
     return (
       <div style={CARD_STYLE}>
         <span style={LABEL_STYLE}>Competitive Landscape</span>
@@ -327,7 +338,7 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
               {matrixData.axis_y?.custom && <input value={matrixData.axis_y.label === 'Custom...' ? '' : matrixData.axis_y.label} onChange={e => setMatrixData(prev => ({ ...prev, axis_y: { label: e.target.value, custom: true } }))} placeholder="Custom axis label" style={{ marginTop: 6, width: '100%', padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />}
             </div>
           </div>
-          <div ref={matrixRef} onMouseMove={onMatrixMove} onMouseUp={onMatrixUp} onTouchMove={onMatrixMove} onTouchEnd={onMatrixUp} style={{ position: 'relative', width: '100%', paddingBottom: '75%', background: 'rgba(123,159,247,0.04)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 10, cursor: 'crosshair', userSelect: 'none', marginBottom: 12 }}>
+          <div ref={matrixRef} onMouseMove={onMatrixMove} onMouseUp={onMatrixUp} onTouchMove={onMatrixMove} onTouchEnd={onMatrixUp} style={{ position: 'relative', width: '100%', paddingBottom: '56%', background: 'rgba(123,159,247,0.04)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 10, cursor: 'crosshair', userSelect: 'none', marginBottom: 12 }}>
             <div style={{ position: 'absolute', inset: 0 }}>
               <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'rgba(44,44,42,0.08)' }} />
               <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(44,44,42,0.08)' }} />
