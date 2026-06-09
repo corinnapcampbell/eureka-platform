@@ -1011,31 +1011,6 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           )
         })()}
 
-        {/* Origin Story */}
-        {(idea.origin_story || isOwner) && (
-          <div id="section-origin_story" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Origin Story</p>
-              {isOwner && inlineEdit.origin_story === undefined && <button onClick={() => startEdit('origin_story')} style={pencilBtnLightStyle} title="Edit origin story">✏️</button>}
-            </div>
-            {inlineEdit.origin_story !== undefined ? (
-              <div>
-                <textarea value={inlineEdit.origin_story} onChange={e => setInlineEdit(v => ({ ...v, origin_story: e.target.value }))} rows={5} style={inlineTextareaStyle} placeholder="What personal experience or insight led you to build this? What problem did you live through that nobody else was solving?" autoFocus />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveInlineField('origin_story')} disabled={inlineSaving === 'origin_story'} style={inlineSaveBtnStyle}>{inlineSaving === 'origin_story' ? 'Saving…' : 'Save'}</button>
-                  <button onClick={() => cancelEdit('origin_story')} style={inlineCancelBtnStyle}>Cancel</button>
-                </div>
-                {savedField === 'origin_story' && <span style={savedConfirmStyle}>Saved ✓</span>}
-              </div>
-            ) : idea.origin_story ? (
-              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.origin_story}</p>
-            ) : (
-              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to share what led you to build this</p>
-            )}
-            {savedField === 'origin_story' && inlineEdit.origin_story === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
-          </div>
-        )}
-
         {/* Customer Validation */}
         {(idea.customer_validation || isOwner) && (() => {
           let cvData = null
