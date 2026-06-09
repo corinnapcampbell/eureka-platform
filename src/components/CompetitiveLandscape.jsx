@@ -1,102 +1,157 @@
 import { useState, useEffect, useRef } from 'react'
 
-const AXIS_OPTIONS = [
-  'Protection level',
-  'Investor-readiness',
-  'Market size',
-  'Price point',
-  'Ease of use',
-  'Speed to market',
-  'Technical complexity',
-  'Custom...',
-]
-
+const CARD_STYLE = { background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }
+const LABEL_STYLE = { fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem', display: 'block' }
+const AXIS_OPTIONS = ['Protection level', 'Investor-readiness', 'Market size', 'Price point', 'Ease of use', 'Speed to market', 'Technical complexity', 'Custom...']
 const DEFAULT_STAGES = ['Raw idea', 'Protected & pitched', 'Validated', 'Patent-ready']
+const BTN = { background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }
+const BTN_SM = { background: 'transparent', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: '#555' }
 
-function parseValue(value) {
-  if (!value) return null
-  if (typeof value === 'string') {
-    try { return JSON.parse(value) } catch { return null }
-  }
-  return value
+function parseValue(v) {
+  if (!v) return null
+  if (typeof v === 'string') { try { return JSON.parse(v) } catch { return null } }
+  return v
+}
+
+function TableReadOnly({ data }) {
+  if (!data || !data.columns || data.columns.length === 0) return <p style={{ fontSize: 13, color: '#888' }}>No competitor data added yet.</p>
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <thead>
+          <tr>
+            <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '0.5px solid rgba(44,44,42,0.1)', color: '#888780', fontWeight: 600, fontSize: 11 }}>Competitor</th>
+            {data.columns.map((col, i) => <th key={i} style={{ padding: '8px 12px', borderBottom: '0.5px solid rgba(44,44,42,0.1)', color: '#888780', fontWeight: 600, fontSize: 11, textAlign: 'center' }}>{col}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          <tr style={{ background: 'rgba(123,159,247,0.08)', borderLeft: '3px solid #7b9ff7' }}>
+            <td style={{ padding: '8px 12px', fontWeight: 600, color: '#7b9ff7', fontSize: 13 }}>Your idea</td>
+            {data.columns.map((_, i) => <td key={i} style={{ textAlign: 'center', padding: '8px 12px', color: '#22c55e', fontSize: 16 }}>✓</td>)}
+          </tr>
+          {(data.competitors || []).map((c, i) => (
+            <tr key={i} style={{ borderBottom: '0.5px solid rgba(44,44,42,0.06)' }}>
+              <td style={{ padding: '8px 12px', color: '#2c2c2a', fontSize: 13 }}>{c.name}</td>
+              {(c.checks || []).map((checked, j) => <td key={j} style={{ textAlign: 'center', padding: '8px 12px', color: checked ? '#22c55e' : '#d1d5db', fontSize: checked ? 16 : 13 }}>{checked ? '✓' : '—'}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function MatrixReadOnly({ data, ideaTitle }) {
+  if (!data || !data.competitors || data.competitors.length === 0) return <p style={{ fontSize: 13, color: '#888' }}>No positioning data added yet.</p>
+  const W = 320, H = 320
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <svg width={W + 80} height={H + 60} style={{ display: 'block', margin: '0 auto' }}>
+        <line x1={40} y1={10} x2={40} y2={H + 10} stroke="#e5e5e5" strokeWidth={1} />
+        <line x1={40} y1={H + 10} x2={W + 50} y2={H + 10} stroke="#e5e5e5" strokeWidth={1} />
+        <text x={40 + W / 2} y={H + 35} textAnchor="middle" fontSize={11} fill="#888780">{data.axis_x?.label || 'X axis'}</text>
+        <text x={12} y={H / 2 + 10} textAnchor="middle" fontSize={11} fill="#888780" transform={`rotate(-90, 12, ${H / 2 + 10})`}>{data.axis_y?.label || 'Y axis'}</text>
+        {(data.competitors || []).map((c, i) => {
+          const cx = 40 + c.x * W
+          const cy = 10 + (1 - c.y) * H
+          return (
+            <g key={i}>
+              <circle cx={cx} cy={cy} r={6} fill="#888780" opacity={0.7} />
+              <text x={cx + 9} y={cy + 4} fontSize={10} fill="#555">{c.name}</text>
+            </g>
+          )
+        })}
+        {data.self && (
+          <g>
+            <circle cx={40 + data.self.x * W} cy={10 + (1 - data.self.y) * H} r={9} fill="#7b9ff7" />
+            <text x={40 + data.self.x * W + 12} y={10 + (1 - data.self.y) * H + 4} fontSize={10} fill="#7b9ff7" fontWeight={600}>{ideaTitle || 'Your idea'}</text>
+          </g>
+        )}
+      </svg>
+    </div>
+  )
+}
+
+function GapReadOnly({ data, ideaTitle }) {
+  if (!data || !data.stages || data.stages.length === 0) return <p style={{ fontSize: 13, color: '#888' }}>No gap data added yet.</p>
+  const stages = data.stages || DEFAULT_STAGES
+  const gapStart = data.gap_start ?? 1
+  const gapEnd = data.gap_end ?? 2
+  const W = 560
+  const stageX = (i) => 40 + (i / (stages.length - 1)) * (W - 80)
+  return (
+    <svg width={W} height={160} style={{ display: 'block', margin: '0 auto', overflow: 'visible' }}>
+      <rect x={stageX(gapStart)} y={50} width={stageX(gapEnd) - stageX(gapStart)} height={40} rx={8} fill="rgba(123,159,247,0.15)" stroke="#7b9ff7" strokeWidth={1} strokeDasharray="4 3" />
+      <line x1={40} y1={70} x2={W - 40} y2={70} stroke="#e5e5e5" strokeWidth={2} />
+      {stages.map((s, i) => (
+        <g key={i}>
+          <circle cx={stageX(i)} cy={70} r={5} fill={i >= gapStart && i <= gapEnd ? '#7b9ff7' : '#d1d5db'} />
+          <text x={stageX(i)} y={95} textAnchor="middle" fontSize={10} fill="#888780">{s}</text>
+        </g>
+      ))}
+      <text x={(stageX(gapStart) + stageX(gapEnd)) / 2} y={65} textAnchor="middle" fontSize={10} fill="#7b9ff7" fontWeight={600}>{ideaTitle || 'Your idea'}</text>
+      {(data.competitors || []).map((c, i) => {
+        const x = stageX(Math.min(c.stage, stages.length - 1))
+        const y = 28 - (i % 2) * 16
+        return (
+          <g key={i}>
+            <rect x={x - 30} y={y - 10} width={60} height={16} rx={4} fill="#f5f5f3" />
+            <text x={x} y={y + 3} textAnchor="middle" fontSize={9} fill="#555">{c.name}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
 }
 
 export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid, ideaTitle, ideaProblem, ideaSolution }) {
-  const parsed = parseValue(value)
-
-  const [format, setFormat] = useState(parsed?.format || 'table')
-  const [tableData, setTableData] = useState(parsed?.table || { columns: [], competitors: [] })
-  const [matrixData, setMatrixData] = useState(parsed?.matrix || {
-    axis_x: { label: 'Ease of use', custom: false },
-    axis_y: { label: 'Market size', custom: false },
-    competitors: [],
-    self: { x: 0.5, y: 0.5 },
-  })
-  const [gapData, setGapData] = useState(parsed?.gap || {
-    stages: [...DEFAULT_STAGES],
-    competitors: [],
-    gap_start: 1,
-    gap_end: 2,
-  })
+  const [format, setFormat] = useState('table')
+  const [tableData, setTableData] = useState({ columns: [], competitors: [] })
+  const [matrixData, setMatrixData] = useState({ axis_x: { label: 'Protection level', custom: false }, axis_y: { label: 'Investor-readiness', custom: false }, competitors: [], self: { x: 0.5, y: 0.5 } })
+  const [gapData, setGapData] = useState({ stages: [...DEFAULT_STAGES], competitors: [], gap_start: 1, gap_end: 2 })
   const [newColName, setNewColName] = useState('')
   const [aiReason, setAiReason] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
-  const [formatWarning, setFormatWarning] = useState(false)
   const [saving, setSaving] = useState(false)
-
+  const [saved, setSaved] = useState(false)
   const matrixRef = useRef(null)
   const draggingRef = useRef(null)
+  const hasLoaded = useRef(false)
 
-  const isSaving = useRef(false)
   useEffect(() => {
-    if (isSaving.current) return
     const p = parseValue(value)
     if (!p) return
     if (p.format) setFormat(p.format)
     if (p.table) setTableData(p.table)
     if (p.matrix) setMatrixData(p.matrix)
     if (p.gap) setGapData(p.gap)
-  }, [value])
-
-  function switchFormat(f) {
-    if (f === format) return
-    setFormatWarning(true)
-    setFormat(f)
-  }
+    hasLoaded.current = true
+  }, [])
 
   async function handleSave() {
-    isSaving.current = true
     setSaving(true)
-    await onChange({ format, table: tableData, matrix: matrixData, gap: gapData })
+    setSaved(false)
+    const val = { format, table: tableData, matrix: matrixData, gap: gapData }
+    await onChange(val)
     setSaving(false)
-    isSaving.current = false
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   function addColumn() {
     if (!newColName.trim() || tableData.columns.length >= 6) return
     const col = newColName.trim()
     setNewColName('')
-    setTableData(prev => ({
-      ...prev,
-      columns: [...prev.columns, col],
-      competitors: prev.competitors.map(c => ({ ...c, checks: [...c.checks, false] })),
-    }))
+    setTableData(prev => ({ ...prev, columns: [...prev.columns, col], competitors: prev.competitors.map(c => ({ ...c, checks: [...(c.checks || []), false] })) }))
   }
 
   function removeColumn(i) {
-    setTableData(prev => ({
-      ...prev,
-      columns: prev.columns.filter((_, j) => j !== i),
-      competitors: prev.competitors.map(c => ({ ...c, checks: c.checks.filter((_, j) => j !== i) })),
-    }))
+    setTableData(prev => ({ ...prev, columns: prev.columns.filter((_, j) => j !== i), competitors: prev.competitors.map(c => ({ ...c, checks: (c.checks || []).filter((_, j) => j !== i) })) }))
   }
 
   function addTableCompetitor() {
-    setTableData(prev => ({
-      ...prev,
-      competitors: [...prev.competitors, { name: '', checks: prev.columns.map(() => false) }],
-    }))
+    setTableData(prev => ({ ...prev, competitors: [...prev.competitors, { name: '', checks: prev.columns.map(() => false) }] }))
   }
 
   function removeTableCompetitor(i) {
@@ -107,43 +162,25 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
     const rect = matrixRef.current.getBoundingClientRect()
     const clientX = e.touches ? e.touches[0].clientX : e.clientX
     const clientY = e.touches ? e.touches[0].clientY : e.clientY
-    return {
-      x: Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)),
-      y: Math.min(1, Math.max(0, (clientY - rect.top) / rect.height)),
-    }
+    return { x: Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)), y: Math.min(1, Math.max(0, (clientY - rect.top) / rect.height)) }
   }
 
   function onMatrixMouseDown(type, index) {
-    return (e) => {
-      e.preventDefault()
-      draggingRef.current = { type, index }
-    }
+    return (e) => { e.preventDefault(); draggingRef.current = { type, index } }
   }
 
   function onMatrixMove(e) {
     if (!draggingRef.current || !matrixRef.current) return
     const pos = getRelativePos(e)
     const { type, index } = draggingRef.current
-    if (type === 'self') {
-      setMatrixData(prev => ({ ...prev, self: pos }))
-    } else {
-      setMatrixData(prev => {
-        const competitors = [...prev.competitors]
-        competitors[index] = { ...competitors[index], x: pos.x, y: pos.y }
-        return { ...prev, competitors }
-      })
-    }
+    if (type === 'self') { setMatrixData(prev => ({ ...prev, self: pos })) }
+    else { setMatrixData(prev => { const competitors = [...prev.competitors]; competitors[index] = { ...competitors[index], x: pos.x, y: pos.y }; return { ...prev, competitors } }) }
   }
 
-  function onMatrixUp() {
-    draggingRef.current = null
-  }
+  function onMatrixUp() { draggingRef.current = null }
 
   function addMatrixCompetitor() {
-    setMatrixData(prev => ({
-      ...prev,
-      competitors: [...prev.competitors, { name: '', x: 0.5, y: 0.5 }],
-    }))
+    setMatrixData(prev => ({ ...prev, competitors: [...prev.competitors, { name: '', x: 0.5, y: 0.5 }] }))
   }
 
   function removeMatrixCompetitor(i) {
@@ -163,443 +200,207 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
     setAiError('')
     setAiReason('')
     try {
-      const prompt = `You are a startup analyst. Given this idea: Title: ${ideaTitle}. Problem: ${ideaProblem}. Solution: ${ideaSolution}. Return JSON only, no markdown, no explanation. JSON must have these keys: recommended_format (one of: table, matrix, gap), reason (one line explaining why this format fits), competitors (array of 4-6 objects). Each competitor object must have: name (string), for_table: { capabilities: array of booleans matching the columns }, for_matrix: { x: float 0-1, y: float 0-1 }, for_gap: { stage: integer 0-3 }. Also include a self object with for_matrix: { x: float 0-1, y: float 0-1 } representing where this idea sits on the matrix.`
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/competitive-suggest`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ prompt }),
-        }
-      )
+      const prompt = `You are a startup analyst. Given this idea: Title: ${ideaTitle}. Problem: ${ideaProblem}. Solution: ${ideaSolution}. Return JSON only, no markdown, no explanation. JSON must have these keys: recommended_format (one of: table, matrix, gap), reason (one line explaining why this format fits), competitors (array of 4-6 objects). Each competitor object must have: name (string), for_table: { capabilities: array of booleans }, for_matrix: { x: float 0-1, y: float 0-1 }, for_gap: { stage: integer 0-3 }. Also include a self object with for_matrix: { x: float 0-1, y: float 0-1 } representing where this idea sits on the matrix.`
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/competitive-suggest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ prompt }),
+      })
       const data = await res.json()
       const result = typeof data === 'string' ? JSON.parse(data) : (data.result || data)
       if (result.recommended_format) setFormat(result.recommended_format)
       if (result.reason) setAiReason(result.reason)
       const aiCompetitors = result.competitors || []
-      setMatrixData(prev => ({
-        ...prev,
-        competitors: aiCompetitors.map(c => ({ name: c.name, x: c.for_matrix?.x ?? 0.5, y: c.for_matrix?.y ?? 0.5 })),
-        self: result.self?.for_matrix ? { x: result.self.for_matrix.x, y: result.self.for_matrix.y } : prev.self,
-      }))
-      setGapData(prev => ({
-        ...prev,
-        competitors: aiCompetitors.map(c => ({ name: c.name, stage: c.for_gap?.stage ?? 0 })),
-      }))
-      setTableData(prev => ({
-        ...prev,
-        competitors: aiCompetitors.map(c => ({ name: c.name, checks: prev.columns.map(() => false) })),
-      }))
+      setMatrixData(prev => ({ ...prev, competitors: aiCompetitors.map(c => ({ name: c.name, x: c.for_matrix?.x ?? 0.5, y: c.for_matrix?.y ?? 0.5 })), self: result.self?.for_matrix ? { x: result.self.for_matrix.x, y: result.self.for_matrix.y } : prev.self }))
+      setGapData(prev => ({ ...prev, competitors: aiCompetitors.map(c => ({ name: c.name, stage: c.for_gap?.stage ?? 0 })) }))
+      setTableData(prev => ({ ...prev, competitors: aiCompetitors.map(c => ({ name: c.name, checks: (c.for_table?.capabilities || []) })) }))
     } catch {
       setAiError('AI suggestion failed. You can fill this in manually.')
     }
     setAiLoading(false)
   }
 
-  // ── READ-ONLY ──────────────────────────────────────────────────────────────
+  const parsed = parseValue(value)
+
   if (!isOwner) {
-    if (!value) return null
-    const p = parseValue(value)
-    if (!p || !p.format) return null
-    const fmt = p.format
-    const tbl = p.table
-    const mat = p.matrix
-    const gap = p.gap
-
+    if (!parsed) return null
     return (
-      <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Competitive Landscape</p>
+      <div style={CARD_STYLE}>
+        <span style={LABEL_STYLE}>Competitive Landscape</span>
+        {parsed.format === 'table' && <TableReadOnly data={parsed.table} ideaTitle={ideaTitle} />}
+        {parsed.format === 'matrix' && <MatrixReadOnly data={parsed.matrix} ideaTitle={ideaTitle} />}
+        {parsed.format === 'gap' && <GapReadOnly data={parsed.gap} ideaTitle={ideaTitle} />}
+      </div>
+    )
+  }
 
-        {fmt === 'table' && tbl && tbl.columns?.length > 0 && (
+  return (
+    <div style={CARD_STYLE}>
+      <span style={LABEL_STYLE}>Competitive Landscape</span>
+
+      {isPaid && (
+        <div style={{ marginBottom: '1rem' }}>
+          <button onClick={aiSuggest} disabled={aiLoading} style={{ ...BTN, opacity: aiLoading ? 0.6 : 1 }}>
+            {aiLoading ? 'Analyzing…' : '✨ AI-suggest competitors'}
+          </button>
+          {aiReason && <p style={{ fontSize: 12, color: '#7b9ff7', fontStyle: 'italic', marginTop: 6 }}>{aiReason}</p>}
+          {aiError && <p style={{ fontSize: 12, color: '#e24b4a', marginTop: 6 }}>{aiError}</p>}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
+        {['table', 'matrix', 'gap'].map(f => (
+          <button key={f} onClick={() => setFormat(f)} style={{ flex: 1, padding: '10px 8px', borderRadius: 8, border: format === f ? '1.5px solid #7b9ff7' : '0.5px solid rgba(44,44,42,0.15)', background: format === f ? 'rgba(123,159,247,0.06)' : '#fff', cursor: 'pointer', textAlign: 'left' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: format === f ? '#7b9ff7' : '#2c2c2a' }}>{f === 'table' ? 'Feature table' : f === 'matrix' ? 'Positioning matrix' : 'Gap diagram'}</div>
+            <div style={{ fontSize: 11, color: '#888780', marginTop: 2 }}>{f === 'table' ? 'Who has what' : f === 'matrix' ? 'Where you sit' : 'The unserved moment'}</div>
+          </button>
+        ))}
+      </div>
+
+      {format === 'table' && (
+        <div>
+          <p style={{ fontSize: 12, color: '#888780', marginBottom: 8 }}>Add capability columns, then add competitors and check which ones they have.</p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <input value={newColName} onChange={e => setNewColName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addColumn()} placeholder="Add capability (e.g. Timestamp proof)" style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 13, outline: 'none' }} />
+            <button onClick={addColumn} style={BTN}>Add</button>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            {tableData.columns.map((col, i) => (
+              <span key={i} style={{ background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '3px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {col} <span onClick={() => removeColumn(i)} style={{ cursor: 'pointer', opacity: 0.6 }}>×</span>
+              </span>
+            ))}
+          </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, color: '#888780', fontWeight: 600, borderBottom: '1px solid #f0f0ee' }}>Competitor</th>
-                  {tbl.columns.map((col, i) => (
-                    <th key={i} style={{ textAlign: 'center', padding: '6px 10px', fontSize: 11, color: '#888780', fontWeight: 600, borderBottom: '1px solid #f0f0ee' }}>{col}</th>
-                  ))}
+                  <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '0.5px solid rgba(44,44,42,0.1)', color: '#888780', fontWeight: 600, fontSize: 11 }}>Competitor</th>
+                  {tableData.columns.map((col, i) => <th key={i} style={{ padding: '8px 12px', borderBottom: '0.5px solid rgba(44,44,42,0.1)', color: '#888780', fontWeight: 600, fontSize: 11, textAlign: 'center', minWidth: 80 }}>{col}</th>)}
+                  <th style={{ width: 32 }}></th>
                 </tr>
               </thead>
               <tbody>
                 <tr style={{ background: 'rgba(123,159,247,0.08)', borderLeft: '3px solid #7b9ff7' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 600, color: '#2c2c2a' }}>{ideaTitle || 'Your idea'}</td>
-                  {tbl.columns.map((_, i) => (
-                    <td key={i} style={{ textAlign: 'center', padding: '8px 10px', color: '#22c55e', fontWeight: 700 }}>✓</td>
-                  ))}
+                  <td style={{ padding: '8px 12px', fontWeight: 600, color: '#7b9ff7', fontSize: 13 }}>Your idea</td>
+                  {tableData.columns.map((_, i) => <td key={i} style={{ textAlign: 'center', padding: '8px 12px', color: '#22c55e', fontSize: 16 }}>✓</td>)}
+                  <td></td>
                 </tr>
-                {(tbl.competitors || []).map((comp, ci) => (
-                  <tr key={ci} style={{ borderBottom: '1px solid #f8f8f6' }}>
-                    <td style={{ padding: '8px 10px', color: '#2c2c2a' }}>{comp.name}</td>
-                    {(comp.checks || []).map((checked, i) => (
-                      <td key={i} style={{ textAlign: 'center', padding: '8px 10px', color: checked ? '#22c55e' : '#d1d5db', fontWeight: checked ? 700 : 400 }}>{checked ? '✓' : '—'}</td>
+                {tableData.competitors.map((c, i) => (
+                  <tr key={i} style={{ borderBottom: '0.5px solid rgba(44,44,42,0.06)' }}>
+                    <td style={{ padding: '6px 12px' }}>
+                      <input value={c.name} onChange={e => setTableData(prev => { const competitors = [...prev.competitors]; competitors[i] = { ...competitors[i], name: e.target.value }; return { ...prev, competitors } })} placeholder="Competitor name" style={{ border: 'none', outline: 'none', fontSize: 13, width: '100%', background: 'transparent', color: '#2c2c2a' }} />
+                    </td>
+                    {(c.checks || []).map((checked, j) => (
+                      <td key={j} style={{ textAlign: 'center', padding: '6px 12px' }}>
+                        <input type="checkbox" checked={!!checked} onChange={e => setTableData(prev => { const competitors = [...prev.competitors]; const checks = [...(competitors[i].checks || [])]; checks[j] = e.target.checked; competitors[i] = { ...competitors[i], checks }; return { ...prev, competitors } })} />
+                      </td>
                     ))}
+                    <td style={{ textAlign: 'center', padding: '6px 4px' }}>
+                      <button onClick={() => removeTableCompetitor(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e24b4a', fontSize: 16, lineHeight: 1 }}>×</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-
-        {fmt === 'matrix' && mat && (
-          <svg width="340" height="340" style={{ display: 'block', margin: '0 auto' }}>
-            <line x1="40" y1="300" x2="320" y2="300" stroke="#e0e0e0" strokeWidth="1.5" />
-            <line x1="40" y1="300" x2="40" y2="20" stroke="#e0e0e0" strokeWidth="1.5" />
-            <text x="180" y="332" textAnchor="middle" fontSize="10" fill="#888780">{mat.axis_x?.label || 'X Axis'}</text>
-            <text x="12" y="160" textAnchor="middle" fontSize="10" fill="#888780" transform="rotate(-90,12,160)">{mat.axis_y?.label || 'Y Axis'}</text>
-            {(mat.competitors || []).map((c, i) => {
-              const cx = 40 + c.x * 280
-              const cy = 300 - c.y * 280
-              return (
-                <g key={i}>
-                  <circle cx={cx} cy={cy} r="6" fill="#d1d5db" />
-                  <text x={cx} y={cy - 10} textAnchor="middle" fontSize="9" fill="#888780">{c.name}</text>
-                </g>
-              )
-            })}
-            {mat.self && (() => {
-              const cx = 40 + mat.self.x * 280
-              const cy = 300 - mat.self.y * 280
-              return (
-                <g>
-                  <circle cx={cx} cy={cy} r="8" fill="#7b9ff7" />
-                  <text x={cx} y={cy - 12} textAnchor="middle" fontSize="9" fill="#7b9ff7" fontWeight="600">{ideaTitle || 'Your idea'}</text>
-                </g>
-              )
-            })()}
-          </svg>
-        )}
-
-        {fmt === 'gap' && gap && (
-          <svg width="100%" height="120" viewBox="0 0 400 120">
-            {(() => {
-              const stages = gap.stages || DEFAULT_STAGES
-              const segW = 340 / (stages.length - 1)
-              const x1 = 30 + (gap.gap_start ?? 1) * segW
-              const x2 = 30 + (gap.gap_end ?? 2) * segW
-              return <rect x={x1} y="40" width={x2 - x1} height="40" rx="6" fill="rgba(123,159,247,0.15)" />
-            })()}
-            <line x1="30" y1="60" x2="370" y2="60" stroke="#e0e0e0" strokeWidth="1.5" />
-            {(gap.stages || DEFAULT_STAGES).map((s, i) => {
-              const stages = gap.stages || DEFAULT_STAGES
-              const x = 30 + i * (340 / (stages.length - 1))
-              return (
-                <g key={i}>
-                  <circle cx={x} cy="60" r="4" fill="#d1d5db" />
-                  <text x={x} y="85" textAnchor="middle" fontSize="8" fill="#888780">{s}</text>
-                </g>
-              )
-            })}
-            {(gap.competitors || []).map((c, i) => {
-              const stages = gap.stages || DEFAULT_STAGES
-              const x = 30 + (c.stage || 0) * (340 / (stages.length - 1))
-              return (
-                <g key={i}>
-                  <rect x={x - 30} y={20 - (i % 2) * 16} width="60" height="14" rx="7" fill="#f0f0ee" />
-                  <text x={x} y={30 - (i % 2) * 16} textAnchor="middle" fontSize="8" fill="#555">{c.name}</text>
-                </g>
-              )
-            })}
-            {(() => {
-              const stages = gap.stages || DEFAULT_STAGES
-              const gapStart = gap.gap_start ?? 1
-              const gapEnd = gap.gap_end ?? 2
-              const x = 30 + ((gapStart + gapEnd) / 2) * (340 / (stages.length - 1))
-              return (
-                <g>
-                  <rect x={x - 35} y="44" width="70" height="16" rx="8" fill="#7b9ff7" />
-                  <text x={x} y="55" textAnchor="middle" fontSize="8" fill="#fff" fontWeight="600">{(ideaTitle || 'Your idea').slice(0, 12)}</text>
-                </g>
-              )
-            })()}
-          </svg>
-        )}
-      </div>
-    )
-  }
-
-  // ── OWNER EDITOR ───────────────────────────────────────────────────────────
-  const inputStyle = { border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 8, padding: '8px 10px', fontSize: 13, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }
-  const btnStyle = { background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }
-
-  return (
-    <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-      <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Competitive Landscape</p>
-
-      {isPaid && (
-        <div style={{ marginBottom: '1rem' }}>
-          <button onClick={aiSuggest} disabled={aiLoading} style={{ ...btnStyle, opacity: aiLoading ? 0.6 : 1, cursor: aiLoading ? 'not-allowed' : 'pointer' }}>
-            {aiLoading ? 'Thinking…' : '✨ AI-suggest competitors'}
-          </button>
-          {aiReason && <p style={{ fontSize: 12, color: '#888780', fontStyle: 'italic', marginTop: 6 }}>{aiReason}</p>}
-          {aiError && <p style={{ fontSize: 12, color: '#e24b4a', marginTop: 6 }}>{aiError}</p>}
+          <button onClick={addTableCompetitor} style={{ ...BTN_SM, marginTop: 10 }}>+ Add competitor</button>
         </div>
       )}
 
-      {/* Format picker */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
-        {[
-          { key: 'table', label: 'Feature table', desc: 'Who has what' },
-          { key: 'matrix', label: 'Positioning matrix', desc: 'Where you sit' },
-          { key: 'gap', label: 'Gap diagram', desc: 'The unserved moment' },
-        ].map(f => (
-          <div
-            key={f.key}
-            onClick={() => switchFormat(f.key)}
-            style={{
-              border: format === f.key ? '1.5px solid #7b9ff7' : '0.5px solid rgba(44,44,42,0.1)',
-              borderRadius: 10,
-              padding: '10px 14px',
-              cursor: 'pointer',
-              flex: '1 1 120px',
-              background: format === f.key ? 'rgba(123,159,247,0.05)' : '#fff',
-            }}
-          >
-            <p style={{ fontSize: 12, fontWeight: 600, color: format === f.key ? '#7b9ff7' : '#2c2c2a', margin: '0 0 2px' }}>{f.label}</p>
-            <p style={{ fontSize: 11, color: '#888780', margin: 0 }}>{f.desc}</p>
-          </div>
-        ))}
-      </div>
-      {formatWarning && (
-        <p style={{ fontSize: 11, color: '#888780', fontStyle: 'italic', marginBottom: '0.75rem' }}>
-          Switching format clears position data for this view. Your other format data is preserved.
-        </p>
-      )}
-
-      {/* TABLE EDITOR */}
-      {format === 'table' && (
-        <div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: '0.75rem', alignItems: 'center' }}>
-            <input
-              value={newColName}
-              onChange={e => setNewColName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addColumn()}
-              placeholder="Add capability (e.g. Timestamp proof)"
-              style={{ ...inputStyle, flex: 1 }}
-            />
-            <button onClick={addColumn} disabled={tableData.columns.length >= 6} style={{ ...btnStyle, flexShrink: 0, opacity: tableData.columns.length >= 6 ? 0.5 : 1 }}>Add</button>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-            {tableData.columns.map((col, i) => (
-              <span key={i} style={{ fontSize: 12, background: 'rgba(123,159,247,0.1)', color: '#4a6fd4', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {col}
-                <span onClick={() => removeColumn(i)} style={{ cursor: 'pointer', fontWeight: 700, color: '#9b7ff7' }}>×</span>
-              </span>
-            ))}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'rgba(123,159,247,0.08)', borderLeft: '3px solid #7b9ff7', borderRadius: 6, marginBottom: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#7b9ff7', minWidth: 120 }}>{ideaTitle || 'Your idea'}</span>
-            {tableData.columns.map((_, i) => (
-              <input key={i} type="checkbox" checked={true} readOnly style={{ accentColor: '#7b9ff7' }} />
-            ))}
-          </div>
-          {tableData.competitors.map((comp, ci) => (
-            <div key={ci} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <input
-                value={comp.name}
-                onChange={e => setTableData(prev => {
-                  const competitors = [...prev.competitors]
-                  competitors[ci] = { ...competitors[ci], name: e.target.value }
-                  return { ...prev, competitors }
-                })}
-                placeholder="Competitor name"
-                style={{ ...inputStyle, width: 140 }}
-              />
-              {comp.checks.map((checked, i) => (
-                <input
-                  key={i}
-                  type="checkbox"
-                  checked={checked}
-                  onChange={e => setTableData(prev => {
-                    const competitors = [...prev.competitors]
-                    const checks = [...competitors[ci].checks]
-                    checks[i] = e.target.checked
-                    competitors[ci] = { ...competitors[ci], checks }
-                    return { ...prev, competitors }
-                  })}
-                />
-              ))}
-              <span onClick={() => removeTableCompetitor(ci)} style={{ cursor: 'pointer', color: '#ccc', fontSize: 18, fontWeight: 700, lineHeight: 1 }}>×</span>
-            </div>
-          ))}
-          <button onClick={addTableCompetitor} style={{ background: 'none', border: '1px dashed #ddd', borderRadius: 8, padding: '6px 12px', fontSize: 12, color: '#888780', cursor: 'pointer', marginTop: 4 }}>+ Add competitor</button>
-        </div>
-      )}
-
-      {/* MATRIX EDITOR */}
       {format === 'matrix' && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: '1rem' }}>
-            {[
-              { key: 'axis_x', label: 'X Axis' },
-              { key: 'axis_y', label: 'Y Axis' },
-            ].map(axis => (
-              <div key={axis.key}>
-                <p style={{ fontSize: 11, color: '#888780', marginBottom: 4, fontWeight: 600 }}>{axis.label}</p>
-                <select
-                  value={matrixData[axis.key]?.custom ? 'Custom...' : (matrixData[axis.key]?.label || '')}
-                  onChange={e => {
-                    const v = e.target.value
-                    setMatrixData(prev => ({
-                      ...prev,
-                      [axis.key]: v === 'Custom...' ? { label: '', custom: true } : { label: v, custom: false },
-                    }))
-                  }}
-                  style={{ ...inputStyle, height: 36 }}
-                >
-                  {AXIS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-                {matrixData[axis.key]?.custom && (
-                  <input
-                    value={matrixData[axis.key]?.label || ''}
-                    onChange={e => setMatrixData(prev => ({ ...prev, [axis.key]: { ...prev[axis.key], label: e.target.value } }))}
-                    placeholder="Enter axis label"
-                    style={{ ...inputStyle, marginTop: 6 }}
-                  />
-                )}
+          <p style={{ fontSize: 12, color: '#888780', marginBottom: 12 }}>Set your axes, then drag dots to position your idea and competitors on the map.</p>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 140 }}>
+              <label style={{ fontSize: 11, color: '#888780', display: 'block', marginBottom: 4 }}>X axis</label>
+              <select value={matrixData.axis_x?.label} onChange={e => setMatrixData(prev => ({ ...prev, axis_x: { label: e.target.value, custom: e.target.value === 'Custom...' } }))} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none' }}>
+                {AXIS_OPTIONS.map(o => <option key={o}>{o}</option>)}
+              </select>
+              {matrixData.axis_x?.custom && <input value={matrixData.axis_x.label === 'Custom...' ? '' : matrixData.axis_x.label} onChange={e => setMatrixData(prev => ({ ...prev, axis_x: { label: e.target.value, custom: true } }))} placeholder="Custom axis label" style={{ marginTop: 6, width: '100%', padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />}
+            </div>
+            <div style={{ flex: 1, minWidth: 140 }}>
+              <label style={{ fontSize: 11, color: '#888780', display: 'block', marginBottom: 4 }}>Y axis</label>
+              <select value={matrixData.axis_y?.label} onChange={e => setMatrixData(prev => ({ ...prev, axis_y: { label: e.target.value, custom: e.target.value === 'Custom...' } }))} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none' }}>
+                {AXIS_OPTIONS.map(o => <option key={o}>{o}</option>)}
+              </select>
+              {matrixData.axis_y?.custom && <input value={matrixData.axis_y.label === 'Custom...' ? '' : matrixData.axis_y.label} onChange={e => setMatrixData(prev => ({ ...prev, axis_y: { label: e.target.value, custom: true } }))} placeholder="Custom axis label" style={{ marginTop: 6, width: '100%', padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />}
+            </div>
+          </div>
+          <div ref={matrixRef} onMouseMove={onMatrixMove} onMouseUp={onMatrixUp} onTouchMove={onMatrixMove} onTouchEnd={onMatrixUp} style={{ position: 'relative', width: '100%', paddingBottom: '75%', background: 'rgba(123,159,247,0.04)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 10, cursor: 'crosshair', userSelect: 'none', marginBottom: 12 }}>
+            <div style={{ position: 'absolute', inset: 0 }}>
+              <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'rgba(44,44,42,0.08)' }} />
+              <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(44,44,42,0.08)' }} />
+              <div style={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: '#888780' }}>{matrixData.axis_x?.label}</div>
+              <div style={{ position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%) rotate(-90deg)', fontSize: 10, color: '#888780', whiteSpace: 'nowrap' }}>{matrixData.axis_y?.label}</div>
+              {(matrixData.competitors || []).map((c, i) => (
+                <div key={i} onMouseDown={onMatrixMouseDown('competitor', i)} onTouchStart={onMatrixMouseDown('competitor', i)} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)', cursor: 'grab', zIndex: 2 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#888780', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }} />
+                  <div style={{ position: 'absolute', left: 16, top: -4, fontSize: 10, color: '#555', whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.9)', padding: '1px 4px', borderRadius: 3 }}>{c.name || `Competitor ${i + 1}`}</div>
+                </div>
+              ))}
+              {matrixData.self && (
+                <div onMouseDown={onMatrixMouseDown('self', -1)} onTouchStart={onMatrixMouseDown('self', -1)} style={{ position: 'absolute', left: `${matrixData.self.x * 100}%`, top: `${(1 - matrixData.self.y) * 100}%`, transform: 'translate(-50%,-50%)', cursor: 'grab', zIndex: 3 }}>
+                  <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#7b9ff7', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(123,159,247,0.4)' }} />
+                  <div style={{ position: 'absolute', left: 20, top: -4, fontSize: 10, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.9)', padding: '1px 4px', borderRadius: 3 }}>{ideaTitle || 'Your idea'}</div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            {(matrixData.competitors || []).map((c, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#888780', flexShrink: 0 }} />
+                <input value={c.name} onChange={e => setMatrixData(prev => { const competitors = [...prev.competitors]; competitors[i] = { ...competitors[i], name: e.target.value }; return { ...prev, competitors } })} placeholder={`Competitor ${i + 1} name`} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none' }} />
+                <button onClick={() => removeMatrixCompetitor(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e24b4a', fontSize: 16 }}>×</button>
               </div>
             ))}
           </div>
-          <div
-            ref={matrixRef}
-            onMouseMove={onMatrixMove}
-            onMouseUp={onMatrixUp}
-            onMouseLeave={onMatrixUp}
-            onTouchMove={onMatrixMove}
-            onTouchEnd={onMatrixUp}
-            style={{ width: 400, height: 400, border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, position: 'relative', background: '#fafaf8', cursor: 'crosshair', userSelect: 'none', margin: '0 auto', maxWidth: '100%' }}
-          >
-            <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 1, background: '#e0e0e0' }} />
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: '#e0e0e0' }} />
-            <div style={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#888780', whiteSpace: 'nowrap' }}>{matrixData.axis_x?.label || 'X Axis'}</div>
-            <div style={{ position: 'absolute', top: '50%', left: 4, transform: 'rotate(-90deg) translateX(-50%)', fontSize: 9, color: '#888780', whiteSpace: 'nowrap' }}>{matrixData.axis_y?.label || 'Y Axis'}</div>
-            {matrixData.competitors.map((c, i) => (
-              <div
-                key={i}
-                onMouseDown={onMatrixMouseDown('competitor', i)}
-                onTouchStart={onMatrixMouseDown('competitor', i)}
-                style={{
-                  position: 'absolute',
-                  left: c.x * 400 - 6,
-                  top: (1 - c.y) * 400 - 6,
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  background: '#d1d5db',
-                  cursor: 'grab',
-                  zIndex: 2,
-                }}
-                title={c.name}
-              />
-            ))}
-            <div
-              onMouseDown={onMatrixMouseDown('self', -1)}
-              onTouchStart={onMatrixMouseDown('self', -1)}
-              style={{
-                position: 'absolute',
-                left: (matrixData.self?.x ?? 0.5) * 400 - 8,
-                top: (1 - (matrixData.self?.y ?? 0.5)) * 400 - 8,
-                width: 16,
-                height: 16,
-                borderRadius: '50%',
-                background: '#7b9ff7',
-                cursor: 'grab',
-                zIndex: 3,
-                border: '2px solid #fff',
-                boxShadow: '0 0 0 1.5px #7b9ff7',
-              }}
-              title={ideaTitle || 'Your idea'}
-            />
-          </div>
-          <div style={{ marginTop: '0.75rem' }}>
-            {matrixData.competitors.map((c, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-                <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#d1d5db', flexShrink: 0 }} />
-                <input
-                  value={c.name}
-                  onChange={e => setMatrixData(prev => {
-                    const competitors = [...prev.competitors]
-                    competitors[i] = { ...competitors[i], name: e.target.value }
-                    return { ...prev, competitors }
-                  })}
-                  placeholder="Competitor name"
-                  style={{ ...inputStyle, flex: 1 }}
-                />
-                <span onClick={() => removeMatrixCompetitor(i)} style={{ cursor: 'pointer', color: '#ccc', fontSize: 18, fontWeight: 700, lineHeight: 1 }}>×</span>
-              </div>
-            ))}
-          </div>
-          <button onClick={addMatrixCompetitor} style={{ background: 'none', border: '1px dashed #ddd', borderRadius: 8, padding: '6px 12px', fontSize: 12, color: '#888780', cursor: 'pointer', marginTop: 4 }}>+ Add competitor</button>
+          <button onClick={addMatrixCompetitor} style={BTN_SM}>+ Add competitor</button>
         </div>
       )}
 
-      {/* GAP EDITOR */}
       {format === 'gap' && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: '1rem' }}>
+          <p style={{ fontSize: 12, color: '#888780', marginBottom: 12 }}>Show where competitors cluster and where your idea fills the gap no one else serves.</p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, overflowX: 'auto' }}>
             {(gapData.stages || DEFAULT_STAGES).map((s, i) => (
-              <input
-                key={i}
-                value={s}
-                onChange={e => setGapData(prev => {
-                  const stages = [...prev.stages]
-                  stages[i] = e.target.value
-                  return { ...prev, stages }
-                })}
-                style={{ ...inputStyle, fontSize: 11, textAlign: 'center' }}
-              />
+              <input key={i} value={s} onChange={e => setGapData(prev => { const stages = [...prev.stages]; stages[i] = e.target.value; return { ...prev, stages } })} style={{ flex: 1, minWidth: 80, padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 11, textAlign: 'center', outline: 'none' }} />
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 12, marginBottom: '1rem', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
             <div>
-              <p style={{ fontSize: 11, color: '#888780', marginBottom: 4, fontWeight: 600 }}>Gap start (stage index)</p>
-              <select value={gapData.gap_start ?? 1} onChange={e => setGapData(prev => ({ ...prev, gap_start: parseInt(e.target.value) }))} style={{ ...inputStyle, width: 80, height: 36 }}>
-                {[0, 1, 2, 3].map(i => <option key={i} value={i}>{i}</option>)}
+              <label style={{ fontSize: 11, color: '#888780', display: 'block', marginBottom: 4 }}>Gap start (stage index)</label>
+              <select value={gapData.gap_start} onChange={e => setGapData(prev => ({ ...prev, gap_start: parseInt(e.target.value) }))} style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none' }}>
+                {(gapData.stages || DEFAULT_STAGES).map((_, i) => <option key={i} value={i}>{i}: {(gapData.stages || DEFAULT_STAGES)[i]}</option>)}
               </select>
             </div>
             <div>
-              <p style={{ fontSize: 11, color: '#888780', marginBottom: 4, fontWeight: 600 }}>Gap end (stage index)</p>
-              <select value={gapData.gap_end ?? 2} onChange={e => setGapData(prev => ({ ...prev, gap_end: parseInt(e.target.value) }))} style={{ ...inputStyle, width: 80, height: 36 }}>
-                {[0, 1, 2, 3].map(i => <option key={i} value={i}>{i}</option>)}
+              <label style={{ fontSize: 11, color: '#888780', display: 'block', marginBottom: 4 }}>Gap end (stage index)</label>
+              <select value={gapData.gap_end} onChange={e => setGapData(prev => ({ ...prev, gap_end: parseInt(e.target.value) }))} style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none' }}>
+                {(gapData.stages || DEFAULT_STAGES).map((_, i) => <option key={i} value={i}>{i}: {(gapData.stages || DEFAULT_STAGES)[i]}</option>)}
               </select>
             </div>
           </div>
-          {(gapData.competitors || []).map((c, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-              <input
-                value={c.name}
-                onChange={e => setGapData(prev => {
-                  const competitors = [...prev.competitors]
-                  competitors[i] = { ...competitors[i], name: e.target.value }
-                  return { ...prev, competitors }
-                })}
-                placeholder="Competitor name"
-                style={{ ...inputStyle, flex: 1 }}
-              />
-              <select
-                value={c.stage ?? 0}
-                onChange={e => setGapData(prev => {
-                  const competitors = [...prev.competitors]
-                  competitors[i] = { ...competitors[i], stage: parseInt(e.target.value) }
-                  return { ...prev, competitors }
-                })}
-                style={{ ...inputStyle, width: 100, height: 36 }}
-              >
-                {[0, 1, 2, 3].map(j => <option key={j} value={j}>{j}: {(gapData.stages || DEFAULT_STAGES)[j]}</option>)}
-              </select>
-              <span onClick={() => removeGapCompetitor(i)} style={{ cursor: 'pointer', color: '#ccc', fontSize: 18, fontWeight: 700, lineHeight: 1 }}>×</span>
-            </div>
-          ))}
-          <button onClick={addGapCompetitor} style={{ background: 'none', border: '1px dashed #ddd', borderRadius: 8, padding: '6px 12px', fontSize: 12, color: '#888780', cursor: 'pointer', marginTop: 4 }}>+ Add competitor</button>
+          <div style={{ marginBottom: 8 }}>
+            {(gapData.competitors || []).map((c, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <input value={c.name} onChange={e => setGapData(prev => { const competitors = [...prev.competitors]; competitors[i] = { ...competitors[i], name: e.target.value }; return { ...prev, competitors } })} placeholder="Competitor name" style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none' }} />
+                <select value={c.stage} onChange={e => setGapData(prev => { const competitors = [...prev.competitors]; competitors[i] = { ...competitors[i], stage: parseInt(e.target.value) }; return { ...prev, competitors } })} style={{ padding: '5px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none' }}>
+                  {(gapData.stages || DEFAULT_STAGES).map((s, j) => <option key={j} value={j}>{s}</option>)}
+                </select>
+                <button onClick={() => removeGapCompetitor(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e24b4a', fontSize: 16 }}>×</button>
+              </div>
+            ))}
+          </div>
+          <button onClick={addGapCompetitor} style={BTN_SM}>+ Add competitor</button>
         </div>
       )}
 
-      <button onClick={handleSave} disabled={saving} style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', marginTop: '1rem', opacity: saving ? 0.6 : 1 }}>
-        {saving ? 'Saving…' : 'Save'}
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: '1.25rem', paddingTop: '1rem', borderTop: '0.5px solid rgba(44,44,42,0.08)' }}>
+        <button onClick={handleSave} disabled={saving} style={{ ...BTN, opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save'}</button>
+        {saved && <span style={{ fontSize: 12, color: '#22c55e' }}>Saved ✓</span>}
+      </div>
     </div>
   )
 }
