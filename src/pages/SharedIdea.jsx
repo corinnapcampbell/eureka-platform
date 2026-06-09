@@ -6,6 +6,7 @@ import { generateIdeaPDF, dedupeArray } from '../utils/generatePDF'
 import { parseBMValue, buildBMHtml, buildSnapshotHTML } from '../utils/businessModel'
 import { ScaledSlide } from '../components/DeckSlides'
 import AIScorecard from '../components/AIScorecard'
+import CompetitiveLandscape from '../components/CompetitiveLandscape'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 
@@ -630,6 +631,15 @@ export default function SharedIdea() {
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Competitive Advantage</p>
             <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.competitive_advantage}</p>
           </div>
+        )}
+
+        {/* Competitive Landscape */}
+        {idea.competitive_landscape && (
+          <CompetitiveLandscape
+            value={idea.competitive_landscape}
+            isOwner={false}
+            isPaid={false}
+          />
         )}
 
         {/* Team */}

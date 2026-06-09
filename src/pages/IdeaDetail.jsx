@@ -9,6 +9,7 @@ import BusinessModelSection, { parseBMValue, serializeBMValue } from '../compone
 import Scorecard from '../components/Scorecard'
 import AIScorecard from '../components/AIScorecard'
 import AIChallenge from '../components/AIChallenge'
+import CompetitiveLandscape from '../components/CompetitiveLandscape'
 
 function splitHowItWorks(text) {
   if (!text?.trim()) return []
@@ -888,7 +889,26 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           </div>
         )}
 
-        {/* Card 6: Risks & Challenges */}
+        {/* Card 6: Competitive Landscape */}
+        {(idea.competitive_landscape || isOwner) && (
+          <CompetitiveLandscape
+            value={idea.competitive_landscape}
+            onChange={async (val) => {
+              const { error } = await supabase
+                .from('ideas')
+                .update({ competitive_landscape: val })
+                .eq('id', id)
+              if (!error) setIdea(prev => ({ ...prev, competitive_landscape: val }))
+            }}
+            isOwner={isOwner}
+            isPaid={isPaid}
+            ideaTitle={idea.title}
+            ideaProblem={idea.problem}
+            ideaSolution={idea.solution}
+          />
+        )}
+
+        {/* Card 7: Risks & Challenges */}
         {(idea.risks || isOwner) && (
           <div id="section-risks" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
