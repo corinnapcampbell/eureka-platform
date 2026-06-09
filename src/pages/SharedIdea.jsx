@@ -639,6 +639,7 @@ export default function SharedIdea() {
             value={idea.competitive_landscape}
             isOwner={false}
             isPaid={false}
+            ideaTitle={idea.title}
           />
         )}
 
