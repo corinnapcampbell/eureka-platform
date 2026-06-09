@@ -673,6 +673,14 @@ export default function SharedIdea() {
           )
         })()}
 
+        {/* Origin Story */}
+        {idea.origin_story && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Origin Story</p>
+            <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.origin_story}</p>
+          </div>
+        )}
+
         {/* Customer Validation */}
         {idea.customer_validation && (() => {
           let cvData = null

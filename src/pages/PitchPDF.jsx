@@ -902,6 +902,13 @@ export default function PitchPDF({ session }) {
             />
           </div>
 
+          {idea?.origin_story && (
+            <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', marginBottom: '1rem', border: '0.5px solid rgba(44,44,42,0.08)' }}>
+              <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#888780', marginBottom: '0.75rem' }}>Origin Story</p>
+              <p style={{ fontSize: 12, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.origin_story}</p>
+            </div>
+          )}
+
           {/* Risks & Challenges — chip input */}
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.5rem' }}>
