@@ -82,27 +82,31 @@ function GapReadOnly({ data, ideaTitle }) {
   const gapStart = data.gap_start ?? 1
   const gapEnd = data.gap_end ?? 2
   const pct = (i) => `${(i / (stages.length - 1)) * 100}%`
+  const competitorsByStage = stages.map((_, i) => (data.competitors || []).filter(c => c.stage === i))
   return (
-    <div style={{ padding: '2rem 1rem 3rem', position: 'relative' }}>
-      <div style={{ position: 'relative', height: 4, background: '#e5e5e5', borderRadius: 2, margin: '2rem 0 0' }}>
-        <div style={{ position: 'absolute', left: pct(gapStart), width: `calc(${pct(gapEnd)} - ${pct(gapStart)})`, height: '100%', background: 'rgba(123,159,247,0.3)', borderRadius: 2 }} />
+    <div style={{ padding: '0 1rem 1rem' }}>
+      <div style={{ position: 'relative', marginTop: '3rem' }}>
+        <div style={{ position: 'relative', height: 4, background: '#e5e5e5', borderRadius: 2, margin: '0 0 0' }}>
+          <div style={{ position: 'absolute', left: pct(gapStart), width: `calc(${pct(gapEnd)} - ${pct(gapStart)})`, height: '100%', background: 'rgba(123,159,247,0.3)', borderRadius: 2 }} />
+        </div>
         {stages.map((s, i) => {
           const inGap = i >= gapStart && i <= gapEnd
-          const competitors = (data.competitors || []).filter(c => c.stage === i)
+          const stageCompetitors = competitorsByStage[i] || []
           return (
             <div key={i} style={{ position: 'absolute', left: pct(i), transform: 'translateX(-50%)', top: -8 }}>
               <div style={{ width: 20, height: 20, borderRadius: '50%', background: inGap ? '#7b9ff7' : '#d1d5db', border: '3px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.1)', margin: '0 auto' }} />
-              <div style={{ fontSize: 12, color: inGap ? '#7b9ff7' : '#888780', textAlign: 'center', marginTop: 10, fontWeight: inGap ? 600 : 400, whiteSpace: 'nowrap' }}>{s}</div>
-              <div style={{ position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-                {competitors.map((c, j) => (
+              <div style={{ fontSize: 11, color: inGap ? '#7b9ff7' : '#888780', textAlign: 'center', marginTop: 10, fontWeight: inGap ? 600 : 400, whiteSpace: 'nowrap' }}>{s}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginTop: 8 }}>
+                {stageCompetitors.map((c, j) => (
                   <div key={j} style={{ background: '#f5f5f3', borderRadius: 5, padding: '3px 8px', fontSize: 11, color: '#555', whiteSpace: 'nowrap', border: '0.5px solid rgba(44,44,42,0.1)' }}>{c.name}</div>
                 ))}
               </div>
             </div>
           )
         })}
-        <div style={{ position: 'absolute', left: `calc((${pct(gapStart)} + ${pct(gapEnd)}) / 2)`, transform: 'translateX(-50%)', top: -32, fontSize: 12, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.95)', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(123,159,247,0.3)' }}>{ideaTitle || 'Your idea'}</div>
+        <div style={{ position: 'absolute', left: `calc((${pct(gapStart)} + ${pct(gapEnd)}) / 2)`, transform: 'translateX(-50%)', top: -42, fontSize: 12, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.95)', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(123,159,247,0.3)' }}>{ideaTitle || 'Your idea'}</div>
       </div>
+      <div style={{ height: Math.max(...stages.map((_, i) => (competitorsByStage[i] || []).length)) * 28 + 60 }} />
     </div>
   )
 }
@@ -358,7 +362,7 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
               {matrixData.axis_y?.custom && <input value={matrixData.axis_y.label === 'Custom...' ? '' : matrixData.axis_y.label} onChange={e => setMatrixData(prev => ({ ...prev, axis_y: { label: e.target.value, custom: true } }))} placeholder="Custom axis label" style={{ marginTop: 6, width: '100%', padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />}
             </div>
           </div>
-          <div ref={matrixRef} style={{ position: 'relative', width: '100%', paddingBottom: '60%', background: 'rgba(123,159,247,0.04)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 10, cursor: 'crosshair', userSelect: 'none', marginBottom: 12 }}>
+          <div ref={matrixRef} style={{ position: 'relative', width: '100%', paddingBottom: '60%', maxHeight: 400, background: 'rgba(123,159,247,0.04)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 10, cursor: 'crosshair', userSelect: 'none', marginBottom: 12 }}>
             <div style={{ position: 'absolute', inset: 0 }}>
               <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'rgba(44,44,42,0.08)' }} />
               <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(44,44,42,0.08)' }} />
