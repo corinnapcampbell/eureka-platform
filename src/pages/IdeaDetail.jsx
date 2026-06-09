@@ -899,7 +899,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 .update({ competitive_landscape: typeof val === 'string' ? val : JSON.stringify(val) })
                 .eq('id', id)
               if (error) { console.error('competitive_landscape save error:', error); return }
-              setIdea(prev => ({ ...prev, competitive_landscape: val }))
+              setIdea(prev => ({ ...prev, competitive_landscape: typeof val === 'string' ? val : JSON.stringify(val) }))
             }}
             isOwner={isOwner}
             isPaid={isPaid}
