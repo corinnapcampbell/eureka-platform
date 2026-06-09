@@ -624,6 +624,97 @@ export default function SharedIdea() {
           )
         })()}
 
+        {/* Competitive Advantage */}
+        {idea.competitive_advantage && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Competitive Advantage</p>
+            <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.competitive_advantage}</p>
+          </div>
+        )}
+
+        {/* Team */}
+        {idea.team && (() => {
+          let teamData = null
+          try { teamData = idea.team ? JSON.parse(idea.team) : null } catch {}
+          if (!teamData) return null
+          return (
+            <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>The Team</p>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: '1rem' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#7b9ff7,#9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: "'Outfit', sans-serif" }}>{(teamData.name || '?')[0].toUpperCase()}</span>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>{teamData.name}</p>
+                    <p style={{ fontSize: 12, color: '#888780', margin: '2px 0 0', fontFamily: "'Outfit', sans-serif" }}>{teamData.role}</p>
+                  </div>
+                </div>
+                {teamData.bio && <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a', marginBottom: teamData.origin ? '1rem' : 0 }}>{teamData.bio}</p>}
+                {teamData.origin && (
+                  <div style={{ borderLeft: '3px solid #7b9ff7', paddingLeft: 12, marginTop: 8 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#7b9ff7', marginBottom: 4 }}>Origin Story</p>
+                    <p style={{ fontSize: 13, lineHeight: 1.7, color: '#555', fontStyle: 'italic', margin: 0 }}>{teamData.origin}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Customer Validation */}
+        {idea.customer_validation && (() => {
+          let cvData = null
+          try { cvData = idea.customer_validation ? JSON.parse(idea.customer_validation) : null } catch {}
+          if (!cvData) return null
+          return (
+            <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Customer Validation</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                {[
+                  { label: 'Waitlist', value: cvData.waitlist || '0', suffix: '' },
+                  { label: 'Interviews', value: cvData.interviews || '0', suffix: '' },
+                  { label: 'Pilots', value: cvData.pilots || '0', suffix: '' },
+                  { label: 'Stage', value: cvData.stage || '—', suffix: '' },
+                ].map(stat => (
+                  <div key={stat.label} style={{ background: 'rgba(123,159,247,0.06)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 22, fontWeight: 700, color: '#2c2c2a', margin: 0, fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>{stat.value}</p>
+                    <p style={{ fontSize: 10, color: '#888780', margin: '4px 0 0', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* Traction & Next Milestones */}
+        {idea.traction && (() => {
+          let trData = null
+          try { trData = idea.traction ? JSON.parse(idea.traction) : null } catch {}
+          if (!trData || !trData.milestones || trData.milestones.length === 0) return null
+          return (
+            <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Traction & Next Milestones</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {trData.milestones.map((m, i) => {
+                  const colors = { done: '#22c55e', 'in-progress': '#7b9ff7', upcoming: '#d1d5db' }
+                  const color = colors[m.status] || '#d1d5db'
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, paddingBottom: i < trData.milestones.length - 1 ? 16 : 0, position: 'relative' }}>
+                      {i < trData.milestones.length - 1 && <div style={{ position: 'absolute', left: 7, top: 16, width: 2, height: 'calc(100% - 8px)', background: '#f0f0ee' }} />}
+                      <div style={{ width: 16, height: 16, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 3, zIndex: 1 }} />
+                      <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <p style={{ fontSize: 14, color: '#2c2c2a', margin: 0, lineHeight: 1.5 }}>{m.label}</p>
+                        {m.date && <span style={{ fontSize: 11, color: '#888780', background: '#f5f5f3', borderRadius: 6, padding: '2px 8px', flexShrink: 0, marginLeft: 12 }}>{new Date(m.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Card 5: Pitch Documents — only shown when at least one is published */}
         {(idea.pdf_published || idea.deck_published) && (
         <div style={{ marginBottom: '1.25rem' }}>
