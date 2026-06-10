@@ -238,7 +238,71 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
       html: `${sH('⚠️', 'RISKS &amp; CHALLENGES')}<div class="risks">${risks.map(r => `<div class="risk"><div class="rdot"></div><div class="rtxt">${escH(r)}</div></div>`).join('')}</div>` },
     { type: 'next_steps', items: nextSteps,
       html: `${sH('🚀', 'NEXT STEPS')}<div class="tl">${nextSteps.map(s => `<div class="tli"><div class="tldot"></div><div><div class="tltitle">${escH(s)}</div></div></div>`).join('')}</div>` },
-  ].filter(s => s.html)
+    idea.team ? (() => {
+      try {
+        const t = typeof idea.team === 'string' ? JSON.parse(idea.team) : idea.team
+        if (!t?.name) return null
+        return {
+          type: 'team',
+          html: `${sH('👥', 'THE TEAM')}<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7b9ff7,#9b7ff7);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0">${escH((t.name||'?')[0].toUpperCase())}</div><div><div style="font-size:13px;font-weight:600;color:#0e0e1f">${escH(t.name||'')}</div><div style="font-size:11px;color:#888">${escH(t.role||'')}</div></div></div>${t.bio ? `<div class="stext">${escH(t.bio)}</div>` : ''}${t.origin ? `<div class="hlight" style="margin-top:8px"><div class="hlabel">Origin Story</div><div class="htext" style="font-style:italic">${escH(t.origin)}</div></div>` : ''}`
+        }
+      } catch { return null }
+    })() : null,
+    idea.origin_story ? {
+      type: 'origin_story',
+      html: `${sH('✨', 'ORIGIN STORY')}<div class="hlight"><div class="htext" style="font-style:italic">${escH(idea.origin_story)}</div></div>`
+    } : null,
+    idea.customer_validation ? (() => {
+      try {
+        const cv = typeof idea.customer_validation === 'string' ? JSON.parse(idea.customer_validation) : idea.customer_validation
+        if (!cv) return null
+        const stats = [
+          cv.waitlist ? { v: cv.waitlist, l: 'Waitlist' } : null,
+          cv.interviews ? { v: cv.interviews, l: 'Interviews' } : null,
+          cv.pilots ? { v: cv.pilots, l: 'Pilots' } : null,
+          cv.stage ? { v: cv.stage, l: 'Stage' } : null,
+        ].filter(Boolean)
+        if (!stats.length) return null
+        return {
+          type: 'customer_validation',
+          html: `${sH('✅', 'CUSTOMER VALIDATION')}<div class="bmet">${stats.map(s => `<div class="bm"><div class="bmv">${escH(String(s.v))}</div><div class="bml">${escH(s.l)}</div></div>`).join('')}</div>`
+        }
+      } catch { return null }
+    })() : null,
+    idea.traction ? (() => {
+      try {
+        const tr = typeof idea.traction === 'string' ? JSON.parse(idea.traction) : idea.traction
+        if (!tr?.milestones?.length) return null
+        return {
+          type: 'traction',
+          html: `${sH('📊', 'TRACTION & MILESTONES')}<div class="tl">${tr.milestones.slice(0,5).map(m => `<div class="tli"><div class="tldot" style="background:${m.status==='done'?'#22c55e':m.status==='in-progress'?'#7b9ff7':'#d1d5db'}"></div><div><div class="tltitle">${escH(m.label||'')}</div>${m.date?`<div class="tltext">${escH(m.date)}</div>`:''}</div></div>`).join('')}</div>`
+        }
+      } catch { return null }
+    })() : null,
+    idea.competitive_landscape ? (() => {
+      try {
+        const cl = typeof idea.competitive_landscape === 'string' ? JSON.parse(idea.competitive_landscape) : idea.competitive_landscape
+        if (!cl) return null
+        if (cl.format === 'table' && cl.table?.competitors?.length) {
+          const cols = cl.table.columns || []
+          const competitors = cl.table.competitors || []
+          const headerRow = `<tr><th style="text-align:left;padding:5px 8px;font-size:9px;color:#888;font-weight:600">Competitor</th>${cols.map(c=>`<th style="padding:5px 8px;font-size:9px;color:#888;font-weight:600;text-align:center">${escH(c)}</th>`).join('')}</tr>`
+          const rows = competitors.map(c=>`<tr><td style="padding:5px 8px;font-size:11px;color:#333">${escH(c.name)}</td>${(c.checks||[]).map(ch=>`<td style="text-align:center;padding:5px 8px;font-size:13px;color:${ch?'#22c55e':'#ddd'}">${ch?'✓':'—'}</td>`).join('')}</tr>`).join('')
+          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead style="border-bottom:1px solid #f0f0f0">${headerRow}</thead><tbody>${rows}</tbody></table></div>` }
+        }
+        if (cl.format === 'gap' && cl.gap?.competitors?.length) {
+          const stages = cl.gap.stages || ['Raw idea','Protected & pitched','Validated','Patent-ready']
+          const competitorList = cl.gap.competitors.map(c=>`${escH(c.name)} (${escH(stages[c.stage]||'')})`).join(' · ')
+          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div class="stext" style="margin-bottom:6px">Gap: ${escH(stages[cl.gap.gap_start]||'')} → ${escH(stages[cl.gap.gap_end]||'')}</div><div class="stext" style="font-size:11px;color:#888">${competitorList}</div>` }
+        }
+        if (cl.format === 'matrix' && cl.matrix?.competitors?.length) {
+          const competitorList = cl.matrix.competitors.map(c=>escH(c.name)).join(' · ')
+          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div class="stext" style="margin-bottom:4px">Axes: ${escH(cl.matrix.axis_x?.label||'')} vs ${escH(cl.matrix.axis_y?.label||'')}</div><div class="stext" style="font-size:11px;color:#888">${competitorList}</div>` }
+        }
+        return null
+      } catch { return null }
+    })() : null,
+  ].filter(s => s?.html)
 
   const PAGE_H = 557
   const buckets = []

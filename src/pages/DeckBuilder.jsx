@@ -373,6 +373,54 @@ export default function DeckBuilder({ session }) {
                 />
               </div>
             )}
+            {idea?.origin_story && (
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '24px 36px', background: '#131320' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 12 }}>Origin Story</p>
+                <p style={{ fontSize: 13, lineHeight: 1.8, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>{idea.origin_story}</p>
+              </div>
+            )}
+            {idea?.team && (() => { try { const t = typeof idea.team === 'string' ? JSON.parse(idea.team) : idea.team; if (!t?.name) return null; return (
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '24px 36px', background: '#131320' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 12 }}>The Team</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#7b9ff7,#9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff' }}>{(t.name||'?')[0].toUpperCase()}</div>
+                  <div><div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{t.name}</div><div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{t.role}</div></div>
+                </div>
+                {t.bio && <p style={{ fontSize: 13, lineHeight: 1.8, color: 'rgba(255,255,255,0.6)' }}>{t.bio}</p>}
+              </div>
+            )} catch { return null } })()}
+            {idea?.customer_validation && (() => { try { const cv = typeof idea.customer_validation === 'string' ? JSON.parse(idea.customer_validation) : idea.customer_validation; if (!cv) return null; return (
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '24px 36px', background: '#131320' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 12 }}>Customer Validation</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
+                  {[{l:'Waitlist',v:cv.waitlist},{l:'Interviews',v:cv.interviews},{l:'Pilots',v:cv.pilots},{l:'Stage',v:cv.stage}].filter(s=>s.v).map((s,i)=>(
+                    <div key={i} style={{ background: 'rgba(123,159,247,0.08)', borderRadius: 8, padding: '10px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{s.v}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2 }}>{s.l}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )} catch { return null } })()}
+            {idea?.traction && (() => { try { const tr = typeof idea.traction === 'string' ? JSON.parse(idea.traction) : idea.traction; if (!tr?.milestones?.length) return null; return (
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '24px 36px', background: '#131320' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 12 }}>Traction & Milestones</p>
+                {tr.milestones.slice(0,5).map((m,i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: m.status==='done'?'#22c55e':m.status==='in-progress'?'#7b9ff7':'#555', flexShrink: 0, marginTop: 3 }} />
+                    <div><div style={{ fontSize: 13, color: '#fff' }}>{m.label}</div>{m.date&&<div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{m.date}</div>}</div>
+                  </div>
+                ))}
+              </div>
+            )} catch { return null } })()}
+            {idea?.competitive_landscape && (() => { try { const cl = typeof idea.competitive_landscape === 'string' ? JSON.parse(idea.competitive_landscape) : idea.competitive_landscape; if (!cl?.format) return null; const competitors = cl[cl.format]?.competitors || []; if (!competitors.length) return null; return (
+              <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '24px 36px', background: '#131320' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 12 }}>Competitive Landscape</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {competitors.map((c,i) => <span key={i} style={{ background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{c.name}</span>)}
+                </div>
+              </div>
+            )} catch { return null } })()}
           </div>
         </div>
       </div>
@@ -469,13 +517,54 @@ export default function DeckBuilder({ session }) {
             />
           </div>
         )}
-
         {idea?.origin_story && (
-          <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', marginBottom: '1rem', border: '0.5px solid rgba(44,44,42,0.08)' }}>
-            <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#888780', marginBottom: '0.75rem' }}>Origin Story</p>
-            <p style={{ fontSize: 12, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.origin_story}</p>
+          <div style={{ marginTop: 16, background: '#131320', borderRadius: 12, padding: '1.25rem' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 10 }}>Origin Story</p>
+            <p style={{ fontSize: 13, lineHeight: 1.8, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>{idea.origin_story}</p>
           </div>
         )}
+        {idea?.team && (() => { try { const t = typeof idea.team === 'string' ? JSON.parse(idea.team) : idea.team; if (!t?.name) return null; return (
+          <div style={{ marginTop: 16, background: '#131320', borderRadius: 12, padding: '1.25rem' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 10 }}>The Team</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#7b9ff7,#9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff' }}>{(t.name||'?')[0].toUpperCase()}</div>
+              <div><div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{t.name}</div><div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{t.role}</div></div>
+            </div>
+            {t.bio && <p style={{ fontSize: 12, lineHeight: 1.8, color: 'rgba(255,255,255,0.6)' }}>{t.bio}</p>}
+          </div>
+        )} catch { return null } })()}
+        {idea?.customer_validation && (() => { try { const cv = typeof idea.customer_validation === 'string' ? JSON.parse(idea.customer_validation) : idea.customer_validation; if (!cv) return null; return (
+          <div style={{ marginTop: 16, background: '#131320', borderRadius: 12, padding: '1.25rem' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 10 }}>Customer Validation</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {[{l:'Waitlist',v:cv.waitlist},{l:'Interviews',v:cv.interviews},{l:'Pilots',v:cv.pilots},{l:'Stage',v:cv.stage}].filter(s=>s.v).map((s,i)=>(
+                <div key={i} style={{ background: 'rgba(123,159,247,0.08)', borderRadius: 8, padding: '8px 12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{s.v}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2 }}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )} catch { return null } })()}
+        {idea?.traction && (() => { try { const tr = typeof idea.traction === 'string' ? JSON.parse(idea.traction) : idea.traction; if (!tr?.milestones?.length) return null; return (
+          <div style={{ marginTop: 16, background: '#131320', borderRadius: 12, padding: '1.25rem' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 10 }}>Traction & Milestones</p>
+            {tr.milestones.slice(0,5).map((m,i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: m.status==='done'?'#22c55e':m.status==='in-progress'?'#7b9ff7':'#555', flexShrink: 0, marginTop: 3 }} />
+                <div><div style={{ fontSize: 12, color: '#fff' }}>{m.label}</div>{m.date&&<div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>{m.date}</div>}</div>
+              </div>
+            ))}
+          </div>
+        )} catch { return null } })()}
+        {idea?.competitive_landscape && (() => { try { const cl = typeof idea.competitive_landscape === 'string' ? JSON.parse(idea.competitive_landscape) : idea.competitive_landscape; if (!cl?.format) return null; const competitors = cl[cl.format]?.competitors || []; if (!competitors.length) return null; return (
+          <div style={{ marginTop: 16, background: '#131320', borderRadius: 12, padding: '1.25rem' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 10 }}>Competitive Landscape</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {competitors.map((c,i) => <span key={i} style={{ background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{c.name}</span>)}
+            </div>
+          </div>
+        )} catch { return null } })()}
       </div>
 
       {/* ── MOBILE BOTTOM NAV (editor view only, fixed) ─────────────────────── */}
