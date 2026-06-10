@@ -6,7 +6,7 @@ export const SLIDE_H = 540
 const NAVY = '#0e0e1f'
 const GRAD = 'linear-gradient(90deg, #7b9ff7, #9b7ff7)'
 
-export const SLIDE_NAMES = ['Cover', 'Problem', 'Solution', 'Market', 'Business Model', 'Advantage', 'Roadmap', 'Closing']
+export const SLIDE_NAMES = ['Cover', 'Problem', 'Solution', 'Market', 'Business Model', 'Advantage', 'Competitive Landscape', 'Team', 'Traction', 'Roadmap', 'Closing']
 
 // ─── Helpers for dynamic slide generation ────────────────────────────────────
 function fmtDate(str) {
@@ -165,6 +165,23 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
         return they.length ? they : []
       })(),
       quote: firstSentence(adv) || `${t} is uniquely positioned to lead this market.`,
+    },
+    {
+      type: 'competitive',
+      sectionLabel: 'COMPETITIVE LANDSCAPE',
+      format: (() => { try { const cl = typeof idea?.competitive_landscape === 'string' ? JSON.parse(idea.competitive_landscape) : idea?.competitive_landscape; return cl?.format || 'table' } catch { return 'table' } })(),
+      competitiveLandscape: idea?.competitive_landscape || null,
+      ideaTitle: idea?.title || '',
+    },
+    {
+      type: 'team',
+      sectionLabel: 'THE TEAM',
+      members: (() => { try { const t = typeof idea?.team === 'string' ? JSON.parse(idea.team) : idea?.team; if (!t?.name) return []; return [{ name: t.name || '', role: t.role || '', bio: t.bio || '' }] } catch { return [] } })(),
+    },
+    {
+      type: 'traction',
+      sectionLabel: 'TRACTION & MILESTONES',
+      milestones: (() => { try { const tr = typeof idea?.traction === 'string' ? JSON.parse(idea.traction) : idea?.traction; return (tr?.milestones || []).slice(0, 6).map(m => ({ label: m.label || '', date: m.date || '', status: m.status || 'upcoming' })) } catch { return [] } })(),
     },
     {
       type: 'roadmap',
@@ -743,6 +760,143 @@ function ClosingSlide({ slide, slideNum, onUpdate }) {
   )
 }
 
+function CompetitiveSlide({ slide }) {
+  const cl = (() => { try { return typeof slide.competitiveLandscape === 'string' ? JSON.parse(slide.competitiveLandscape) : slide.competitiveLandscape } catch { return null } })()
+  return (
+    <div style={{ width: SLIDE_W, height: SLIDE_H, background: NAVY, display: 'flex', flexDirection: 'column', padding: '48px 56px', boxSizing: 'border-box', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: GRAD }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '3px', color: 'rgba(123,159,247,0.7)', textTransform: 'uppercase', marginBottom: 24 }}>{slide.sectionLabel}</div>
+      {!cl && <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16, marginTop: 40 }}>No competitive landscape data yet. Add it on your idea page.</div>}
+      {cl?.format === 'table' && cl.table?.competitors?.length > 0 && (
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', padding: '8px 14px', borderBottom: '1px solid rgba(123,159,247,0.4)', color: '#7b9ff7', fontWeight: 700, fontSize: 12 }}>Competitor</th>
+                {(cl.table.columns || []).map((col, i) => <th key={i} style={{ padding: '8px 14px', borderBottom: '1px solid rgba(123,159,247,0.4)', color: '#7b9ff7', fontWeight: 700, fontSize: 12, textAlign: 'center' }}>{col}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ background: 'rgba(123,159,247,0.15)', borderLeft: '3px solid #7b9ff7' }}>
+                <td style={{ padding: '8px 14px', fontWeight: 700, color: '#7b9ff7', fontSize: 14 }}>{slide.ideaTitle || 'Your idea'}</td>
+                {(cl.table.columns || []).map((_, i) => <td key={i} style={{ textAlign: 'center', padding: '8px 14px', color: '#22c55e', fontSize: 18 }}>✓</td>)}
+              </tr>
+              {cl.table.competitors.slice(0, 6).map((c, i) => (
+                <tr key={i} style={{ borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+                  <td style={{ padding: '8px 14px', color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>{c.name}</td>
+                  {(c.checks || []).map((checked, j) => <td key={j} style={{ textAlign: 'center', padding: '8px 14px', color: checked ? '#22c55e' : 'rgba(255,255,255,0.2)', fontSize: checked ? 18 : 14 }}>{checked ? '✓' : '—'}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {cl?.format === 'matrix' && cl.matrix?.competitors?.length > 0 && (
+        <div style={{ flex: 1, position: 'relative', background: 'rgba(123,159,247,0.04)', borderRadius: 12, border: '0.5px solid rgba(123,159,247,0.15)', margin: '0 0 8px' }}>
+          <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 12, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>{cl.matrix.axis_x?.label} →</div>
+          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%) rotate(-90deg)', fontSize: 12, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>↑ {cl.matrix.axis_y?.label}</div>
+          {cl.matrix.competitors.map((c, i) => (
+            <div key={i} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)' }}>
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.6)' }} />
+              <div style={{ position: 'absolute', left: 16, top: -5, fontSize: 12, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>{c.name}</div>
+            </div>
+          ))}
+          {cl.matrix.self && (
+            <div style={{ position: 'absolute', left: `${cl.matrix.self.x * 100}%`, top: `${(1 - cl.matrix.self.y) * 100}%`, transform: 'translate(-50%,-50%)' }}>
+              <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#7b9ff7', boxShadow: '0 0 12px rgba(123,159,247,0.6)', border: '2px solid rgba(255,255,255,0.6)' }} />
+              <div style={{ position: 'absolute', left: 20, top: -6, fontSize: 13, color: '#7b9ff7', fontWeight: 700, whiteSpace: 'nowrap' }}>{slide.ideaTitle || 'Your idea'}</div>
+            </div>
+          )}
+        </div>
+      )}
+      {cl?.format === 'gap' && cl.gap?.competitors?.length > 0 && (() => {
+        const stages = cl.gap.stages || ['Raw idea', 'Protected & pitched', 'Validated', 'Patent-ready']
+        const gapStart = cl.gap.gap_start ?? 1
+        const gapEnd = cl.gap.gap_end ?? 2
+        const pct = i => `${(i / (stages.length - 1)) * 100}%`
+        const competitorsByStage = stages.map((_, i) => (cl.gap.competitors || []).filter(c => c.stage === i))
+        return (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 40px' }}>
+            <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, margin: '80px 0 0' }}>
+              <div style={{ position: 'absolute', left: pct(gapStart), width: `calc(${pct(gapEnd)} - ${pct(gapStart)})`, height: '100%', background: 'rgba(123,159,247,0.5)', borderRadius: 3 }} />
+              {stages.map((s, i) => {
+                const inGap = i >= gapStart && i <= gapEnd
+                return (
+                  <div key={i} style={{ position: 'absolute', left: pct(i), transform: 'translateX(-50%)', top: -12 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: '50%', background: inGap ? '#7b9ff7' : 'rgba(255,255,255,0.15)', border: `2px solid ${inGap ? '#7b9ff7' : 'rgba(255,255,255,0.2)'}`, margin: '0 auto', boxShadow: inGap ? '0 0 16px rgba(123,159,247,0.5)' : 'none' }} />
+                    <div style={{ fontSize: 13, color: inGap ? '#7b9ff7' : 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 12, fontWeight: inGap ? 700 : 400, whiteSpace: 'nowrap' }}>{s}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginTop: 8 }}>
+                      {(competitorsByStage[i] || []).map((c, j) => (
+                        <div key={j} style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: '3px 10px', fontSize: 12, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', border: '0.5px solid rgba(255,255,255,0.1)' }}>{c.name}</div>
+                      ))}
+                    </div>
+                    {inGap && i === Math.floor((gapStart + gapEnd) / 2) && (
+                      <div style={{ position: 'absolute', top: -48, left: '50%', transform: 'translateX(-50%)', fontSize: 14, color: '#7b9ff7', fontWeight: 700, whiteSpace: 'nowrap', background: 'rgba(14,14,31,0.9)', padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(123,159,247,0.4)' }}>{slide.ideaTitle || 'Your idea'}</div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: GRAD }} />
+    </div>
+  )
+}
+
+function TeamSlide({ slide, onUpdate }) {
+  const members = slide.members || []
+  return (
+    <div style={{ width: SLIDE_W, height: SLIDE_H, background: NAVY, display: 'flex', flexDirection: 'column', padding: '48px 56px', boxSizing: 'border-box', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: GRAD }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '3px', color: 'rgba(123,159,247,0.7)', textTransform: 'uppercase', marginBottom: 32 }}>{slide.sectionLabel}</div>
+      {members.length === 0 && <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16 }}>No team members added yet.</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: members.length > 2 ? 'repeat(3, 1fr)' : members.length === 2 ? 'repeat(2, 1fr)' : '1fr', gap: 32, flex: 1 }}>
+        {members.map((m, i) => (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{(m.name || '?')[0].toUpperCase()}</div>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{m.name || 'Team member'}</div>
+                <div style={{ fontSize: 14, color: 'rgba(123,159,247,0.8)', marginTop: 2 }}>{m.role || 'Role'}</div>
+              </div>
+            </div>
+            {m.bio && <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>{m.bio}</div>}
+          </div>
+        ))}
+      </div>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: GRAD }} />
+    </div>
+  )
+}
+
+function TractionSlide({ slide }) {
+  const milestones = slide.milestones || []
+  return (
+    <div style={{ width: SLIDE_W, height: SLIDE_H, background: NAVY, display: 'flex', flexDirection: 'column', padding: '48px 56px', boxSizing: 'border-box', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: GRAD }} />
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '3px', color: 'rgba(123,159,247,0.7)', textTransform: 'uppercase', marginBottom: 32 }}>{slide.sectionLabel}</div>
+      {milestones.length === 0 && <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16 }}>No milestones added yet.</div>}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
+        {milestones.slice(0, 7).map((m, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+            <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.status === 'done' ? '#22c55e' : m.status === 'in-progress' ? '#7b9ff7' : 'rgba(255,255,255,0.2)', border: `2px solid ${m.status === 'done' ? '#22c55e' : m.status === 'in-progress' ? '#7b9ff7' : 'rgba(255,255,255,0.15)'}`, flexShrink: 0, marginTop: 3, boxShadow: m.status === 'done' ? '0 0 8px rgba(34,197,94,0.4)' : m.status === 'in-progress' ? '0 0 8px rgba(123,159,247,0.4)' : 'none' }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, color: m.status === 'done' ? 'rgba(255,255,255,0.9)' : m.status === 'in-progress' ? '#7b9ff7' : 'rgba(255,255,255,0.45)', fontWeight: m.status === 'in-progress' ? 600 : 400, lineHeight: 1.4 }}>{m.label}</div>
+              {m.date && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{m.date}</div>}
+            </div>
+            <div style={{ fontSize: 11, color: m.status === 'done' ? '#22c55e' : m.status === 'in-progress' ? '#7b9ff7' : 'rgba(255,255,255,0.2)', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', flexShrink: 0 }}>{m.status === 'done' ? '✓ Done' : m.status === 'in-progress' ? '→ Active' : '○ Upcoming'}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: GRAD }} />
+    </div>
+  )
+}
+
 // ─── Dispatcher ───────────────────────────────────────────────────────────────
 export function SlideContent({ slide, slideNum, onUpdate }) {
   const props = { slide, slideNum, onUpdate }
@@ -754,6 +908,9 @@ export function SlideContent({ slide, slideNum, onUpdate }) {
     case 'business':  return <BusinessSlide  {...props} />
     case 'advantage': return <AdvantageSlide {...props} />
     case 'roadmap':   return <RoadmapSlide   {...props} />
+    case 'competitive': return <CompetitiveSlide slide={slide} />
+    case 'team': return <TeamSlide slide={slide} onUpdate={onUpdate} />
+    case 'traction': return <TractionSlide slide={slide} />
     case 'closing':   return <ClosingSlide   {...props} />
     default: return null
   }

@@ -350,13 +350,18 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
     })() : null,
   ].filter(s => s?.html)
 
-  const PAGE_H = 557
+  const PAGE_H = 520
   const buckets = []
   let cur = [], curH = 0
   for (const s of sections) {
     const h = sectionHeight(s)
-    if (curH + h > PAGE_H && cur.length) { buckets.push(cur); cur = []; curH = 0 }
-    cur.push(s.html); curH += h
+    if (h >= PAGE_H) {
+      if (cur.length) { buckets.push(cur); cur = []; curH = 0 }
+      buckets.push([s.html])
+    } else {
+      if (curH + h > PAGE_H && cur.length) { buckets.push(cur); cur = []; curH = 0 }
+      cur.push(s.html); curH += h
+    }
   }
   if (cur.length) buckets.push(cur)
 
@@ -489,7 +494,7 @@ export default function PitchPDF({ session }) {
     howItWorks: [], targetMarket: [], freeTier: [], paidTier: [], risks: [], nextSteps: [],
   })
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
-  const [teamForm, setTeamForm] = useState({ name: '', role: '', bio: '', origin: '' })
+  const [teamMembers, setTeamMembers] = useState([{ name: '', role: '', bio: '' }])
   const [originStory, setOriginStory] = useState('')
   const [cvForm, setCvForm] = useState({ waitlist: '', interviews: '', pilots: '', stage: '' })
   const [tractionMilestones, setTractionMilestones] = useState([])
@@ -545,7 +550,7 @@ export default function PitchPDF({ session }) {
       setNextStepsChips(parsedNextSteps)
 
       const rawTeam = data.team ? (typeof data.team === 'string' ? (() => { try { return JSON.parse(data.team) } catch { return null } })() : data.team) : null
-      if (rawTeam?.name) setTeamForm({ name: rawTeam.name || '', role: rawTeam.role || '', bio: rawTeam.bio || '', origin: rawTeam.origin || '' })
+      if (rawTeam?.name) setTeamMembers([{ name: rawTeam.name || '', role: rawTeam.role || '', bio: rawTeam.bio || '' }])
       if (data.origin_story) setOriginStory(data.origin_story)
       const rawCV = data.customer_validation ? (typeof data.customer_validation === 'string' ? (() => { try { return JSON.parse(data.customer_validation) } catch { return null } })() : data.customer_validation) : null
       if (rawCV) setCvForm({ waitlist: rawCV.waitlist || '', interviews: rawCV.interviews || '', pilots: rawCV.pilots || '', stage: rawCV.stage || '' })
@@ -660,7 +665,8 @@ export default function PitchPDF({ session }) {
     }
     const ideaWithFormData = {
       ...idea,
-      _pdf_team: teamForm,
+      _pdf_team: teamMembers[0] || {},
+      _pdf_team_members: teamMembers,
       _pdf_origin_story: originStory,
       _pdf_customer_validation: cvForm,
       _pdf_traction_milestones: tractionMilestones,
@@ -680,7 +686,8 @@ export default function PitchPDF({ session }) {
       risks:           risksChips.length         ? risksChips.join('\n')                                       : form.risks,
       next_steps:      nextStepsChips.length     ? nextStepsChips.join('\n')                                   : form.next_steps,
       business_model:  bmValue ? serializeBMValue(bmValue) : form.business_model,
-      _pdf_team: teamForm,
+      _pdf_team: teamMembers[0] || {},
+      _pdf_team_members: teamMembers,
       _pdf_origin_story: originStory,
       _pdf_customer_validation: cvForm,
       _pdf_traction_milestones: tractionMilestones,
@@ -1037,24 +1044,41 @@ export default function PitchPDF({ session }) {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.75rem' }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>The Team</div>
-                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Founder background and team details</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Add all team members — name, role, and background</div>
               </div>
-              <button onClick={() => aiSuggest('team')} disabled={!!suggesting} style={{ background: suggesting === 'team' ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: suggesting ? 'not-allowed' : 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, opacity: suggesting && suggesting !== 'team' ? 0.45 : 1 }}>{suggesting === 'team' ? '…thinking' : '✨ AI Suggest'}</button>
+              <button onClick={() => setTeamMembers(m => [...m, { name: '', role: '', bio: '' }])} style={{ background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0 }}>+ Add member</button>
             </div>
-            <input value={teamForm.name} onChange={e => setTeamForm(v => ({ ...v, name: e.target.value }))} placeholder="Full name" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 14, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none', marginBottom: 8 }} />
-            <input value={teamForm.role} onChange={e => setTeamForm(v => ({ ...v, role: e.target.value }))} placeholder="Role / title" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 14, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none', marginBottom: 8 }} />
-            <textarea value={teamForm.bio} onChange={e => setTeamForm(v => ({ ...v, bio: e.target.value }))} rows={3} placeholder="Background and relevant experience" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none', marginBottom: 8 }} />
-            <textarea value={teamForm.origin} onChange={e => setTeamForm(v => ({ ...v, origin: e.target.value }))} rows={2} placeholder="Origin story — why you built this" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
-            {aiSuggestions['team'] && (
-              <div style={{ marginTop: '0.75rem', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 10, padding: '1rem 1.25rem' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 0.5rem' }}>AI Suggestion — review before using</p>
-                <p style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, margin: '0 0 0.75rem', fontStyle: 'italic' }}>{aiSuggestions['team']}</p>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => { setTeamForm(v => ({ ...v, bio: aiSuggestions['team'] })); setAiSuggestions(s => { const n = { ...s }; delete n['team']; return n }) }} style={{ background: '#2c2c2a', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Use this suggestion</button>
-                  <button onClick={() => setAiSuggestions(s => { const n = { ...s }; delete n['team']; return n })} style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#888', cursor: 'pointer' }}>Dismiss</button>
+            {teamMembers.map((m, i) => (
+              <div key={i} style={{ border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, padding: '1rem', marginBottom: 10, background: '#fafaf8', position: 'relative' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#7b9ff7' }}>Member {i + 1}{i === 0 ? ' (Founder)' : ''}</div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button onClick={() => aiSuggest(`team_${i}`)} disabled={!!suggesting} style={{ background: suggesting === `team_${i}` ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: '#7b9ff7', cursor: suggesting ? 'not-allowed' : 'pointer', opacity: suggesting && suggesting !== `team_${i}` ? 0.45 : 1 }}>{suggesting === `team_${i}` ? '…' : '✨ AI Suggest'}</button>
+                    {teamMembers.length > 1 && <button onClick={() => setTeamMembers(ms => ms.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e24b4a', fontSize: 16, lineHeight: 1 }}>×</button>}
+                  </div>
                 </div>
+                <input value={m.name} onChange={e => setTeamMembers(ms => { const n = [...ms]; n[i] = { ...n[i], name: e.target.value }; return n })} placeholder="Full name" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fff', outline: 'none', marginBottom: 6 }} />
+                <div style={{ position: 'relative', marginBottom: 6 }}>
+                  <input value={m.role} onChange={e => setTeamMembers(ms => { const n = [...ms]; n[i] = { ...n[i], role: e.target.value }; return n })} placeholder="Role (e.g. CEO, CTO, Head of Design, Legal Advisor…)" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fff', outline: 'none' }} />
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 6 }}>
+                  {['CEO / Founder', 'CTO', 'COO', 'Head of Design', 'Head of Marketing', 'Legal Advisor', 'Investor', 'Advisor'].filter(r => r !== m.role).slice(0, 5).map(r => (
+                    <span key={r} onClick={() => setTeamMembers(ms => { const n = [...ms]; n[i] = { ...n[i], role: r }; return n })} style={{ fontSize: 11, color: '#7b9ff7', background: 'rgba(123,159,247,0.08)', borderRadius: 20, padding: '2px 8px', cursor: 'pointer', border: '0.5px solid rgba(123,159,247,0.2)' }}>{r}</span>
+                  ))}
+                </div>
+                <textarea value={m.bio} onChange={e => setTeamMembers(ms => { const n = [...ms]; n[i] = { ...n[i], bio: e.target.value }; return n })} rows={2} placeholder="Brief background and relevant experience" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fff', outline: 'none' }} />
+                {aiSuggestions[`team_${i}`] && (
+                  <div style={{ marginTop: 8, background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 8, padding: '0.75rem 1rem' }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px' }}>AI Suggestion</p>
+                    <p style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.7, margin: '0 0 8px', fontStyle: 'italic' }}>{aiSuggestions[`team_${i}`]}</p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => { setTeamMembers(ms => { const n = [...ms]; n[i] = { ...n[i], bio: aiSuggestions[`team_${i}`] }; return n }); setAiSuggestions(s => { const n = { ...s }; delete n[`team_${i}`]; return n }) }} style={{ background: '#2c2c2a', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Use this</button>
+                      <button onClick={() => setAiSuggestions(s => { const n = { ...s }; delete n[`team_${i}`]; return n })} style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 6, padding: '6px 12px', fontSize: 12, color: '#888', cursor: 'pointer' }}>Dismiss</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
 
           {/* Origin Story */}
