@@ -302,7 +302,7 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
           const cols = cl.table.columns || []
           const competitors = cl.table.competitors
           const headerRow = `<tr><th style="text-align:left;padding:6px 10px;font-size:10px;color:#888;font-weight:700;border-bottom:2px solid #7b9ff7">Competitor</th>${cols.map(c=>`<th style="padding:6px 10px;font-size:10px;color:#888;font-weight:700;text-align:center;border-bottom:2px solid #7b9ff7">${escH(c)}</th>`).join('')}</tr>`
-          const yourRow = `<tr style="background:rgba(123,159,247,0.08);border-left:3px solid #7b9ff7"><td style="padding:6px 10px;font-size:11px;font-weight:700;color:#7b9ff7">Your idea</td>${cols.map(()=>`<td style="text-align:center;padding:6px 10px;font-size:14px;color:#22c55e">✓</td>`).join('')}</tr>`
+          const yourRow = `<tr style="background:rgba(123,159,247,0.08);border-left:3px solid #7b9ff7"><td style="padding:6px 10px;font-size:11px;font-weight:700;color:#7b9ff7">${escH(idea.title || 'Your idea')}</td>${cols.map(()=>`<td style="text-align:center;padding:6px 10px;font-size:14px;color:#22c55e">✓</td>`).join('')}</tr>`
           const rows = competitors.map(c=>`<tr style="border-bottom:1px solid #f5f5f5"><td style="padding:6px 10px;font-size:11px;color:#333">${escH(c.name)}</td>${(c.checks||[]).map(ch=>`<td style="text-align:center;padding:6px 10px;font-size:13px;color:${ch?'#22c55e':'#ccc'}">${ch?'✓':'—'}</td>`).join('')}</tr>`).join('')
           return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">${headerRow}${yourRow}${rows}</table></div>` }
         }
@@ -320,7 +320,7 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
           }).join('')
           const selfCx = Math.round(40 + self.x * (W - 60))
           const selfCy = Math.round(10 + (1 - self.y) * (H - 40))
-          const selfDot = `<circle cx="${selfCx}" cy="${selfCy}" r="8" fill="#7b9ff7"/><text x="${selfCx + 12}" y="${selfCy + 4}" font-size="9" fill="#7b9ff7" font-weight="700" font-family="Inter,sans-serif">Your idea</text>`
+          const selfDot = `<circle cx="${selfCx}" cy="${selfCy}" r="8" fill="#7b9ff7"/><text x="${selfCx + 12}" y="${selfCy + 4}" font-size="9" fill="#7b9ff7" font-weight="700" font-family="Inter,sans-serif">${escH(idea.title || 'Your idea')}</text>`
           const svg = `<svg width="${W}" height="${H + 30}" xmlns="http://www.w3.org/2000/svg"><line x1="40" y1="${H - 30}" x2="${W - 10}" y2="${H - 30}" stroke="#e5e5e5" stroke-width="1"/><line x1="40" y1="10" x2="40" y2="${H - 30}" stroke="#e5e5e5" stroke-width="1"/><text x="${W / 2}" y="${H + 20}" text-anchor="middle" font-size="10" fill="#888780" font-family="Inter,sans-serif">${escH(axisX)} →</text><text x="12" y="${H / 2}" text-anchor="middle" font-size="10" fill="#888780" font-family="Inter,sans-serif" transform="rotate(-90,12,${H / 2})">↑ ${escH(axisY)}</text>${dots}${selfDot}</svg>`
           return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto">${svg}</div>` }
         }
@@ -340,7 +340,7 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
             const dots = competitorsByStage[i].map((c, j) => `<rect x="${x - 22}" y="${4 - j * 14}" width="44" height="12" rx="3" fill="#f5f5f3"/><text x="${x}" y="${12 - j * 14}" text-anchor="middle" font-size="8" fill="#555" font-family="Inter,sans-serif">${escH(c.name)}</text>`).join('')
             return `${dots}<circle cx="${x}" cy="36" r="5" fill="${inGap ? '#7b9ff7' : '#d1d5db'}"/><text x="${x}" y="54" text-anchor="middle" font-size="9" fill="${inGap ? '#7b9ff7' : '#888780'}" font-weight="${inGap ? '700' : '400'}" font-family="Inter,sans-serif">${escH(s)}</text>`
           }).join('')
-          const ideaLabel = `<text x="${(stageX(gapStart) + stageX(gapEnd)) / 2}" y="24" text-anchor="middle" font-size="9" fill="#7b9ff7" font-weight="700" font-family="Inter,sans-serif">Your idea</text>`
+          const ideaLabel = `<text x="${(stageX(gapStart) + stageX(gapEnd)) / 2}" y="24" text-anchor="middle" font-size="9" fill="#7b9ff7" font-weight="700" font-family="Inter,sans-serif">${escH(idea.title || 'Your idea')}</text>`
           const svg = `<svg width="${W}" height="70" xmlns="http://www.w3.org/2000/svg">${gapRect}${axisLine}${stageDots}${ideaLabel}</svg>`
           return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto">${svg}</div>` }
         }
