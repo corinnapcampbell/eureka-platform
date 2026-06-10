@@ -203,17 +203,27 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
   const sectionHeight = (s) => {
     switch (s.type) {
       case 'problem': case 'solution': case 'competitive_advantage':
-        return OVERHEAD + Math.ceil(s.text.length / 60) * LINE
+        return OVERHEAD + Math.ceil((s.text || '').length / 60) * LINE
       case 'how_it_works':
-        return OVERHEAD + s.items.length * (LINE + 10)
+        return OVERHEAD + (s.items || []).length * (LINE + 10)
       case 'target_market':
-        return OVERHEAD + Math.ceil(s.items.length / 4) * (LINE + 8)
+        return OVERHEAD + Math.ceil((s.items || []).length / 4) * (LINE + 8)
       case 'market_size':
         return OVERHEAD + 3 * LINE
       case 'business_model':
-        return OVERHEAD + Math.max(s.freeItems.length, s.paidItems.length) * LINE + 60
+        return OVERHEAD + Math.max((s.freeItems || []).length, (s.paidItems || []).length) * LINE + 60
       case 'risks': case 'next_steps':
-        return OVERHEAD + s.items.length * (LINE + 8)
+        return OVERHEAD + (s.items || []).length * (LINE + 8)
+      case 'team':
+        return OVERHEAD + 5 * LINE
+      case 'origin_story':
+        return OVERHEAD + 4 * LINE
+      case 'customer_validation':
+        return OVERHEAD + 3 * LINE
+      case 'traction':
+        return OVERHEAD + 5 * LINE
+      case 'competitive_landscape':
+        return OVERHEAD + 12 * LINE
       default:
         return OVERHEAD + 2 * LINE
     }
@@ -238,9 +248,9 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
       html: `${sH('⚠️', 'RISKS &amp; CHALLENGES')}<div class="risks">${risks.map(r => `<div class="risk"><div class="rdot"></div><div class="rtxt">${escH(r)}</div></div>`).join('')}</div>` },
     { type: 'next_steps', items: nextSteps,
       html: `${sH('🚀', 'NEXT STEPS')}<div class="tl">${nextSteps.map(s => `<div class="tli"><div class="tldot"></div><div><div class="tltitle">${escH(s)}</div></div></div>`).join('')}</div>` },
-    idea.team ? (() => {
+    (idea._pdf_team?.name || (typeof idea.team === 'string' ? (() => { try { return JSON.parse(idea.team) } catch { return null } })() : idea.team)?.name) ? (() => {
       try {
-        const t = typeof idea.team === 'string' ? JSON.parse(idea.team) : idea.team
+        const t = idea._pdf_team?.name ? idea._pdf_team : (typeof idea.team === 'string' ? JSON.parse(idea.team) : idea.team)
         if (!t?.name) return null
         return {
           type: 'team',
@@ -248,13 +258,15 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
         }
       } catch { return null }
     })() : null,
-    idea.origin_story ? {
+    (idea._pdf_origin_story || idea.origin_story) ? {
       type: 'origin_story',
-      html: `${sH('✨', 'ORIGIN STORY')}<div class="hlight"><div class="htext" style="font-style:italic">${escH(idea.origin_story)}</div></div>`
+      html: `${sH('✨', 'ORIGIN STORY')}<div class="hlight"><div class="htext" style="font-style:italic">${escH(idea._pdf_origin_story || idea.origin_story)}</div></div>`
     } : null,
-    idea.customer_validation ? (() => {
+    (idea._pdf_customer_validation?.waitlist || idea._pdf_customer_validation?.interviews || idea._pdf_customer_validation?.pilots || idea._pdf_customer_validation?.stage || idea.customer_validation) ? (() => {
       try {
-        const cv = typeof idea.customer_validation === 'string' ? JSON.parse(idea.customer_validation) : idea.customer_validation
+        const cv = idea._pdf_customer_validation?.waitlist || idea._pdf_customer_validation?.interviews || idea._pdf_customer_validation?.pilots || idea._pdf_customer_validation?.stage
+          ? idea._pdf_customer_validation
+          : (typeof idea.customer_validation === 'string' ? JSON.parse(idea.customer_validation) : idea.customer_validation)
         if (!cv) return null
         const stats = [
           cv.waitlist ? { v: cv.waitlist, l: 'Waitlist' } : null,
@@ -269,13 +281,15 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
         }
       } catch { return null }
     })() : null,
-    idea.traction ? (() => {
+    (idea._pdf_traction_milestones?.length || idea.traction) ? (() => {
       try {
-        const tr = typeof idea.traction === 'string' ? JSON.parse(idea.traction) : idea.traction
-        if (!tr?.milestones?.length) return null
+        const milestones = idea._pdf_traction_milestones?.length
+          ? idea._pdf_traction_milestones
+          : (typeof idea.traction === 'string' ? JSON.parse(idea.traction) : idea.traction)?.milestones
+        if (!milestones?.length) return null
         return {
           type: 'traction',
-          html: `${sH('📊', 'TRACTION & MILESTONES')}<div class="tl">${tr.milestones.slice(0,5).map(m => `<div class="tli"><div class="tldot" style="background:${m.status==='done'?'#22c55e':m.status==='in-progress'?'#7b9ff7':'#d1d5db'}"></div><div><div class="tltitle">${escH(m.label||'')}</div>${m.date?`<div class="tltext">${escH(m.date)}</div>`:''}</div></div>`).join('')}</div>`
+          html: `${sH('📊', 'TRACTION & MILESTONES')}<div class="tl">${milestones.slice(0,5).map(m => `<div class="tli"><div class="tldot" style="background:${m.status==='done'?'#22c55e':m.status==='in-progress'?'#7b9ff7':'#d1d5db'}"></div><div><div class="tltitle">${escH(m.label||'')}</div>${m.date?`<div class="tltext">${escH(m.date)}</div>`:''}</div></div>`).join('')}</div>`
         }
       } catch { return null }
     })() : null,
@@ -283,22 +297,54 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
       try {
         const cl = typeof idea.competitive_landscape === 'string' ? JSON.parse(idea.competitive_landscape) : idea.competitive_landscape
         if (!cl) return null
+
         if (cl.format === 'table' && cl.table?.competitors?.length) {
           const cols = cl.table.columns || []
-          const competitors = cl.table.competitors || []
-          const headerRow = `<tr><th style="text-align:left;padding:5px 8px;font-size:9px;color:#888;font-weight:600">Competitor</th>${cols.map(c=>`<th style="padding:5px 8px;font-size:9px;color:#888;font-weight:600;text-align:center">${escH(c)}</th>`).join('')}</tr>`
-          const rows = competitors.map(c=>`<tr><td style="padding:5px 8px;font-size:11px;color:#333">${escH(c.name)}</td>${(c.checks||[]).map(ch=>`<td style="text-align:center;padding:5px 8px;font-size:13px;color:${ch?'#22c55e':'#ddd'}">${ch?'✓':'—'}</td>`).join('')}</tr>`).join('')
-          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead style="border-bottom:1px solid #f0f0f0">${headerRow}</thead><tbody>${rows}</tbody></table></div>` }
+          const competitors = cl.table.competitors
+          const headerRow = `<tr><th style="text-align:left;padding:6px 10px;font-size:10px;color:#888;font-weight:700;border-bottom:2px solid #7b9ff7">Competitor</th>${cols.map(c=>`<th style="padding:6px 10px;font-size:10px;color:#888;font-weight:700;text-align:center;border-bottom:2px solid #7b9ff7">${escH(c)}</th>`).join('')}</tr>`
+          const yourRow = `<tr style="background:rgba(123,159,247,0.08);border-left:3px solid #7b9ff7"><td style="padding:6px 10px;font-size:11px;font-weight:700;color:#7b9ff7">Your idea</td>${cols.map(()=>`<td style="text-align:center;padding:6px 10px;font-size:14px;color:#22c55e">✓</td>`).join('')}</tr>`
+          const rows = competitors.map(c=>`<tr style="border-bottom:1px solid #f5f5f5"><td style="padding:6px 10px;font-size:11px;color:#333">${escH(c.name)}</td>${(c.checks||[]).map(ch=>`<td style="text-align:center;padding:6px 10px;font-size:13px;color:${ch?'#22c55e':'#ccc'}">${ch?'✓':'—'}</td>`).join('')}</tr>`).join('')
+          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">${headerRow}${yourRow}${rows}</table></div>` }
         }
-        if (cl.format === 'gap' && cl.gap?.competitors?.length) {
-          const stages = cl.gap.stages || ['Raw idea','Protected & pitched','Validated','Patent-ready']
-          const competitorList = cl.gap.competitors.map(c=>`${escH(c.name)} (${escH(stages[c.stage]||'')})`).join(' · ')
-          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div class="stext" style="margin-bottom:6px">Gap: ${escH(stages[cl.gap.gap_start]||'')} → ${escH(stages[cl.gap.gap_end]||'')}</div><div class="stext" style="font-size:11px;color:#888">${competitorList}</div>` }
-        }
+
         if (cl.format === 'matrix' && cl.matrix?.competitors?.length) {
-          const competitorList = cl.matrix.competitors.map(c=>escH(c.name)).join(' · ')
-          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div class="stext" style="margin-bottom:4px">Axes: ${escH(cl.matrix.axis_x?.label||'')} vs ${escH(cl.matrix.axis_y?.label||'')}</div><div class="stext" style="font-size:11px;color:#888">${competitorList}</div>` }
+          const W = 300, H = 260
+          const competitors = cl.matrix.competitors
+          const self = cl.matrix.self || { x: 0.8, y: 0.8 }
+          const axisX = cl.matrix.axis_x?.label || 'X axis'
+          const axisY = cl.matrix.axis_y?.label || 'Y axis'
+          const dots = competitors.map(c => {
+            const cx = Math.round(40 + c.x * (W - 60))
+            const cy = Math.round(10 + (1 - c.y) * (H - 40))
+            return `<circle cx="${cx}" cy="${cy}" r="5" fill="#888780" opacity="0.8"/><text x="${cx + 8}" y="${cy + 4}" font-size="9" fill="#555" font-family="Inter,sans-serif">${escH(c.name)}</text>`
+          }).join('')
+          const selfCx = Math.round(40 + self.x * (W - 60))
+          const selfCy = Math.round(10 + (1 - self.y) * (H - 40))
+          const selfDot = `<circle cx="${selfCx}" cy="${selfCy}" r="8" fill="#7b9ff7"/><text x="${selfCx + 12}" y="${selfCy + 4}" font-size="9" fill="#7b9ff7" font-weight="700" font-family="Inter,sans-serif">Your idea</text>`
+          const svg = `<svg width="${W}" height="${H + 30}" xmlns="http://www.w3.org/2000/svg"><line x1="40" y1="${H - 30}" x2="${W - 10}" y2="${H - 30}" stroke="#e5e5e5" stroke-width="1"/><line x1="40" y1="10" x2="40" y2="${H - 30}" stroke="#e5e5e5" stroke-width="1"/><text x="${W / 2}" y="${H + 20}" text-anchor="middle" font-size="10" fill="#888780" font-family="Inter,sans-serif">${escH(axisX)} →</text><text x="12" y="${H / 2}" text-anchor="middle" font-size="10" fill="#888780" font-family="Inter,sans-serif" transform="rotate(-90,12,${H / 2})">↑ ${escH(axisY)}</text>${dots}${selfDot}</svg>`
+          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto">${svg}</div>` }
         }
+
+        if (cl.format === 'gap' && cl.gap?.competitors?.length) {
+          const stages = cl.gap.stages || ['Raw idea', 'Protected & pitched', 'Validated', 'Patent-ready']
+          const gapStart = cl.gap.gap_start ?? 1
+          const gapEnd = cl.gap.gap_end ?? 2
+          const W = 300
+          const stageX = i => Math.round(20 + (i / (stages.length - 1)) * (W - 40))
+          const competitorsByStage = stages.map((_, i) => cl.gap.competitors.filter(c => c.stage === i))
+          const gapRect = `<rect x="${stageX(gapStart)}" y="28" width="${stageX(gapEnd) - stageX(gapStart)}" height="16" rx="4" fill="rgba(123,159,247,0.2)" stroke="#7b9ff7" stroke-width="1" stroke-dasharray="3 2"/>`
+          const axisLine = `<line x1="20" y1="36" x2="${W - 20}" y2="36" stroke="#e5e5e5" stroke-width="2"/>`
+          const stageDots = stages.map((s, i) => {
+            const x = stageX(i)
+            const inGap = i >= gapStart && i <= gapEnd
+            const dots = competitorsByStage[i].map((c, j) => `<rect x="${x - 22}" y="${4 - j * 14}" width="44" height="12" rx="3" fill="#f5f5f3"/><text x="${x}" y="${12 - j * 14}" text-anchor="middle" font-size="8" fill="#555" font-family="Inter,sans-serif">${escH(c.name)}</text>`).join('')
+            return `${dots}<circle cx="${x}" cy="36" r="5" fill="${inGap ? '#7b9ff7' : '#d1d5db'}"/><text x="${x}" y="54" text-anchor="middle" font-size="9" fill="${inGap ? '#7b9ff7' : '#888780'}" font-weight="${inGap ? '700' : '400'}" font-family="Inter,sans-serif">${escH(s)}</text>`
+          }).join('')
+          const ideaLabel = `<text x="${(stageX(gapStart) + stageX(gapEnd)) / 2}" y="24" text-anchor="middle" font-size="9" fill="#7b9ff7" font-weight="700" font-family="Inter,sans-serif">Your idea</text>`
+          const svg = `<svg width="${W}" height="70" xmlns="http://www.w3.org/2000/svg">${gapRect}${axisLine}${stageDots}${ideaLabel}</svg>`
+          return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto">${svg}</div>` }
+        }
+
         return null
       } catch { return null }
     })() : null,
@@ -443,6 +489,10 @@ export default function PitchPDF({ session }) {
     howItWorks: [], targetMarket: [], freeTier: [], paidTier: [], risks: [], nextSteps: [],
   })
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const [teamForm, setTeamForm] = useState({ name: '', role: '', bio: '', origin: '' })
+  const [originStory, setOriginStory] = useState('')
+  const [cvForm, setCvForm] = useState({ waitlist: '', interviews: '', pilots: '', stage: '' })
+  const [tractionMilestones, setTractionMilestones] = useState([])
 
   useEffect(() => {
     async function load() {
@@ -494,6 +544,13 @@ export default function PitchPDF({ session }) {
       setRisksChips(parsedRisks)
       setNextStepsChips(parsedNextSteps)
 
+      const rawTeam = data.team ? (typeof data.team === 'string' ? (() => { try { return JSON.parse(data.team) } catch { return null } })() : data.team) : null
+      if (rawTeam?.name) setTeamForm({ name: rawTeam.name || '', role: rawTeam.role || '', bio: rawTeam.bio || '', origin: rawTeam.origin || '' })
+      if (data.origin_story) setOriginStory(data.origin_story)
+      const rawCV = data.customer_validation ? (typeof data.customer_validation === 'string' ? (() => { try { return JSON.parse(data.customer_validation) } catch { return null } })() : data.customer_validation) : null
+      if (rawCV) setCvForm({ waitlist: rawCV.waitlist || '', interviews: rawCV.interviews || '', pilots: rawCV.pilots || '', stage: rawCV.stage || '' })
+      const rawTraction = data.traction ? (typeof data.traction === 'string' ? (() => { try { return JSON.parse(data.traction) } catch { return null } })() : data.traction) : null
+      if (rawTraction?.milestones?.length) setTractionMilestones(rawTraction.milestones.map(m => ({ label: m.label || '', date: m.date || '', status: m.status || 'upcoming' })))
       setLoading(false)
     }
     load()
@@ -601,9 +658,14 @@ export default function PitchPDF({ session }) {
       risks:           risksChips.join('\n'),
       next_steps:      nextStepsChips.join('\n'),
     }
-    console.log('DEBUG bmValue at generate:', JSON.stringify(bmValue))
-    console.log('DEBUG form.business_model:', form.business_model)
-    const html = buildPreviewHTML(formWithChips, idea, session?.user?.email, bmValue)
+    const ideaWithFormData = {
+      ...idea,
+      _pdf_team: teamForm,
+      _pdf_origin_story: originStory,
+      _pdf_customer_validation: cvForm,
+      _pdf_traction_milestones: tractionMilestones,
+    }
+    const html = buildPreviewHTML(formWithChips, ideaWithFormData, session?.user?.email, bmValue)
     setPreviewHTML(html)
     setGenerating(false)
     isMobile ? setStage('preview') : setStage('preview-desktop')
@@ -618,6 +680,10 @@ export default function PitchPDF({ session }) {
       risks:           risksChips.length         ? risksChips.join('\n')                                       : form.risks,
       next_steps:      nextStepsChips.length     ? nextStepsChips.join('\n')                                   : form.next_steps,
       business_model:  bmValue ? serializeBMValue(bmValue) : form.business_model,
+      _pdf_team: teamForm,
+      _pdf_origin_story: originStory,
+      _pdf_customer_validation: cvForm,
+      _pdf_traction_milestones: tractionMilestones,
     }
     await supabase.from('ideas').update({
       pdf_published: true,
@@ -966,12 +1032,119 @@ export default function PitchPDF({ session }) {
             />
           </div>
 
-          {idea?.origin_story && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', marginBottom: '1rem', border: '0.5px solid rgba(44,44,42,0.08)' }}>
-              <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#888780', marginBottom: '0.75rem' }}>Origin Story</p>
-              <p style={{ fontSize: 12, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.origin_story}</p>
+          {/* Team */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>The Team</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Founder background and team details</div>
+              </div>
+              <button onClick={() => aiSuggest('team')} disabled={!!suggesting} style={{ background: suggesting === 'team' ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: suggesting ? 'not-allowed' : 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, opacity: suggesting && suggesting !== 'team' ? 0.45 : 1 }}>{suggesting === 'team' ? '…thinking' : '✨ AI Suggest'}</button>
             </div>
-          )}
+            <input value={teamForm.name} onChange={e => setTeamForm(v => ({ ...v, name: e.target.value }))} placeholder="Full name" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 14, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none', marginBottom: 8 }} />
+            <input value={teamForm.role} onChange={e => setTeamForm(v => ({ ...v, role: e.target.value }))} placeholder="Role / title" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 14, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none', marginBottom: 8 }} />
+            <textarea value={teamForm.bio} onChange={e => setTeamForm(v => ({ ...v, bio: e.target.value }))} rows={3} placeholder="Background and relevant experience" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none', marginBottom: 8 }} />
+            <textarea value={teamForm.origin} onChange={e => setTeamForm(v => ({ ...v, origin: e.target.value }))} rows={2} placeholder="Origin story — why you built this" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+            {aiSuggestions['team'] && (
+              <div style={{ marginTop: '0.75rem', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 10, padding: '1rem 1.25rem' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 0.5rem' }}>AI Suggestion — review before using</p>
+                <p style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, margin: '0 0 0.75rem', fontStyle: 'italic' }}>{aiSuggestions['team']}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { setTeamForm(v => ({ ...v, bio: aiSuggestions['team'] })); setAiSuggestions(s => { const n = { ...s }; delete n['team']; return n }) }} style={{ background: '#2c2c2a', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Use this suggestion</button>
+                  <button onClick={() => setAiSuggestions(s => { const n = { ...s }; delete n['team']; return n })} style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#888', cursor: 'pointer' }}>Dismiss</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Origin Story */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.5rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Origin Story</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>What personal experience led you to build this?</div>
+              </div>
+              <button onClick={() => aiSuggest('origin_story')} disabled={!!suggesting} style={{ background: suggesting === 'origin_story' ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: suggesting ? 'not-allowed' : 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, opacity: suggesting && suggesting !== 'origin_story' ? 0.45 : 1 }}>{suggesting === 'origin_story' ? '…thinking' : '✨ AI Suggest'}</button>
+            </div>
+            <textarea value={originStory} onChange={e => setOriginStory(e.target.value)} rows={4} placeholder="Share the personal moment or insight that sparked this idea…" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+            {aiSuggestions['origin_story'] && (
+              <div style={{ marginTop: '0.75rem', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 10, padding: '1rem 1.25rem' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 0.5rem' }}>AI Suggestion — review before using</p>
+                <p style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, margin: '0 0 0.75rem', fontStyle: 'italic' }}>{aiSuggestions['origin_story']}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { setOriginStory(aiSuggestions['origin_story']); setAiSuggestions(s => { const n = { ...s }; delete n['origin_story']; return n }) }} style={{ background: '#2c2c2a', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>Use this suggestion</button>
+                  <button onClick={() => setAiSuggestions(s => { const n = { ...s }; delete n['origin_story']; return n })} style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#888', cursor: 'pointer' }}>Dismiss</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Customer Validation */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Customer Validation</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Evidence of market demand</div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {[{ key: 'waitlist', label: 'Waitlist signups', placeholder: 'e.g. 250' }, { key: 'interviews', label: 'Customer interviews', placeholder: 'e.g. 12' }, { key: 'pilots', label: 'Pilots / beta users', placeholder: 'e.g. 3' }, { key: 'stage', label: 'Stage', placeholder: 'e.g. Pre-revenue' }].map(f => (
+                <div key={f.key}>
+                  <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>{f.label}</div>
+                  <input value={cvForm[f.key]} onChange={e => setCvForm(v => ({ ...v, [f.key]: e.target.value }))} placeholder={f.placeholder} style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Traction & Milestones */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Traction &amp; Milestones</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Key milestones reached and upcoming</div>
+              </div>
+              <button onClick={() => setTractionMilestones(m => [...m, { label: '', date: '', status: 'upcoming' }])} style={{ background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0 }}>+ Add milestone</button>
+            </div>
+            {tractionMilestones.length === 0 && <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>No milestones yet — click + Add milestone to get started.</p>}
+            {tractionMilestones.map((m, i) => (
+              <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                <select value={m.status} onChange={e => setTractionMilestones(ms => { const n = [...ms]; n[i] = { ...n[i], status: e.target.value }; return n })} style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.2)', fontSize: 12, outline: 'none', background: m.status === 'done' ? 'rgba(34,197,94,0.08)' : m.status === 'in-progress' ? 'rgba(123,159,247,0.08)' : '#fafaf8', color: m.status === 'done' ? '#22c55e' : m.status === 'in-progress' ? '#7b9ff7' : '#888', flexShrink: 0 }}>
+                  <option value="done">✓ Done</option>
+                  <option value="in-progress">→ In progress</option>
+                  <option value="upcoming">○ Upcoming</option>
+                </select>
+                <input value={m.label} onChange={e => setTractionMilestones(ms => { const n = [...ms]; n[i] = { ...n[i], label: e.target.value }; return n })} placeholder="Milestone description" style={{ flex: 1, padding: '6px 10px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.15)', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', background: '#fafaf8', outline: 'none' }} />
+                <input value={m.date} onChange={e => setTractionMilestones(ms => { const n = [...ms]; n[i] = { ...n[i], date: e.target.value }; return n })} placeholder="Date (optional)" style={{ width: 110, padding: '6px 10px', borderRadius: 6, border: '0.5px solid rgba(44,44,42,0.15)', fontSize: 12, color: '#888', fontFamily: 'inherit', background: '#fafaf8', outline: 'none' }} />
+                <button onClick={() => setTractionMilestones(ms => ms.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e24b4a', fontSize: 16, flexShrink: 0 }}>×</button>
+              </div>
+            ))}
+          </div>
+
+          {/* Competitive Landscape Preview */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Competitive Landscape</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Pulled from your idea page — edit there to update</div>
+              </div>
+            </div>
+            {idea?.competitive_landscape ? (
+              <div style={{ border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 8, padding: '0.75rem', background: 'rgba(123,159,247,0.02)' }}>
+                {(() => {
+                  try {
+                    const cl = typeof idea.competitive_landscape === 'string' ? JSON.parse(idea.competitive_landscape) : idea.competitive_landscape
+                    if (!cl?.format) return <p style={{ fontSize: 12, color: '#b0b0a8', margin: 0 }}>No format selected yet.</p>
+                    const CompetitiveLandscape = require('../components/CompetitiveLandscape').default
+                    return null
+                  } catch { return null }
+                })()}
+                <p style={{ fontSize: 11, color: '#7b9ff7', margin: 0, fontStyle: 'italic' }}>✓ Competitive landscape data loaded — will appear in your PDF.</p>
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>No competitive landscape data yet. <a href={`/idea/${ideaId}`} style={{ color: '#7b9ff7', textDecoration: 'none' }}>Add it on your idea page →</a></p>
+            )}
+          </div>
 
           {/* Risks & Challenges — chip input */}
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>

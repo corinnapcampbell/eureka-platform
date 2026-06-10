@@ -415,9 +415,83 @@ export default function DeckBuilder({ session }) {
             )} catch { return null } })()}
             {idea?.competitive_landscape && (() => { try { const cl = typeof idea.competitive_landscape === 'string' ? JSON.parse(idea.competitive_landscape) : idea.competitive_landscape; if (!cl?.format) return null; const competitors = cl[cl.format]?.competitors || []; if (!competitors.length) return null; return (
               <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', padding: '24px 36px', background: '#131320' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 12 }}>Competitive Landscape</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {competitors.map((c,i) => <span key={i} style={{ background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{c.name}</span>)}
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 16 }}>Competitive Landscape</p>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '1rem', border: '0.5px solid rgba(255,255,255,0.06)' }}>
+                  {cl.format === 'table' && cl.table?.competitors?.length > 0 && (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid rgba(123,159,247,0.3)', color: '#7b9ff7', fontWeight: 600, fontSize: 10 }}>Competitor</th>
+                            {(cl.table.columns || []).map((col, i) => <th key={i} style={{ padding: '6px 10px', borderBottom: '1px solid rgba(123,159,247,0.3)', color: '#7b9ff7', fontWeight: 600, fontSize: 10, textAlign: 'center' }}>{col}</th>)}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr style={{ background: 'rgba(123,159,247,0.1)', borderLeft: '3px solid #7b9ff7' }}>
+                            <td style={{ padding: '6px 10px', fontWeight: 600, color: '#7b9ff7', fontSize: 12 }}>{idea.title || 'Your idea'}</td>
+                            {(cl.table.columns || []).map((_, i) => <td key={i} style={{ textAlign: 'center', padding: '6px 10px', color: '#22c55e', fontSize: 14 }}>✓</td>)}
+                          </tr>
+                          {cl.table.competitors.map((c, i) => (
+                            <tr key={i} style={{ borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+                              <td style={{ padding: '6px 10px', color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>{c.name}</td>
+                              {(c.checks || []).map((checked, j) => <td key={j} style={{ textAlign: 'center', padding: '6px 10px', color: checked ? '#22c55e' : 'rgba(255,255,255,0.2)', fontSize: checked ? 14 : 12 }}>{checked ? '✓' : '—'}</td>)}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {cl.format === 'matrix' && cl.matrix?.competitors?.length > 0 && (
+                    <div style={{ position: 'relative', width: '100%', paddingBottom: '60%', background: 'rgba(123,159,247,0.04)', borderRadius: 8 }}>
+                      <div style={{ position: 'absolute', inset: 0 }}>
+                        <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,0.08)' }} />
+                        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                        <div style={{ position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>{cl.matrix.axis_x?.label} →</div>
+                        <div style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%) rotate(-90deg)', fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>↑ {cl.matrix.axis_y?.label}</div>
+                        {cl.matrix.competitors.map((c, i) => (
+                          <div key={i} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)', zIndex: 2 }}>
+                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.6)' }} />
+                            <div style={{ position: 'absolute', left: 14, top: -4, fontSize: 10, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>{c.name}</div>
+                          </div>
+                        ))}
+                        {cl.matrix.self && (
+                          <div style={{ position: 'absolute', left: `${cl.matrix.self.x * 100}%`, top: `${(1 - cl.matrix.self.y) * 100}%`, transform: 'translate(-50%,-50%)', zIndex: 3 }}>
+                            <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#7b9ff7', border: '2px solid rgba(255,255,255,0.6)', boxShadow: '0 0 8px rgba(123,159,247,0.6)' }} />
+                            <div style={{ position: 'absolute', left: 18, top: -5, fontSize: 10, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap' }}>{idea.title || 'Your idea'}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {cl.format === 'gap' && cl.gap?.competitors?.length > 0 && (() => {
+                    const stages = cl.gap.stages || ['Raw idea', 'Protected & pitched', 'Validated', 'Patent-ready']
+                    const gapStart = cl.gap.gap_start ?? 1
+                    const gapEnd = cl.gap.gap_end ?? 2
+                    const pct = i => `${(i / (stages.length - 1)) * 100}%`
+                    const competitorsByStage = stages.map((_, i) => (cl.gap.competitors || []).filter(c => c.stage === i))
+                    return (
+                      <div style={{ padding: '1rem 0.5rem 2rem' }}>
+                        <div style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, margin: '2rem 0 0' }}>
+                          <div style={{ position: 'absolute', left: pct(gapStart), width: `calc(${pct(gapEnd)} - ${pct(gapStart)})`, height: '100%', background: 'rgba(123,159,247,0.4)', borderRadius: 2 }} />
+                          {stages.map((s, i) => {
+                            const inGap = i >= gapStart && i <= gapEnd
+                            return (
+                              <div key={i} style={{ position: 'absolute', left: pct(i), transform: 'translateX(-50%)', top: -8 }}>
+                                <div style={{ width: 20, height: 20, borderRadius: '50%', background: inGap ? '#7b9ff7' : 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.3)', margin: '0 auto' }} />
+                                <div style={{ fontSize: 10, color: inGap ? '#7b9ff7' : 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 8, whiteSpace: 'nowrap', fontWeight: inGap ? 600 : 400 }}>{s}</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, marginTop: 6 }}>
+                                  {(competitorsByStage[i] || []).map((c, j) => (
+                                    <div key={j} style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 4, padding: '2px 6px', fontSize: 10, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>{c.name}</div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          })}
+                          <div style={{ position: 'absolute', left: `calc((${pct(gapStart)} + ${pct(gapEnd)}) / 2)`, transform: 'translateX(-50%)', top: -32, fontSize: 11, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(14,14,31,0.9)', padding: '2px 8px', borderRadius: 5, border: '1px solid rgba(123,159,247,0.3)' }}>{idea.title || 'Your idea'}</div>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )} catch { return null } })()}
@@ -559,9 +633,56 @@ export default function DeckBuilder({ session }) {
         )} catch { return null } })()}
         {idea?.competitive_landscape && (() => { try { const cl = typeof idea.competitive_landscape === 'string' ? JSON.parse(idea.competitive_landscape) : idea.competitive_landscape; if (!cl?.format) return null; const competitors = cl[cl.format]?.competitors || []; if (!competitors.length) return null; return (
           <div style={{ marginTop: 16, background: '#131320', borderRadius: 12, padding: '1.25rem' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 10 }}>Competitive Landscape</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {competitors.map((c,i) => <span key={i} style={{ background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 20, padding: '3px 10px', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{c.name}</span>)}
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#7b9ff7', marginBottom: 12 }}>Competitive Landscape</p>
+            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '0.75rem', border: '0.5px solid rgba(255,255,255,0.06)' }}>
+              {cl.format === 'table' && cl.table?.competitors?.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                    <thead><tr><th style={{ textAlign: 'left', padding: '5px 8px', borderBottom: '1px solid rgba(123,159,247,0.3)', color: '#7b9ff7', fontWeight: 600, fontSize: 9 }}>Competitor</th>{(cl.table.columns || []).map((col, i) => <th key={i} style={{ padding: '5px 8px', borderBottom: '1px solid rgba(123,159,247,0.3)', color: '#7b9ff7', fontWeight: 600, fontSize: 9, textAlign: 'center' }}>{col}</th>)}</tr></thead>
+                    <tbody>
+                      <tr style={{ background: 'rgba(123,159,247,0.1)', borderLeft: '2px solid #7b9ff7' }}><td style={{ padding: '5px 8px', fontWeight: 600, color: '#7b9ff7', fontSize: 11 }}>{idea.title || 'Your idea'}</td>{(cl.table.columns || []).map((_, i) => <td key={i} style={{ textAlign: 'center', padding: '5px 8px', color: '#22c55e', fontSize: 13 }}>✓</td>)}</tr>
+                      {cl.table.competitors.map((c, i) => <tr key={i} style={{ borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}><td style={{ padding: '5px 8px', color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>{c.name}</td>{(c.checks || []).map((checked, j) => <td key={j} style={{ textAlign: 'center', padding: '5px 8px', color: checked ? '#22c55e' : 'rgba(255,255,255,0.2)', fontSize: checked ? 13 : 11 }}>{checked ? '✓' : '—'}</td>)}</tr>)}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {cl.format === 'matrix' && cl.matrix?.competitors?.length > 0 && (
+                <div style={{ position: 'relative', width: '100%', paddingBottom: '60%', background: 'rgba(123,159,247,0.04)', borderRadius: 6 }}>
+                  <div style={{ position: 'absolute', inset: 0 }}>
+                    <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,0.08)' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                    {cl.matrix.competitors.map((c, i) => <div key={i} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)' }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.4)' }} /><div style={{ position: 'absolute', left: 12, top: -3, fontSize: 9, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>{c.name}</div></div>)}
+                    {cl.matrix.self && <div style={{ position: 'absolute', left: `${cl.matrix.self.x * 100}%`, top: `${(1 - cl.matrix.self.y) * 100}%`, transform: 'translate(-50%,-50%)' }}><div style={{ width: 12, height: 12, borderRadius: '50%', background: '#7b9ff7', boxShadow: '0 0 6px rgba(123,159,247,0.6)' }} /><div style={{ position: 'absolute', left: 16, top: -4, fontSize: 9, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap' }}>{idea.title || 'Your idea'}</div></div>}
+                  </div>
+                </div>
+              )}
+              {cl.format === 'gap' && cl.gap?.competitors?.length > 0 && (() => {
+                const stages = cl.gap.stages || ['Raw idea','Protected & pitched','Validated','Patent-ready']
+                const gapStart = cl.gap.gap_start ?? 1
+                const gapEnd = cl.gap.gap_end ?? 2
+                const pct = i => `${(i / (stages.length - 1)) * 100}%`
+                const competitorsByStage = stages.map((_, i) => (cl.gap.competitors || []).filter(c => c.stage === i))
+                return (
+                  <div style={{ padding: '1rem 0 1.5rem' }}>
+                    <div style={{ position: 'relative', height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, margin: '1.5rem 0 0' }}>
+                      <div style={{ position: 'absolute', left: pct(gapStart), width: `calc(${pct(gapEnd)} - ${pct(gapStart)})`, height: '100%', background: 'rgba(123,159,247,0.4)', borderRadius: 2 }} />
+                      {stages.map((s, i) => {
+                        const inGap = i >= gapStart && i <= gapEnd
+                        return (
+                          <div key={i} style={{ position: 'absolute', left: pct(i), transform: 'translateX(-50%)', top: -7 }}>
+                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: inGap ? '#7b9ff7' : 'rgba(255,255,255,0.2)', margin: '0 auto' }} />
+                            <div style={{ fontSize: 9, color: inGap ? '#7b9ff7' : 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 6, whiteSpace: 'nowrap' }}>{s}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginTop: 4 }}>
+                              {(competitorsByStage[i] || []).map((c, j) => <div key={j} style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 3, padding: '1px 5px', fontSize: 9, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>{c.name}</div>)}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      <div style={{ position: 'absolute', left: `calc((${pct(gapStart)} + ${pct(gapEnd)}) / 2)`, transform: 'translateX(-50%)', top: -26, fontSize: 10, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap' }}>{idea.title || 'Your idea'}</div>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </div>
         )} catch { return null } })()}
