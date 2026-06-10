@@ -7,7 +7,7 @@ import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import NavBar from '../components/NavBar'
 
-const SLIDES_COUNT = 11
+const SLIDES_COUNT = 12
 const NAVY = '#0e0e1f'
 
 const DECK_CSS = `

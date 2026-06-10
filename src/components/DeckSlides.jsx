@@ -6,7 +6,7 @@ export const SLIDE_H = 540
 const NAVY = '#0e0e1f'
 const GRAD = 'linear-gradient(90deg, #7b9ff7, #9b7ff7)'
 
-export const SLIDE_NAMES = ['Cover', 'Problem', 'Solution', 'Market', 'Business Model', 'Advantage', 'Competitive Landscape', 'Team', 'Traction', 'Roadmap', 'Closing']
+export const SLIDE_NAMES = ['Cover', 'Problem', 'Solution', 'Market', 'Business Model', 'Revenue Projections', 'Advantage', 'Competitive Landscape', 'Team', 'Traction', 'Roadmap', 'Closing']
 
 // ─── Helpers for dynamic slide generation ────────────────────────────────────
 function fmtDate(str) {
@@ -143,10 +143,19 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
     {
       type: 'business',
       sectionLabel: 'BUSINESS MODEL',
-      title: firstSentence(biz) || 'Scalable revenue model designed for growth.',
+      title: 'Scalable revenue model designed for growth.',
       freeTierChips: (() => { try { const bm = parseBMValue(idea?.business_model); const { free } = extractBMChips(bm); return free } catch { return [] } })(),
       paidTierChips: (() => { try { const bm = parseBMValue(idea?.business_model); const { paid } = extractBMChips(bm); return paid } catch { return [] } })(),
       note: bizLines.slice(2).join(' ') || 'Revenue scales with adoption and market growth.',
+    },
+    {
+      type: 'revenue',
+      sectionLabel: 'REVENUE PROJECTIONS',
+      paidPrice: (() => { try { const bm = parseBMValue(idea?.business_model); const allModels = bm?.models || []; for (const model of allModels) { const data = bm?.[model.toLowerCase().replace(/\s*\/\s*/g, '_').replace(/\s+/g, '_').replace(/[^a-z_]/g, '')]; if (data?.paidPrice) return data.paidPrice } return '$12' } catch { return '$12' } })(),
+      startingUsers: 100,
+      monthlyGrowthRate: 10,
+      conversionRate: 5,
+      aiGenerated: false,
     },
     {
       type: 'advantage',
@@ -542,69 +551,53 @@ function MarketSlide({ slide, slideNum, onUpdate }) {
 
 function BusinessSlide({ slide, slideNum, onUpdate }) {
   const u = onUpdate ? (f, v) => onUpdate({ [f]: v }) : null
-  const freeChips = slide.freeTierChips || (slide.freeTier ? [slide.freeTier] : [])
-  const paidChips = slide.paidTierChips || (slide.paidTier ? [slide.paidTier] : [])
+  const freeChips = slide.freeTierChips || []
+  const paidChips = slide.paidTierChips || []
   const [freeInput, setFreeInput] = useState('')
   const [paidInput, setPaidInput] = useState('')
   return (
-    <div style={{ width: SLIDE_W, height: SLIDE_H, background: '#fff', position: 'relative', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif" }}>
-      <AccentBars />
-      <div style={{ padding: '42px 52px 38px', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ fontSize: 8.5, color: '#7b9ff7', letterSpacing: 1.5, fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>{slide.sectionLabel}</div>
-        <div style={{ fontSize: 26, fontWeight: 700, color: NAVY, lineHeight: 1.3, marginBottom: 26 }}>
-          {u ? <ET value={slide.title} onChange={v => u('title', v)} multiline style={{ fontSize: 26, color: NAVY }} /> : slide.title}
+    <div style={{ width: SLIDE_W, height: SLIDE_H, background: NAVY, position: 'relative', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: GRAD }} />
+      <div style={{ padding: '44px 56px 40px', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontSize: 10, color: 'rgba(123,159,247,0.7)', letterSpacing: '3px', fontWeight: 700, textTransform: 'uppercase', marginBottom: 10 }}>{slide.sectionLabel}</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: 28 }}>
+          {u ? <ET value={slide.title} onChange={v => u('title', v)} multiline style={{ fontSize: 22, color: '#fff' }} /> : slide.title}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 14, flex: 1, minHeight: 0 }}>
-          <div style={{ border: '1px solid rgba(0,0,0,0.09)', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ height: 3, background: GRAD, flexShrink: 0 }} />
-            <div style={{ padding: '18px 22px', flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: 9.5, fontWeight: 600, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>🆓 Free Tier</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, flex: 1, minHeight: 0 }}>
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 3, background: 'linear-gradient(90deg,#1db47c,#16a368)', flexShrink: 0 }} />
+            <div style={{ padding: '20px 24px', flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#1db47c', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ background: 'rgba(29,180,124,0.15)', borderRadius: 6, padding: '3px 10px' }}>FREE</span>
+              </div>
               {u ? (
-                <DeckChipInput
-                  chips={freeChips}
-                  onChipsChange={v => u('freeTierChips', v)}
-                  inputVal={freeInput}
-                  setInputVal={setFreeInput}
-                  placeholder="Add a feature, press Enter…"
-                  chipBg="rgba(20,184,166,0.08)"
-                  chipBorder="rgba(20,184,166,0.35)"
-                  chipText="#0d9488"
-                  inputColor="#444"
-                />
+                <DeckChipInput chips={freeChips} onChipsChange={v => u('freeTierChips', v)} inputVal={freeInput} setInputVal={setFreeInput} placeholder="Add free feature…" chipBg="rgba(29,180,124,0.1)" chipBorder="rgba(29,180,124,0.3)" chipText="#1db47c" inputColor="rgba(255,255,255,0.4)" />
               ) : (
-                <div style={{ fontSize: 12, lineHeight: 1.7, color: '#444' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {freeChips.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 2 }}>
-                      <span style={{ color: '#14b8a6', fontWeight: 700 }}>·</span>
-                      <span>{item}</span>
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1db47c', flexShrink: 0, marginTop: 5 }} />
+                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{item}</span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
           </div>
-          <div style={{ background: NAVY, borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ height: 3, background: GRAD, flexShrink: 0 }} />
-            <div style={{ padding: '18px 22px', flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: 9.5, fontWeight: 600, color: '#7b9ff7', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>⭐ Paid Tier</div>
+            <div style={{ padding: '20px 24px', flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ background: 'rgba(123,159,247,0.15)', borderRadius: 6, padding: '3px 10px' }}>PRO ✦</span>
+              </div>
               {u ? (
-                <DeckChipInput
-                  chips={paidChips}
-                  onChipsChange={v => u('paidTierChips', v)}
-                  inputVal={paidInput}
-                  setInputVal={setPaidInput}
-                  placeholder="Add a feature, press Enter…"
-                  chipBg="rgba(123,159,247,0.12)"
-                  chipBorder="rgba(123,159,247,0.35)"
-                  chipText="#7b9ff7"
-                  inputColor="rgba(255,255,255,0.55)"
-                />
+                <DeckChipInput chips={paidChips} onChipsChange={v => u('paidTierChips', v)} inputVal={paidInput} setInputVal={setPaidInput} placeholder="Add pro feature…" chipBg="rgba(123,159,247,0.12)" chipBorder="rgba(123,159,247,0.35)" chipText="#7b9ff7" inputColor="rgba(255,255,255,0.4)" />
               ) : (
-                <div style={{ fontSize: 12, lineHeight: 1.7, color: 'rgba(255,255,255,0.7)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {paidChips.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 2 }}>
-                      <span style={{ color: '#7b9ff7', fontWeight: 700 }}>·</span>
-                      <span>{item}</span>
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#7b9ff7', flexShrink: 0, marginTop: 5 }} />
+                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{item}</span>
                     </div>
                   ))}
                 </div>
@@ -612,11 +605,11 @@ function BusinessSlide({ slide, slideNum, onUpdate }) {
             </div>
           </div>
         </div>
-        <div style={{ fontSize: 11.5, color: '#888', fontStyle: 'italic', borderTop: '0.5px solid rgba(0,0,0,0.08)', paddingTop: 12 }}>
-          {u ? <ET value={slide.note} onChange={v => u('note', v)} style={{ fontSize: 11.5, color: '#888' }} /> : slide.note}
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', borderTop: '0.5px solid rgba(255,255,255,0.07)', paddingTop: 12, marginTop: 16 }}>
+          {u ? <ET value={slide.note} onChange={v => u('note', v)} style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }} /> : slide.note}
         </div>
       </div>
-      <SlideFooter slideNum={slideNum} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: GRAD }} />
     </div>
   )
 }
@@ -756,6 +749,61 @@ function ClosingSlide({ slide, slideNum, onUpdate }) {
         </div>
       </div>
       <SlideFooter slideNum={slideNum} dark />
+    </div>
+  )
+}
+
+function RevenueSlide({ slide, onUpdate }) {
+  const u = onUpdate ? (f, v) => onUpdate({ [f]: v }) : null
+  const paidPrice = parseFloat((slide.paidPrice || '$12').replace(/[^0-9.]/g, '')) || 12
+  const startingUsers = slide.startingUsers || 100
+  const monthlyGrowth = (slide.monthlyGrowthRate || 10) / 100
+  const convRate = (slide.conversionRate || 5) / 100
+  const scenarios = [
+    { label: 'Conservative', multiplier: 0.5, color: '#888780', lightColor: 'rgba(136,135,128,0.15)' },
+    { label: 'Moderate', multiplier: 1, color: '#7b9ff7', lightColor: 'rgba(123,159,247,0.15)' },
+    { label: 'Optimistic', multiplier: 2, color: '#22c55e', lightColor: 'rgba(34,197,94,0.15)' },
+  ]
+  function calcRevenue(months, mult) {
+    const users = startingUsers * Math.pow(1 + monthlyGrowth * mult, months)
+    const paying = users * convRate
+    const mrr = paying * paidPrice
+    return mrr
+  }
+  function fmt(n) {
+    if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M'
+    if (n >= 1000) return '$' + Math.round(n / 1000) + 'K'
+    return '$' + Math.round(n)
+  }
+  return (
+    <div style={{ width: SLIDE_W, height: SLIDE_H, background: NAVY, position: 'relative', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: GRAD }} />
+      <div style={{ padding: '44px 56px 40px', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontSize: 10, color: 'rgba(123,159,247,0.7)', letterSpacing: '3px', fontWeight: 700, textTransform: 'uppercase', marginBottom: 10 }}>{slide.sectionLabel}</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          <span>Starting users: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{startingUsers.toLocaleString()}</strong></span>
+          <span>Monthly growth: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{slide.monthlyGrowthRate || 10}%</strong></span>
+          <span>Free→paid conversion: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{slide.conversionRate || 5}%</strong></span>
+          <span>Paid price: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{slide.paidPrice || '$12'}/mo</strong></span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, flex: 1, minHeight: 0 }}>
+          {scenarios.map(sc => (
+            <div key={sc.label} style={{ background: sc.lightColor, border: `0.5px solid ${sc.color}40`, borderRadius: 16, padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: sc.color, letterSpacing: '2px', textTransform: 'uppercase' }}>{sc.label}</div>
+              {[{ label: '6 months', months: 6 }, { label: '12 months', months: 12 }, { label: '24 months', months: 24 }].map(period => (
+                <div key={period.label} style={{ borderTop: `0.5px solid ${sc.color}30`, paddingTop: 12 }}>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '1px' }}>{period.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{fmt(calcRevenue(period.months, sc.multiplier))}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>MRR</div>
+                  <div style={{ fontSize: 13, color: sc.color, marginTop: 2 }}>{fmt(calcRevenue(period.months, sc.multiplier) * 12)} ARR</div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 14, fontStyle: 'italic' }}>Model assumptions only. Actual results will vary based on market conditions and execution.</div>
+      </div>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: GRAD }} />
     </div>
   )
 }
@@ -909,6 +957,7 @@ export function SlideContent({ slide, slideNum, onUpdate }) {
     case 'business':  return <BusinessSlide  {...props} />
     case 'advantage': return <AdvantageSlide {...props} />
     case 'roadmap':   return <RoadmapSlide   {...props} />
+    case 'revenue': return <RevenueSlide slide={slide} onUpdate={onUpdate} />
     case 'competitive': return <CompetitiveSlide slide={slide} />
     case 'team': return <TeamSlide slide={slide} onUpdate={onUpdate} />
     case 'traction': return <TractionSlide slide={slide} />
