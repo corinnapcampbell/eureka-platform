@@ -144,8 +144,8 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
       type: 'business',
       sectionLabel: 'BUSINESS MODEL',
       title: firstSentence(biz) || 'Scalable revenue model designed for growth.',
-      freeTierChips: bizFreeChips.length ? bizFreeChips : (bizLines[0] ? bizLines[0].split(',').map(s => s.trim()).filter(Boolean) : ['Core features, free to start']),
-      paidTierChips: bizPaidChips.length ? bizPaidChips : (bizLines[1] ? bizLines[1].split(',').map(s => s.trim()).filter(Boolean) : ['Advanced features and priority support']),
+      freeTierChips: (() => { try { const bm = parseBMValue(idea?.business_model); const { free } = extractBMChips(bm); return free } catch { return [] } })(),
+      paidTierChips: (() => { try { const bm = parseBMValue(idea?.business_model); const { paid } = extractBMChips(bm); return paid } catch { return [] } })(),
       note: bizLines.slice(2).join(' ') || 'Revenue scales with adoption and market growth.',
     },
     {
@@ -819,7 +819,10 @@ function CompetitiveSlide({ slide }) {
         const competitorsByStage = stages.map((_, i) => (cl.gap.competitors || []).filter(c => c.stage === i))
         return (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 40px' }}>
-            <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, margin: '80px 0 0' }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ display: 'inline-block', fontSize: 14, color: '#7b9ff7', fontWeight: 700, background: 'rgba(14,14,31,0.9)', padding: '6px 16px', borderRadius: 8, border: '1px solid rgba(123,159,247,0.4)', whiteSpace: 'nowrap' }}>{slide.ideaTitle || 'Your idea'}</div>
+          </div>
+          <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, margin: '80px 0 0' }}>
               <div style={{ position: 'absolute', left: pct(gapStart), width: `calc(${pct(gapEnd)} - ${pct(gapStart)})`, height: '100%', background: 'rgba(123,159,247,0.5)', borderRadius: 3 }} />
               {stages.map((s, i) => {
                 const inGap = i >= gapStart && i <= gapEnd
@@ -832,9 +835,7 @@ function CompetitiveSlide({ slide }) {
                         <div key={j} style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: '3px 10px', fontSize: 12, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', border: '0.5px solid rgba(255,255,255,0.1)' }}>{c.name}</div>
                       ))}
                     </div>
-                    {inGap && i === Math.floor((gapStart + gapEnd) / 2) && (
-                      <div style={{ position: 'absolute', top: -48, left: '50%', transform: 'translateX(-50%)', fontSize: 14, color: '#7b9ff7', fontWeight: 700, whiteSpace: 'nowrap', background: 'rgba(14,14,31,0.9)', padding: '4px 12px', borderRadius: 8, border: '1px solid rgba(123,159,247,0.4)' }}>{slide.ideaTitle || 'Your idea'}</div>
-                    )}
+
                   </div>
                 )
               })}
