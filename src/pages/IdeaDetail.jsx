@@ -1011,6 +1011,99 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           )
         })()}
 
+        {/* Revenue Projections */}
+        {(idea.revenue_projections || isOwner) && (() => {
+          let rp = null
+          try { rp = idea.revenue_projections ? (typeof idea.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea.revenue_projections) : null } catch {}
+          const editing = inlineEdit.revenue_projections !== undefined
+          const editVal = editing ? inlineEdit.revenue_projections : (rp || { startingUsers: 100, monthlyGrowthRate: 10, conversionRate: 5, paidPriceOverride: '' })
+          const getPaidPrice = () => {
+            if (rp?.paidPriceOverride) return rp.paidPriceOverride
+            try {
+              const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model
+              const models = bm?.models || []
+              for (const model of models) {
+                const key = model.toLowerCase().replace(/\s*\/\s*/g, '_').replace(/\s+/g, '_').replace(/[^a-z_]/g, '')
+                const data = bm?.[key]
+                if (data?.paidPrice) return data.paidPrice
+              }
+            } catch {}
+            return '$12'
+          }
+          const paidPrice = parseFloat((getPaidPrice() || '$12').replace(/[^0-9.]/g, '')) || 12
+          const startingUsers = (rp?.startingUsers) || 100
+          const monthlyGrowth = ((rp?.monthlyGrowthRate) || 10) / 100
+          const convRate = ((rp?.conversionRate) || 5) / 100
+          const scenarios = [
+            { label: 'Conservative', multiplier: 0.5, color: '#888780' },
+            { label: 'Moderate', multiplier: 1, color: '#7b9ff7' },
+            { label: 'Optimistic', multiplier: 2, color: '#22c55e' },
+          ]
+          const calc = (months, mult) => {
+            const users = startingUsers * Math.pow(1 + monthlyGrowth * mult, months)
+            return users * convRate * paidPrice
+          }
+          const fmt = n => n >= 1000000 ? '$' + (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n)
+          return (
+            <div id="section-revenue_projections" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Revenue Projections</p>
+                {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, revenue_projections: rp || { startingUsers: 100, monthlyGrowthRate: 10, conversionRate: 5, paidPriceOverride: '' } }))} style={pencilBtnLightStyle} title="Edit revenue projections">✏️</button>}
+              </div>
+              {editing ? (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Starting users</div>
+                      <input type="number" value={editVal.startingUsers ?? 100} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, startingUsers: e.target.value } }))} style={inlineTextareaStyle} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Monthly growth rate (%)</div>
+                      <input type="number" value={editVal.monthlyGrowthRate ?? 10} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, monthlyGrowthRate: e.target.value } }))} style={inlineTextareaStyle} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Free→paid conversion (%)</div>
+                      <input type="number" value={editVal.conversionRate ?? 5} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, conversionRate: e.target.value } }))} style={inlineTextareaStyle} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Price override (optional, auto from Business Model: {getPaidPrice()})</div>
+                      <input value={editVal.paidPriceOverride || ''} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, paidPriceOverride: e.target.value } }))} placeholder={getPaidPrice()} style={inlineTextareaStyle} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => saveInlineField('revenue_projections')} disabled={inlineSaving === 'revenue_projections'} style={inlineSaveBtnStyle}>{inlineSaving === 'revenue_projections' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('revenue_projections')} style={inlineCancelBtnStyle}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, color: '#888780', marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <span>Starting users: <strong style={{ color: '#2c2c2a' }}>{startingUsers.toLocaleString()}</strong></span>
+                    <span>Monthly growth: <strong style={{ color: '#2c2c2a' }}>{(rp?.monthlyGrowthRate) || 10}%</strong></span>
+                    <span>Conversion: <strong style={{ color: '#2c2c2a' }}>{(rp?.conversionRate) || 5}%</strong></span>
+                    <span>Price: <strong style={{ color: '#2c2c2a' }}>{getPaidPrice()}/mo</strong></span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+                    {scenarios.map(sc => (
+                      <div key={sc.label} style={{ background: sc.color + '0d', border: `0.5px solid ${sc.color}40`, borderRadius: 10, padding: '0.75rem 1rem' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: sc.color, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>{sc.label}</div>
+                        {[{ l: '6mo', m: 6 }, { l: '12mo', m: 12 }, { l: '24mo', m: 24 }].map(p => (
+                          <div key={p.l} style={{ marginBottom: 6 }}>
+                            <div style={{ fontSize: 10, color: '#b0b0a8', textTransform: 'uppercase' }}>{p.l} MRR</div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: '#2c2c2a' }}>{fmt(calc(p.m, sc.multiplier))}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: '#b0b0a8', fontStyle: 'italic', marginTop: 10 }}>Model assumptions only — actual results will vary.</p>
+                  {savedField === 'revenue_projections' && <span style={{ color: '#22c55e', fontSize: 12, marginLeft: 8 }}>Saved ✓</span>}
+                </>
+              )}
+            </div>
+          )
+        })()}
+
         {/* Customer Validation */}
         {(idea.customer_validation || isOwner) && (() => {
           let cvData = null
