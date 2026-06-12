@@ -223,9 +223,9 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
       case 'traction':
         return OVERHEAD + 5 * LINE
       case 'competitive_landscape':
-        return OVERHEAD + 12 * LINE
+        return OVERHEAD + 5 * LINE
       case 'revenue_projections':
-        return OVERHEAD + 9 * LINE
+        return OVERHEAD + 5 * LINE
       default:
         return OVERHEAD + 2 * LINE
     }
