@@ -119,6 +119,8 @@ export default function IdeaDetail({ session }) {
   const [inlineSaving, setInlineSaving] = useState(null)
   const [savedField, setSavedField] = useState(null)
   const [isPaid, setIsPaid] = useState(true) // hardcoded true for testing; wire to real tier later
+  const [aiRevenueLoading, setAiRevenueLoading] = useState(false)
+  const [revenueSuggestionReason, setRevenueSuggestionReason] = useState('')
   const [teaseSuggesting, setTeaseSuggesting] = useState(false)
   const [teaseSuggestion, setTeaseSuggestion] = useState(null)
   const [publishingScore, setPublishingScore] = useState(false)
@@ -457,6 +459,36 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
       <button onClick={() => navigate('/dashboard')} style={btnGhost}>← Back to vault</button>
     </div>
   )
+
+  async function handleRevenueAISuggest() {
+    setAiRevenueLoading(true)
+    setRevenueSuggestionReason('')
+    try {
+      const prompt = `For this startup idea: "${idea.title}" — ${idea.problem || ''} ${idea.solution || ''}. Market size info: ${idea.market_size || 'unknown'}. Stage: ${idea.stage || 'unknown'}. Target audience: ${idea.target_audience || 'unknown'}. Business model: ${idea.business_model || 'unknown'}. Suggest realistic revenue projection assumptions for a financial model. Return ONLY JSON with no markdown, no backticks, no explanation: {"startingUsers": <number>, "monthlyGrowthRate": <number, percent e.g. 8>, "conversionRate": <number, percent e.g. 4>, "reasoning": "<one sentence explaining these numbers based on the idea's market and stage>"}`
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/revenue-suggest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = await res.json()
+      if (data.startingUsers) {
+        setInlineEdit(v => ({ ...v, revenue_projections: {
+          startingUsers: data.startingUsers,
+          monthlyGrowthRate: data.monthlyGrowthRate || 10,
+          conversionRate: data.conversionRate || 5,
+          paidPriceOverride: v.revenue_projections?.paidPriceOverride || '',
+        }}))
+        setRevenueSuggestionReason(data.reasoning || '')
+      }
+    } catch (e) {
+      console.error('Revenue suggestion failed', e)
+    }
+    setAiRevenueLoading(false)
+  }
 
   const date = new Date(idea.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
   const isOwner = !!session?.user?.id && session.user.id === idea.user_id
@@ -1048,7 +1080,10 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             <div id="section-revenue_projections" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Revenue Projections</p>
-                {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, revenue_projections: rp || { startingUsers: 100, monthlyGrowthRate: 10, conversionRate: 5, paidPriceOverride: '' } }))} style={pencilBtnLightStyle} title="Edit revenue projections">✏️</button>}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {isOwner && isPaid && <button onClick={handleRevenueAISuggest} disabled={aiRevenueLoading} style={{ background: aiRevenueLoading ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '4px 10px', fontSize: 12, color: '#7b9ff7', cursor: aiRevenueLoading ? 'not-allowed' : 'pointer', fontWeight: 500 }}>{aiRevenueLoading ? '…thinking' : '✨ AI Suggest'}</button>}
+                  {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, revenue_projections: rp || { startingUsers: 100, monthlyGrowthRate: 10, conversionRate: 5, paidPriceOverride: '' } }))} style={pencilBtnLightStyle} title="Edit revenue projections">✏️</button>}
+                </div>
               </div>
               {editing ? (
                 <div>
@@ -1070,9 +1105,12 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                       <input value={editVal.paidPriceOverride || ''} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, paidPriceOverride: e.target.value } }))} placeholder={getPaidPrice()} style={inlineTextareaStyle} />
                     </div>
                   </div>
+                  {revenueSuggestionReason && (
+                    <div style={{ background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 8, padding: '0.5rem 0.75rem', marginBottom: 10, fontSize: 12, color: '#555', fontStyle: 'italic' }}>✨ {revenueSuggestionReason}</div>
+                  )}
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => saveInlineField('revenue_projections')} disabled={inlineSaving === 'revenue_projections'} style={inlineSaveBtnStyle}>{inlineSaving === 'revenue_projections' ? 'Saving…' : 'Save'}</button>
-                    <button onClick={() => cancelEdit('revenue_projections')} style={inlineCancelBtnStyle}>Cancel</button>
+                    <button onClick={() => { saveInlineField('revenue_projections'); setRevenueSuggestionReason('') }} disabled={inlineSaving === 'revenue_projections'} style={inlineSaveBtnStyle}>{inlineSaving === 'revenue_projections' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => { cancelEdit('revenue_projections'); setRevenueSuggestionReason('') }} style={inlineCancelBtnStyle}>Cancel</button>
                   </div>
                 </div>
               ) : (
