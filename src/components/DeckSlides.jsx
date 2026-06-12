@@ -151,10 +151,22 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
     {
       type: 'revenue',
       sectionLabel: 'REVENUE PROJECTIONS',
-      paidPrice: (() => { try { const bm = parseBMValue(idea?.business_model); const allModels = bm?.models || []; for (const model of allModels) { const data = bm?.[model.toLowerCase().replace(/\s*\/\s*/g, '_').replace(/\s+/g, '_').replace(/[^a-z_]/g, '')]; if (data?.paidPrice) return data.paidPrice } return '$12' } catch { return '$12' } })(),
-      startingUsers: 100,
-      monthlyGrowthRate: 10,
-      conversionRate: 5,
+      paidPrice: (() => {
+        try {
+          const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections
+          if (rp?.paidPriceOverride) return rp.paidPriceOverride
+          const bm = parseBMValue(idea?.business_model)
+          const allModels = bm?.models || []
+          for (const model of allModels) {
+            const data = bm?.[model.toLowerCase().replace(/\s*\/\s*/g, '_').replace(/\s+/g, '_').replace(/[^a-z_]/g, '')]
+            if (data?.paidPrice) return data.paidPrice
+          }
+          return '$12'
+        } catch { return '$12' }
+      })(),
+      startingUsers: (() => { try { const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections; return rp?.startingUsers || 100 } catch { return 100 } })(),
+      monthlyGrowthRate: (() => { try { const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections; return rp?.monthlyGrowthRate || 10 } catch { return 10 } })(),
+      conversionRate: (() => { try { const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections; return rp?.conversionRate || 5 } catch { return 5 } })(),
       aiGenerated: false,
     },
     {
@@ -755,10 +767,10 @@ function ClosingSlide({ slide, slideNum, onUpdate }) {
 
 function RevenueSlide({ slide, onUpdate }) {
   const u = onUpdate ? (f, v) => onUpdate({ [f]: v }) : null
-  const paidPrice = parseFloat((slide.paidPrice || '$12').replace(/[^0-9.]/g, '')) || 12
-  const startingUsers = slide.startingUsers || 100
-  const monthlyGrowth = (slide.monthlyGrowthRate || 10) / 100
-  const convRate = (slide.conversionRate || 5) / 100
+  const paidPrice = parseFloat(String(slide.paidPrice || '$12').replace(/[^0-9.]/g, '')) || 12
+  const startingUsers = parseFloat(slide.startingUsers) || 100
+  const monthlyGrowth = (parseFloat(slide.monthlyGrowthRate) || 10) / 100
+  const convRate = (parseFloat(slide.conversionRate) || 5) / 100
   const scenarios = [
     { label: 'Conservative', multiplier: 0.5, color: '#888780', lightColor: 'rgba(136,135,128,0.15)' },
     { label: 'Moderate', multiplier: 1, color: '#7b9ff7', lightColor: 'rgba(123,159,247,0.15)' },
@@ -780,12 +792,14 @@ function RevenueSlide({ slide, onUpdate }) {
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: GRAD }} />
       <div style={{ padding: '44px 56px 40px', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
         <div style={{ fontSize: 10, color: 'rgba(123,159,247,0.7)', letterSpacing: '3px', fontWeight: 700, textTransform: 'uppercase', marginBottom: 10 }}>{slide.sectionLabel}</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          <span>Starting users: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{startingUsers.toLocaleString()}</strong></span>
-          <span>Monthly growth: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{slide.monthlyGrowthRate || 10}%</strong></span>
-          <span>Free→paid conversion: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{slide.conversionRate || 5}%</strong></span>
-          <span>Paid price: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{slide.paidPrice || '$12'}/mo</strong></span>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 8, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          <span>Starting users: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.startingUsers ?? 100)} onChange={v => u('startingUsers', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : startingUsers.toLocaleString()}</strong></span>
+          <span>Monthly growth: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.monthlyGrowthRate ?? 10)} onChange={v => u('monthlyGrowthRate', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.monthlyGrowthRate || 10)}%</strong></span>
+          <span>Free→paid conversion: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.conversionRate ?? 5)} onChange={v => u('conversionRate', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.conversionRate || 5)}%</strong></span>
+          <span>Paid price: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={slide.paidPrice || '$12'} onChange={v => u('paidPrice', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.paidPrice || '$12')}/mo</strong></span>
         </div>
+        {u && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginBottom: 16, fontStyle: 'italic' }}>Pulled from your idea page — edit here for this deck only.</div>}
+        {!u && <div style={{ marginBottom: 16 }} />}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, flex: 1, minHeight: 0 }}>
           {scenarios.map(sc => (
             <div key={sc.label} style={{ background: sc.lightColor, border: `0.5px solid ${sc.color}40`, borderRadius: 16, padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>

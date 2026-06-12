@@ -224,6 +224,8 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
         return OVERHEAD + 5 * LINE
       case 'competitive_landscape':
         return OVERHEAD + 12 * LINE
+      case 'revenue_projections':
+        return OVERHEAD + 9 * LINE
       default:
         return OVERHEAD + 2 * LINE
     }
@@ -346,6 +348,48 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
         }
 
         return null
+      } catch { return null }
+    })() : null,
+    (idea._pdf_revenue_projections?.startingUsers || idea._pdf_revenue_projections?.monthlyGrowthRate || idea._pdf_revenue_projections?.conversionRate) ? (() => {
+      try {
+        const rev = idea._pdf_revenue_projections
+        const paidPrice = parseFloat(String(rev.paidPriceOverride || (() => {
+          try {
+            const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model
+            const models = bm?.models || []
+            for (const model of models) {
+              const key = model.toLowerCase().replace(/\s*\/\s*/g, '_').replace(/\s+/g, '_').replace(/[^a-z_]/g, '')
+              const data = bm?.[key]
+              if (data?.paidPrice) return data.paidPrice
+            }
+          } catch {}
+          return '$12'
+        })()).replace(/[^0-9.]/g, '')) || 12
+        const startingUsers = parseFloat(rev.startingUsers) || 100
+        const monthlyGrowth = (parseFloat(rev.monthlyGrowthRate) || 10) / 100
+        const convRate = (parseFloat(rev.conversionRate) || 5) / 100
+        const calc = (months, mult) => startingUsers * Math.pow(1 + monthlyGrowth * mult, months) * convRate * paidPrice
+        const fmt = n => n >= 1000000 ? '$' + (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n)
+        const scenarios = [
+          { label: 'Conservative', mult: 0.5, color: '#888780' },
+          { label: 'Moderate', mult: 1, color: '#7b9ff7' },
+          { label: 'Optimistic', mult: 2, color: '#22c55e' },
+        ]
+        const cards = scenarios.map(sc => `
+          <div style="flex:1;background:${sc.color}0d;border:0.5px solid ${sc.color}40;border-radius:10px;padding:10px 12px">
+            <div style="font-size:10px;font-weight:700;color:${sc.color};letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">${sc.label}</div>
+            ${[{l:'6mo',m:6},{l:'12mo',m:12},{l:'24mo',m:24}].map(p => `
+              <div style="margin-bottom:5px">
+                <div style="font-size:9px;color:#b0b0a8;text-transform:uppercase">${p.l} MRR</div>
+                <div style="font-size:14px;font-weight:700;color:#0e0e1f">${escH(fmt(calc(p.m, sc.mult)))}</div>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')
+        return {
+          type: 'revenue_projections',
+          html: `${sH('💰', 'REVENUE PROJECTIONS')}<div class="stext" style="margin-bottom:8px;font-size:11px;color:#888">Starting users: ${escH(String(startingUsers))} · Monthly growth: ${escH(String(rev.monthlyGrowthRate || 10))}% · Conversion: ${escH(String(rev.conversionRate || 5))}% · Price: ${escH(rev.paidPriceOverride || '$' + paidPrice)}/mo</div><div style="display:flex;gap:8px">${cards}</div><div class="stext" style="margin-top:8px;font-size:10px;color:#aaa;font-style:italic">Model assumptions only — actual results will vary.</div>`
+        }
       } catch { return null }
     })() : null,
   ].filter(s => s?.html)
@@ -498,6 +542,7 @@ export default function PitchPDF({ session }) {
   const [originStory, setOriginStory] = useState('')
   const [cvForm, setCvForm] = useState({ waitlist: '', interviews: '', pilots: '', stage: '' })
   const [tractionMilestones, setTractionMilestones] = useState([])
+  const [revenueForm, setRevenueForm] = useState({ startingUsers: '', monthlyGrowthRate: '', conversionRate: '', paidPriceOverride: '' })
 
   useEffect(() => {
     async function load() {
@@ -556,6 +601,8 @@ export default function PitchPDF({ session }) {
       if (rawCV) setCvForm({ waitlist: rawCV.waitlist || '', interviews: rawCV.interviews || '', pilots: rawCV.pilots || '', stage: rawCV.stage || '' })
       const rawTraction = data.traction ? (typeof data.traction === 'string' ? (() => { try { return JSON.parse(data.traction) } catch { return null } })() : data.traction) : null
       if (rawTraction?.milestones?.length) setTractionMilestones(rawTraction.milestones.map(m => ({ label: m.label || '', date: m.date || '', status: m.status || 'upcoming' })))
+      const rawRevenue = data.revenue_projections ? (typeof data.revenue_projections === 'string' ? (() => { try { return JSON.parse(data.revenue_projections) } catch { return null } })() : data.revenue_projections) : null
+      if (rawRevenue) setRevenueForm({ startingUsers: String(rawRevenue.startingUsers || ''), monthlyGrowthRate: String(rawRevenue.monthlyGrowthRate || ''), conversionRate: String(rawRevenue.conversionRate || ''), paidPriceOverride: rawRevenue.paidPriceOverride || '' })
       setLoading(false)
     }
     load()
@@ -670,6 +717,7 @@ export default function PitchPDF({ session }) {
       _pdf_origin_story: originStory,
       _pdf_customer_validation: cvForm,
       _pdf_traction_milestones: tractionMilestones,
+      _pdf_revenue_projections: revenueForm,
     }
     const html = buildPreviewHTML(formWithChips, ideaWithFormData, session?.user?.email, bmValue)
     setPreviewHTML(html)
@@ -691,6 +739,7 @@ export default function PitchPDF({ session }) {
       _pdf_origin_story: originStory,
       _pdf_customer_validation: cvForm,
       _pdf_traction_milestones: tractionMilestones,
+      _pdf_revenue_projections: revenueForm,
     }
     await supabase.from('ideas').update({
       pdf_published: true,
@@ -1143,6 +1192,34 @@ export default function PitchPDF({ session }) {
                 <button onClick={() => setTractionMilestones(ms => ms.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e24b4a', fontSize: 16, flexShrink: 0 }}>×</button>
               </div>
             ))}
+          </div>
+
+          {/* Revenue Projections */}
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Revenue Projections</div>
+                <div style={{ fontSize: 12, color: '#b0b0a8' }}>Pulled from your idea page — edit here for this PDF only</div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Starting users</div>
+                <input type="number" value={revenueForm.startingUsers} onChange={e => setRevenueForm(v => ({ ...v, startingUsers: e.target.value }))} placeholder="100" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Monthly growth rate (%)</div>
+                <input type="number" value={revenueForm.monthlyGrowthRate} onChange={e => setRevenueForm(v => ({ ...v, monthlyGrowthRate: e.target.value }))} placeholder="10" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Free→paid conversion (%)</div>
+                <input type="number" value={revenueForm.conversionRate} onChange={e => setRevenueForm(v => ({ ...v, conversionRate: e.target.value }))} placeholder="5" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Price override (optional)</div>
+                <input value={revenueForm.paidPriceOverride} onChange={e => setRevenueForm(v => ({ ...v, paidPriceOverride: e.target.value }))} placeholder="$12" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+              </div>
+            </div>
           </div>
 
           {/* Competitive Landscape Preview */}
