@@ -887,6 +887,49 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe your business model</p>
             )}
             {savedField === 'business_model' && inlineEdit.business_model === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <div style={{ marginTop: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Revenue Structure</p>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: '#888780' }}>Who pays</p>
+                  {isOwner && inlineEdit.who_pays === undefined && <button onClick={() => startEdit('who_pays')} style={pencilBtnLightStyle} title="Edit who pays">✏️</button>}
+                </div>
+                {inlineEdit.who_pays !== undefined ? (
+                  <>
+                    <textarea value={inlineEdit.who_pays} onChange={e => setInlineEdit(v => ({ ...v, who_pays: e.target.value }))} rows={2} style={inlineTextareaStyle} autoFocus />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button onClick={() => saveInlineField('who_pays')} disabled={inlineSaving === 'who_pays'} style={inlineSaveBtnStyle}>{inlineSaving === 'who_pays' ? 'Saving…' : 'Save'}</button>
+                      <button onClick={() => cancelEdit('who_pays')} style={inlineCancelBtnStyle}>Cancel</button>
+                    </div>
+                    {savedField === 'who_pays' && <span style={savedConfirmStyle}>Saved ✓</span>}
+                  </>
+                ) : idea.who_pays ? (
+                  <p style={{ fontSize: 13, lineHeight: 1.7, color: '#2c2c2a' }}>{idea.who_pays}</p>
+                ) : isOwner ? (
+                  <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️</p>
+                ) : null}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: '#888780' }}>Revenue streams</p>
+                  {isOwner && inlineEdit.revenue_streams === undefined && <button onClick={() => startEdit('revenue_streams')} style={pencilBtnLightStyle} title="Edit revenue streams">✏️</button>}
+                </div>
+                {inlineEdit.revenue_streams !== undefined ? (
+                  <>
+                    <textarea value={inlineEdit.revenue_streams} onChange={e => setInlineEdit(v => ({ ...v, revenue_streams: e.target.value }))} rows={2} style={inlineTextareaStyle} autoFocus />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button onClick={() => saveInlineField('revenue_streams')} disabled={inlineSaving === 'revenue_streams'} style={inlineSaveBtnStyle}>{inlineSaving === 'revenue_streams' ? 'Saving…' : 'Save'}</button>
+                      <button onClick={() => cancelEdit('revenue_streams')} style={inlineCancelBtnStyle}>Cancel</button>
+                    </div>
+                    {savedField === 'revenue_streams' && <span style={savedConfirmStyle}>Saved ✓</span>}
+                  </>
+                ) : idea.revenue_streams ? (
+                  <p style={{ fontSize: 13, lineHeight: 1.7, color: '#2c2c2a' }}>{idea.revenue_streams}</p>
+                ) : isOwner ? (
+                  <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️</p>
+                ) : null}
+              </div>
+            </div>
             <AIChallenge
               sectionKey="business_model"
               sectionLabel="Business Model"
@@ -895,197 +938,6 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             />
           </div>
         )}
-
-        {/* Revenue Details card */}
-        {(idea.who_pays || idea.revenue_streams || idea.pricing_power || idea.revenue_potential || idea.business_stage || isOwner) && (
-          <div id="section-revenue_details" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Revenue Details</p>
-            {[
-              { key: 'who_pays', label: 'Who pays', placeholder: 'e.g. Enterprise HR teams pay annually' },
-              { key: 'revenue_streams', label: 'Revenue streams', placeholder: 'e.g. Subscriptions, marketplace fees, data licensing' },
-              { key: 'pricing_power', label: 'Pricing power', placeholder: 'e.g. High switching costs, no comparable alternative' },
-              { key: 'revenue_potential', label: 'Revenue potential', placeholder: 'e.g. $50M TAM, targeting 5% in year 3' },
-              { key: 'business_stage', label: 'Business stage', placeholder: 'e.g. Pre-revenue, MVP live, first paying customers' },
-            ].map(({ key, label, placeholder }) => (
-              <div key={key} style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#aaa' }}>{label}</p>
-                  {isOwner && inlineEdit[key] === undefined && (
-                    <button onClick={() => startEdit(key)} style={pencilBtnLightStyle} title={`Edit ${label}`}>✏️</button>
-                  )}
-                </div>
-                {inlineEdit[key] !== undefined ? (
-                  <div>
-                    <textarea
-                      value={inlineEdit[key]}
-                      onChange={e => setInlineEdit(prev => ({ ...prev, [key]: e.target.value }))}
-                      rows={2}
-                      style={{ width: '100%', border: '1px solid rgba(123,159,247,0.4)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: "'Outfit', sans-serif", fontWeight: 300, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-                      placeholder={placeholder}
-                      autoFocus
-                    />
-                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                      <button onClick={() => saveInlineField(key)} disabled={inlineSaving === key} style={inlineSaveBtnStyle}>{inlineSaving === key ? 'Saving…' : 'Save'}</button>
-                      <button onClick={() => cancelEdit(key)} style={inlineCancelBtnStyle}>Cancel</button>
-                    </div>
-                    {savedField === key && <span style={savedConfirmStyle}>Saved ✓</span>}
-                  </div>
-                ) : idea[key] ? (
-                  <p style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.6, margin: 0 }}>{idea[key]}</p>
-                ) : isOwner ? (
-                  <p style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic', margin: 0 }}>{placeholder}</p>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Card 5: Competitive Advantage */}
-        {(idea.competitive_advantage || isOwner) && (
-          <div id="section-competitive_advantage" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Competitive Advantage</p>
-              {isOwner && inlineEdit.competitive_advantage === undefined && <button onClick={() => startEdit('competitive_advantage')} style={pencilBtnLightStyle} title="Edit competitive advantage">✏️</button>}
-            </div>
-            {inlineEdit.competitive_advantage !== undefined ? (
-              <>
-                <textarea value={inlineEdit.competitive_advantage} onChange={e => setInlineEdit(v => ({ ...v, competitive_advantage: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What makes this uniquely positioned to win?" autoFocus />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveInlineField('competitive_advantage')} disabled={inlineSaving === 'competitive_advantage'} style={inlineSaveBtnStyle}>{inlineSaving === 'competitive_advantage' ? 'Saving…' : 'Save'}</button>
-                  <button onClick={() => cancelEdit('competitive_advantage')} style={inlineCancelBtnStyle}>Cancel</button>
-                </div>
-              </>
-            ) : idea.competitive_advantage ? (
-              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.competitive_advantage}</p>
-            ) : (
-              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe your competitive advantage</p>
-            )}
-            {savedField === 'competitive_advantage' && inlineEdit.competitive_advantage === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
-            <AIChallenge sectionKey="competitive_advantage" sectionLabel="Competitive Advantage" content={idea.competitive_advantage} isPaid={isPaid} />
-          </div>
-        )}
-
-        {/* Card 6: Competitive Landscape */}
-        {(idea.competitive_landscape || isOwner) && (
-          <CompetitiveLandscape
-            value={idea.competitive_landscape}
-            onChange={async (val) => {
-              const { error } = await supabase
-                .from('ideas')
-                .update({ competitive_landscape: typeof val === 'string' ? val : JSON.stringify(val) })
-                .eq('id', id)
-              if (error) { console.error('competitive_landscape save error:', error); return }
-              setIdea(prev => ({ ...prev, competitive_landscape: typeof val === 'string' ? val : JSON.stringify(val) }))
-            }}
-            isOwner={isOwner}
-            isPaid={isPaid}
-            ideaTitle={idea.title}
-            ideaProblem={idea.problem}
-            ideaSolution={idea.solution}
-          />
-        )}
-
-        {/* Card 7: Risks & Challenges */}
-        {(idea.risks || isOwner) && (
-          <div id="section-risks" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Risks & Challenges</p>
-              {isOwner && inlineEdit.risks === undefined && <button onClick={() => startEdit('risks')} style={pencilBtnLightStyle} title="Edit risks">✏️</button>}
-            </div>
-            {inlineEdit.risks !== undefined ? (
-              <>
-                <textarea value={inlineEdit.risks} onChange={e => setInlineEdit(v => ({ ...v, risks: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What obstacles or risks could affect this idea?" autoFocus />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveInlineField('risks')} disabled={inlineSaving === 'risks'} style={inlineSaveBtnStyle}>{inlineSaving === 'risks' ? 'Saving…' : 'Save'}</button>
-                  <button onClick={() => cancelEdit('risks')} style={inlineCancelBtnStyle}>Cancel</button>
-                </div>
-              </>
-            ) : idea.risks ? (
-              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.risks}</p>
-            ) : (
-              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to list your risks & challenges</p>
-            )}
-            {savedField === 'risks' && inlineEdit.risks === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
-            <AIChallenge sectionKey="risks" sectionLabel="Risks & Challenges" content={idea.risks} isPaid={isPaid} />
-          </div>
-        )}
-
-        {/* Card 7: Next Steps */}
-        {(idea.next_steps || isOwner) && (
-          <div id="section-next_steps" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Next Steps</p>
-              {isOwner && inlineEdit.next_steps === undefined && <button onClick={() => startEdit('next_steps')} style={pencilBtnLightStyle} title="Edit next steps">✏️</button>}
-            </div>
-            {inlineEdit.next_steps !== undefined ? (
-              <>
-                <textarea value={inlineEdit.next_steps} onChange={e => setInlineEdit(v => ({ ...v, next_steps: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What are the next steps to bring this idea to life?" autoFocus />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button onClick={() => saveInlineField('next_steps')} disabled={inlineSaving === 'next_steps'} style={inlineSaveBtnStyle}>{inlineSaving === 'next_steps' ? 'Saving…' : 'Save'}</button>
-                  <button onClick={() => cancelEdit('next_steps')} style={inlineCancelBtnStyle}>Cancel</button>
-                </div>
-              </>
-            ) : idea.next_steps ? (
-              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.next_steps}</p>
-            ) : (
-              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to outline your next steps</p>
-            )}
-            {savedField === 'next_steps' && inlineEdit.next_steps === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
-            <AIChallenge sectionKey="next_steps" sectionLabel="Next Steps" content={idea.next_steps} isPaid={isPaid} />
-          </div>
-        )}
-
-        {/* Team */}
-        {(idea.team || isOwner) && (() => {
-          let teamData = null
-          try { teamData = idea.team ? JSON.parse(idea.team) : null } catch {}
-          const editing = inlineEdit.team !== undefined
-          const editVal = editing ? inlineEdit.team : { name: '', role: '', bio: '', origin: '' }
-          return (
-            <div id="section-team" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>The Team</p>
-                {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, team: teamData || { name: '', role: '', bio: '', origin: '' } }))} style={pencilBtnLightStyle} title="Edit team">✏️</button>}
-              </div>
-              {editing ? (
-                <>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
-                    <input value={editVal.name || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, name: e.target.value } }))} placeholder="Full name" autoFocus style={inlineTextareaStyle} />
-                    <input value={editVal.role || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, role: e.target.value } }))} placeholder="Role / title" style={inlineTextareaStyle} />
-                    <textarea value={editVal.bio || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, bio: e.target.value } }))} placeholder="Background and relevant experience" rows={3} style={inlineTextareaStyle} />
-                    <textarea value={editVal.origin || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, origin: e.target.value } }))} placeholder="Origin story — why you built this" rows={3} style={inlineTextareaStyle} />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => saveInlineField('team')} disabled={inlineSaving === 'team'} style={inlineSaveBtnStyle}>{inlineSaving === 'team' ? 'Saving…' : 'Save'}</button>
-                    <button onClick={() => cancelEdit('team')} style={inlineCancelBtnStyle}>Cancel</button>
-                  </div>
-                </>
-              ) : teamData ? (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: '1rem' }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#7b9ff7,#9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: "'Outfit', sans-serif" }}>{(teamData.name || '?')[0].toUpperCase()}</span>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>{teamData.name}</p>
-                      <p style={{ fontSize: 12, color: '#888780', margin: '2px 0 0', fontFamily: "'Outfit', sans-serif" }}>{teamData.role}</p>
-                    </div>
-                  </div>
-                  {teamData.bio && <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a', marginBottom: teamData.origin ? '1rem' : 0 }}>{teamData.bio}</p>}
-                  {teamData.origin && (
-                    <div style={{ borderLeft: '3px solid #7b9ff7', paddingLeft: 12, marginTop: 8 }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#7b9ff7', marginBottom: 4 }}>Origin Story</p>
-                      <p style={{ fontSize: 13, lineHeight: 1.7, color: '#555', fontStyle: 'italic', margin: 0 }}>{teamData.origin}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to introduce your team</p>
-              )}
-              {savedField === 'team' && !editing && <span style={savedConfirmStyle}>Saved ✓</span>}
-            </div>
-          )
-        })()}
 
         {/* Revenue Projections */}
         {(idea.revenue_projections || isOwner) && (() => {
@@ -1123,7 +975,11 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           return (
             <div id="section-revenue_projections" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Revenue Projections</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', margin: 0 }}>Revenue Projections</p>
+                  {idea.revenue_potential && <span style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 5, padding: '2px 8px', fontWeight: 500 }}>{idea.revenue_potential}</span>}
+                  {idea.business_stage && <span style={{ fontSize: 11, background: 'rgba(44,44,42,0.06)', color: '#555', borderRadius: 5, padding: '2px 8px', fontWeight: 500 }}>{idea.business_stage}</span>}
+                </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   {isOwner && isPaid && <button onClick={handleRevenueAISuggest} disabled={aiRevenueLoading} style={{ background: aiRevenueLoading ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '4px 10px', fontSize: 12, color: '#7b9ff7', cursor: aiRevenueLoading ? 'not-allowed' : 'pointer', fontWeight: 500 }}>{aiRevenueLoading ? '…thinking' : '✨ AI Suggest'}</button>}
                   {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, revenue_projections: rp || { startingUsers: 100, monthlyGrowthRate: 10, conversionRate: 5, paidPriceOverride: '' } }))} style={pencilBtnLightStyle} title="Edit revenue projections">✏️</button>}
@@ -1248,6 +1104,173 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to add validation data</p>
               )}
               {savedField === 'customer_validation' && !editing && <span style={savedConfirmStyle}>Saved ✓</span>}
+            </div>
+          )
+        })()}
+
+        {/* Card 5: Competitive Advantage */}
+        {(idea.competitive_advantage || isOwner) && (
+          <div id="section-competitive_advantage" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Competitive Advantage</p>
+              {isOwner && inlineEdit.competitive_advantage === undefined && <button onClick={() => startEdit('competitive_advantage')} style={pencilBtnLightStyle} title="Edit competitive advantage">✏️</button>}
+            </div>
+            {inlineEdit.competitive_advantage !== undefined ? (
+              <>
+                <textarea value={inlineEdit.competitive_advantage} onChange={e => setInlineEdit(v => ({ ...v, competitive_advantage: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What makes this uniquely positioned to win?" autoFocus />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveInlineField('competitive_advantage')} disabled={inlineSaving === 'competitive_advantage'} style={inlineSaveBtnStyle}>{inlineSaving === 'competitive_advantage' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('competitive_advantage')} style={inlineCancelBtnStyle}>Cancel</button>
+                </div>
+              </>
+            ) : idea.competitive_advantage ? (
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.competitive_advantage}</p>
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe your competitive advantage</p>
+            )}
+            {savedField === 'competitive_advantage' && inlineEdit.competitive_advantage === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <div style={{ marginTop: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Pricing Power</p>
+                {isOwner && inlineEdit.pricing_power === undefined && <button onClick={() => startEdit('pricing_power')} style={pencilBtnLightStyle} title="Edit pricing power">✏️</button>}
+              </div>
+              {inlineEdit.pricing_power !== undefined ? (
+                <>
+                  <textarea value={inlineEdit.pricing_power} onChange={e => setInlineEdit(v => ({ ...v, pricing_power: e.target.value }))} rows={2} style={inlineTextareaStyle} autoFocus />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button onClick={() => saveInlineField('pricing_power')} disabled={inlineSaving === 'pricing_power'} style={inlineSaveBtnStyle}>{inlineSaving === 'pricing_power' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('pricing_power')} style={inlineCancelBtnStyle}>Cancel</button>
+                  </div>
+                  {savedField === 'pricing_power' && <span style={savedConfirmStyle}>Saved ✓</span>}
+                </>
+              ) : idea.pricing_power ? (
+                <p style={{ fontSize: 13, lineHeight: 1.7, color: '#2c2c2a' }}>{idea.pricing_power}</p>
+              ) : isOwner ? (
+                <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️</p>
+              ) : null}
+            </div>
+            <AIChallenge sectionKey="competitive_advantage" sectionLabel="Competitive Advantage" content={idea.competitive_advantage} isPaid={isPaid} />
+          </div>
+        )}
+
+        {/* Card 6: Competitive Landscape */}
+        {(idea.competitive_landscape || isOwner) && (
+          <CompetitiveLandscape
+            value={idea.competitive_landscape}
+            onChange={async (val) => {
+              const { error } = await supabase
+                .from('ideas')
+                .update({ competitive_landscape: typeof val === 'string' ? val : JSON.stringify(val) })
+                .eq('id', id)
+              if (error) { console.error('competitive_landscape save error:', error); return }
+              setIdea(prev => ({ ...prev, competitive_landscape: typeof val === 'string' ? val : JSON.stringify(val) }))
+            }}
+            isOwner={isOwner}
+            isPaid={isPaid}
+            ideaTitle={idea.title}
+            ideaProblem={idea.problem}
+            ideaSolution={idea.solution}
+          />
+        )}
+
+        {/* Card 7: Risks & Challenges */}
+        {(idea.risks || isOwner) && (
+          <div id="section-risks" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Risks & Challenges</p>
+              {isOwner && inlineEdit.risks === undefined && <button onClick={() => startEdit('risks')} style={pencilBtnLightStyle} title="Edit risks">✏️</button>}
+            </div>
+            {inlineEdit.risks !== undefined ? (
+              <>
+                <textarea value={inlineEdit.risks} onChange={e => setInlineEdit(v => ({ ...v, risks: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What obstacles or risks could affect this idea?" autoFocus />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveInlineField('risks')} disabled={inlineSaving === 'risks'} style={inlineSaveBtnStyle}>{inlineSaving === 'risks' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('risks')} style={inlineCancelBtnStyle}>Cancel</button>
+                </div>
+              </>
+            ) : idea.risks ? (
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.risks}</p>
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to list your risks & challenges</p>
+            )}
+            {savedField === 'risks' && inlineEdit.risks === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <AIChallenge sectionKey="risks" sectionLabel="Risks & Challenges" content={idea.risks} isPaid={isPaid} />
+          </div>
+        )}
+
+        {/* Card 7: Next Steps */}
+        {(idea.next_steps || isOwner) && (
+          <div id="section-next_steps" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Next Steps</p>
+              {isOwner && inlineEdit.next_steps === undefined && <button onClick={() => startEdit('next_steps')} style={pencilBtnLightStyle} title="Edit next steps">✏️</button>}
+            </div>
+            {inlineEdit.next_steps !== undefined ? (
+              <>
+                <textarea value={inlineEdit.next_steps} onChange={e => setInlineEdit(v => ({ ...v, next_steps: e.target.value }))} rows={4} style={inlineTextareaStyle} placeholder="What are the next steps to bring this idea to life?" autoFocus />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => saveInlineField('next_steps')} disabled={inlineSaving === 'next_steps'} style={inlineSaveBtnStyle}>{inlineSaving === 'next_steps' ? 'Saving…' : 'Save'}</button>
+                  <button onClick={() => cancelEdit('next_steps')} style={inlineCancelBtnStyle}>Cancel</button>
+                </div>
+              </>
+            ) : idea.next_steps ? (
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.next_steps}</p>
+            ) : (
+              <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to outline your next steps</p>
+            )}
+            {savedField === 'next_steps' && inlineEdit.next_steps === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
+            <AIChallenge sectionKey="next_steps" sectionLabel="Next Steps" content={idea.next_steps} isPaid={isPaid} />
+          </div>
+        )}
+
+        {/* Team */}
+        {(idea.team || isOwner) && (() => {
+          let teamData = null
+          try { teamData = idea.team ? JSON.parse(idea.team) : null } catch {}
+          const editing = inlineEdit.team !== undefined
+          const editVal = editing ? inlineEdit.team : { name: '', role: '', bio: '', origin: '' }
+          return (
+            <div id="section-team" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>The Team</p>
+                {isOwner && !editing && <button onClick={() => setInlineEdit(v => ({ ...v, team: teamData || { name: '', role: '', bio: '', origin: '' } }))} style={pencilBtnLightStyle} title="Edit team">✏️</button>}
+              </div>
+              {editing ? (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+                    <input value={editVal.name || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, name: e.target.value } }))} placeholder="Full name" autoFocus style={inlineTextareaStyle} />
+                    <input value={editVal.role || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, role: e.target.value } }))} placeholder="Role / title" style={inlineTextareaStyle} />
+                    <textarea value={editVal.bio || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, bio: e.target.value } }))} placeholder="Background and relevant experience" rows={3} style={inlineTextareaStyle} />
+                    <textarea value={editVal.origin || ''} onChange={e => setInlineEdit(v => ({ ...v, team: { ...v.team, origin: e.target.value } }))} placeholder="Origin story — why you built this" rows={3} style={inlineTextareaStyle} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => saveInlineField('team')} disabled={inlineSaving === 'team'} style={inlineSaveBtnStyle}>{inlineSaving === 'team' ? 'Saving…' : 'Save'}</button>
+                    <button onClick={() => cancelEdit('team')} style={inlineCancelBtnStyle}>Cancel</button>
+                  </div>
+                </>
+              ) : teamData ? (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: '1rem' }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#7b9ff7,#9b7ff7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: "'Outfit', sans-serif" }}>{(teamData.name || '?')[0].toUpperCase()}</span>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>{teamData.name}</p>
+                      <p style={{ fontSize: 12, color: '#888780', margin: '2px 0 0', fontFamily: "'Outfit', sans-serif" }}>{teamData.role}</p>
+                    </div>
+                  </div>
+                  {teamData.bio && <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a', marginBottom: teamData.origin ? '1rem' : 0 }}>{teamData.bio}</p>}
+                  {teamData.origin && (
+                    <div style={{ borderLeft: '3px solid #7b9ff7', paddingLeft: 12, marginTop: 8 }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#7b9ff7', marginBottom: 4 }}>Origin Story</p>
+                      <p style={{ fontSize: 13, lineHeight: 1.7, color: '#555', fontStyle: 'italic', margin: 0 }}>{teamData.origin}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to introduce your team</p>
+              )}
+              {savedField === 'team' && !editing && <span style={savedConfirmStyle}>Saved ✓</span>}
             </div>
           )
         })()}
