@@ -129,7 +129,7 @@ export default function IdeaDetail({ session }) {
   const startEditRef = useRef(null)
 
   useEffect(() => {
-    const INLINE_FIELDS = new Set(['title', 'problem', 'solution', 'how_it_works', 'business_model', 'tagline', 'target_audience', 'competitive_advantage', 'risks', 'next_steps', 'tease', 'origin_story'])
+    const INLINE_FIELDS = new Set(['title', 'problem', 'solution', 'how_it_works', 'business_model', 'tagline', 'target_audience', 'competitive_advantage', 'risks', 'next_steps', 'tease', 'origin_story', 'who_pays', 'revenue_streams', 'pricing_power', 'revenue_potential', 'business_stage'])
     function handler(e) {
       const { field } = e.detail
       if (INLINE_FIELDS.has(field) && startEditRef.current) startEditRef.current(field)
@@ -290,7 +290,7 @@ export default function IdeaDetail({ session }) {
 
   const PITCH_SNAPSHOT_FIELDS = [
     'title', 'tagline', 'problem', 'solution', 'how_it_works', 'market_size',
-    'business_model', 'competitive_advantage', 'risks', 'next_steps', 'origin_story',
+    'business_model', 'competitive_advantage', 'risks', 'next_steps', 'origin_story', 'who_pays', 'revenue_streams', 'pricing_power', 'revenue_potential', 'business_stage',
     'target_audience', 'category', 'looking_for', 'traction', 'team',
     'additional_info', 'blockchain_hash', 'created_at',
   ]
@@ -325,7 +325,7 @@ export default function IdeaDetail({ session }) {
       tagline: fresh.tagline || '', problem: fresh.problem || '',
       solution: fresh.solution || '', how_it_works: fresh.how_it_works || '',
       market_size: fresh.market_size || '', target_audience: fresh.target_audience || '',
-      business_model: fresh.business_model || '', competitive_advantage: fresh.competitive_advantage || '', origin_story: fresh.origin_story || '',
+      business_model: fresh.business_model || '', competitive_advantage: fresh.competitive_advantage || '', origin_story: fresh.origin_story || '', who_pays: fresh.who_pays || '', revenue_streams: fresh.revenue_streams || '', pricing_power: fresh.pricing_power || '', revenue_potential: fresh.revenue_potential || '', business_stage: fresh.business_stage || '',
       risks: fresh.risks || '', next_steps: fresh.next_steps || '',
       ...(fresh.pdf_snapshot || {}),
     }
@@ -893,6 +893,50 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               content={(() => { try { const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model; return bm?.models?.length ? `Models: ${bm.models.join(', ')}` : '' } catch { return idea.business_model || '' } })()}
               isPaid={isPaid}
             />
+          </div>
+        )}
+
+        {/* Revenue Details card */}
+        {(idea.who_pays || idea.revenue_streams || idea.pricing_power || idea.revenue_potential || idea.business_stage || isOwner) && (
+          <div id="section-revenue_details" style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Revenue Details</p>
+            {[
+              { key: 'who_pays', label: 'Who pays', placeholder: 'e.g. Enterprise HR teams pay annually' },
+              { key: 'revenue_streams', label: 'Revenue streams', placeholder: 'e.g. Subscriptions, marketplace fees, data licensing' },
+              { key: 'pricing_power', label: 'Pricing power', placeholder: 'e.g. High switching costs, no comparable alternative' },
+              { key: 'revenue_potential', label: 'Revenue potential', placeholder: 'e.g. $50M TAM, targeting 5% in year 3' },
+              { key: 'business_stage', label: 'Business stage', placeholder: 'e.g. Pre-revenue, MVP live, first paying customers' },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key} style={{ marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#aaa' }}>{label}</p>
+                  {isOwner && inlineEdit[key] === undefined && (
+                    <button onClick={() => startEdit(key)} style={pencilBtnLightStyle} title={`Edit ${label}`}>✏️</button>
+                  )}
+                </div>
+                {inlineEdit[key] !== undefined ? (
+                  <div>
+                    <textarea
+                      value={inlineEdit[key]}
+                      onChange={e => setInlineEdit(prev => ({ ...prev, [key]: e.target.value }))}
+                      rows={2}
+                      style={{ width: '100%', border: '1px solid rgba(123,159,247,0.4)', borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: "'Outfit', sans-serif", fontWeight: 300, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+                      placeholder={placeholder}
+                      autoFocus
+                    />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                      <button onClick={() => saveInlineField(key)} disabled={inlineSaving === key} style={inlineSaveBtnStyle}>{inlineSaving === key ? 'Saving…' : 'Save'}</button>
+                      <button onClick={() => cancelEdit(key)} style={inlineCancelBtnStyle}>Cancel</button>
+                    </div>
+                    {savedField === key && <span style={savedConfirmStyle}>Saved ✓</span>}
+                  </div>
+                ) : idea[key] ? (
+                  <p style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.6, margin: 0 }}>{idea[key]}</p>
+                ) : isOwner ? (
+                  <p style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic', margin: 0 }}>{placeholder}</p>
+                ) : null}
+              </div>
+            ))}
           </div>
         )}
 

@@ -295,6 +295,20 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
         }
       } catch { return null }
     })() : null,
+    (idea.who_pays || idea.revenue_streams || idea.pricing_power || idea.revenue_potential || idea.business_stage) ? (() => {
+      const rows = [
+        { label: 'Who pays', val: idea.who_pays },
+        { label: 'Revenue streams', val: idea.revenue_streams },
+        { label: 'Pricing power', val: idea.pricing_power },
+        { label: 'Revenue potential', val: idea.revenue_potential },
+        { label: 'Business stage', val: idea.business_stage },
+      ].filter(r => r.val)
+      if (!rows.length) return null
+      return {
+        type: 'revenue_details',
+        html: `${sH('💰', 'REVENUE DETAILS')}<div style="display:flex;flex-direction:column;gap:10px">${rows.map(r => `<div><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#888780;margin-bottom:3px">${escH(r.label)}</div><div style="font-size:12px;color:#2c2c2a;line-height:1.6">${escH(r.val)}</div></div>`).join('')}</div>`
+      }
+    })() : null,
     idea.competitive_landscape ? (() => {
       try {
         const svgLabelAttrs = (cx, cW, offset = 8) => cx > cW * 0.55 ? { x: cx - offset, textAnchor: 'end' } : { x: cx + offset, textAnchor: 'start' }

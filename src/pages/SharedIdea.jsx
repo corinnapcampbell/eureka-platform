@@ -625,6 +625,24 @@ export default function SharedIdea() {
           )
         })()}
 
+        {(idea.who_pays || idea.revenue_streams || idea.pricing_power || idea.revenue_potential || idea.business_stage) && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Revenue Details</p>
+            {[
+              { key: 'who_pays', label: 'Who pays' },
+              { key: 'revenue_streams', label: 'Revenue streams' },
+              { key: 'pricing_power', label: 'Pricing power' },
+              { key: 'revenue_potential', label: 'Revenue potential' },
+              { key: 'business_stage', label: 'Business stage' },
+            ].filter(({ key }) => idea[key]).map(({ key, label }) => (
+              <div key={key} style={{ marginBottom: '0.75rem' }}>
+                <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#aaa', marginBottom: 3 }}>{label}</p>
+                <p style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.6, margin: 0 }}>{idea[key]}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Competitive Advantage */}
         {idea.competitive_advantage && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>

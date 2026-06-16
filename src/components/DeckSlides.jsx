@@ -168,6 +168,11 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
       monthlyGrowthRate: (() => { try { const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections; return rp?.monthlyGrowthRate || 10 } catch { return 10 } })(),
       conversionRate: (() => { try { const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections; return rp?.conversionRate || 5 } catch { return 5 } })(),
       aiGenerated: false,
+      whoPays: idea?.who_pays || '',
+      revenueStreams: idea?.revenue_streams || '',
+      pricingPower: idea?.pricing_power || '',
+      revenuePotential: idea?.revenue_potential || '',
+      businessStage: idea?.business_stage || '',
     },
     {
       type: 'advantage',
@@ -787,11 +792,28 @@ function RevenueSlide({ slide, onUpdate }) {
     if (n >= 1000) return '$' + Math.round(n / 1000) + 'K'
     return '$' + Math.round(n)
   }
+  const hasQualitative = slide.whoPays || slide.revenueStreams || slide.pricingPower || slide.revenuePotential || slide.businessStage
   return (
     <div style={{ width: SLIDE_W, height: SLIDE_H, background: NAVY, position: 'relative', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: GRAD }} />
       <div style={{ padding: '44px 56px 40px', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
         <div style={{ fontSize: 10, color: 'rgba(123,159,247,0.7)', letterSpacing: '3px', fontWeight: 700, textTransform: 'uppercase', marginBottom: 10 }}>{slide.sectionLabel}</div>
+        {hasQualitative && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+            {[
+              { label: 'Who pays', val: slide.whoPays },
+              { label: 'Revenue streams', val: slide.revenueStreams },
+              { label: 'Pricing power', val: slide.pricingPower },
+              { label: 'Revenue potential', val: slide.revenuePotential },
+              { label: 'Stage', val: slide.businessStage },
+            ].filter(r => r.val).map((r, i) => (
+              <div key={i} style={{ background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(123,159,247,0.6)', marginBottom: 4 }}>{r.label}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{r.val}</div>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 8, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
           <span>Starting users: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.startingUsers ?? 100)} onChange={v => u('startingUsers', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : startingUsers.toLocaleString()}</strong></span>
           <span>Monthly growth: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.monthlyGrowthRate ?? 10)} onChange={v => u('monthlyGrowthRate', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.monthlyGrowthRate || 10)}%</strong></span>
