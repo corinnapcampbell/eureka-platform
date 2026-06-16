@@ -862,13 +862,13 @@ function CompetitiveSlide({ slide }) {
           {cl.matrix.competitors.map((c, i) => (
             <div key={i} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)' }}>
               <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.6)' }} />
-              <div style={{ position: 'absolute', ...(c.x > 0.6 ? { right: 16, left: 'auto' } : { left: 16 }), top: -5, fontSize: 12, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>{c.name}</div>
+              <div style={{ position: 'absolute', ...(c.x > 0.55 ? { right: 16, left: 'auto' } : { left: 16 }), top: -5, fontSize: 12, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
             </div>
           ))}
           {cl.matrix.self && (
             <div style={{ position: 'absolute', left: `${cl.matrix.self.x * 100}%`, top: `${(1 - cl.matrix.self.y) * 100}%`, transform: 'translate(-50%,-50%)' }}>
               <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#7b9ff7', boxShadow: '0 0 12px rgba(123,159,247,0.6)', border: '2px solid rgba(255,255,255,0.6)' }} />
-              <div style={{ position: 'absolute', ...(cl.matrix.self.x > 0.6 ? { right: 16, left: 'auto' } : { left: 16 }), top: -6, fontSize: 13, color: '#7b9ff7', fontWeight: 700, whiteSpace: 'nowrap' }}>{slide.ideaTitle || 'Your idea'}</div>
+              <div style={{ position: 'absolute', ...(cl.matrix.self.x > 0.55 ? { right: 16, left: 'auto' } : { left: 16 }), top: -6, fontSize: 13, color: '#7b9ff7', fontWeight: 700, whiteSpace: 'nowrap', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>{slide.ideaTitle || 'Your idea'}</div>
             </div>
           )}
         </div>
