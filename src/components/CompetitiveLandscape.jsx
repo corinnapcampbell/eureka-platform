@@ -97,9 +97,9 @@ function GapReadOnly({ data, ideaTitle }) {
   const pct = (i) => `${(i / (stages.length - 1)) * 100}%`
   const competitorsByStage = stages.map((_, i) => (data.competitors || []).filter(c => c.stage === i))
   return (
-    <div style={{ padding: '0 1rem 1rem' }}>
+    <div style={{ padding: '0 2.5rem 1rem' }}>
       <div style={{ position: 'relative', marginTop: '3rem', minHeight: Math.max(...stages.map((_, i) => (competitorsByStage[i] || []).length)) * 28 + 140 }}>
-        <div style={{ position: 'relative', height: 4, background: '#e5e5e5', borderRadius: 2, margin: '0 0 0' }}>
+        <div style={{ position: 'relative', height: 4, background: '#e5e5e5', borderRadius: 2, margin: '0 0 0', overflow: 'visible' }}>
           <div style={{ position: 'absolute', left: pct(gapStart), width: `calc(${pct(gapEnd)} - ${pct(gapStart)})`, height: '100%', background: 'rgba(123,159,247,0.3)', borderRadius: 2 }} />
         </div>
         {stages.map((s, i) => {
