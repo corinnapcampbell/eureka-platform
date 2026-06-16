@@ -677,7 +677,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
                 <button
                   onClick={() => {}}
-                  style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}
+                  style={{ background: 'none', border: '0.5px solid rgba(123,159,247,0.5)', borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 500, color: '#7b9ff7', cursor: 'pointer' }}
                 >
                   $0.99 Re-publish
                 </button>

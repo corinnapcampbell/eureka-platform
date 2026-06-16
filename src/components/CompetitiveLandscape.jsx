@@ -13,6 +13,14 @@ function parseValue(v) {
   return v
 }
 
+function getLabelStyle(pos, isOwn) {
+  const base = { position: 'absolute', fontSize: 12, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '2px 5px', borderRadius: 4, color: isOwn ? '#7b9ff7' : '#444', fontWeight: isOwn ? 600 : 400 }
+  if (pos === 'left') return { ...base, right: 20, left: 'auto', top: -6 }
+  if (pos === 'top') return { ...base, left: '50%', transform: 'translateX(-50%)', bottom: 20, top: 'auto' }
+  if (pos === 'bottom') return { ...base, left: '50%', transform: 'translateX(-50%)', top: 16 }
+  return { ...base, left: 16, top: -6 }
+}
+
 function TableReadOnly({ data, ideaTitle }) {
   if (!data || !data.competitors?.length) return null
   const hasColumns = data.columns?.length > 0
@@ -63,13 +71,13 @@ function MatrixReadOnly({ data, ideaTitle }) {
       {(data.competitors || []).map((c, i) => (
         <div key={i} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)', zIndex: 2 }}>
           <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#888780', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }} />
-          <div style={{ position: 'absolute', ...(c.x > 0.65 ? { right: 20, left: 'auto' } : { left: 16 }), top: -6, fontSize: 12, color: '#444', whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '2px 5px', borderRadius: 4 }}>{c.name}</div>
+          <div style={getLabelStyle(c.labelPos || 'right', false)}>{c.name}</div>
         </div>
       ))}
       {data.self && (
         <div style={{ position: 'absolute', left: `${data.self.x * 100}%`, top: `${(1 - data.self.y) * 100}%`, transform: 'translate(-50%,-50%)', zIndex: 3 }}>
           <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#7b9ff7', border: '2px solid #fff', boxShadow: '0 1px 6px rgba(123,159,247,0.5)' }} />
-          <div style={{ position: 'absolute', ...(data.self.x > 0.65 ? { right: 24, left: 'auto' } : { left: 20 }), top: -6, fontSize: 12, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '2px 5px', borderRadius: 4 }}>{ideaTitle || 'Your idea'}</div>
+          <div style={getLabelStyle(data.self.labelPos || 'right', true)}>{ideaTitle || 'Your idea'}</div>
         </div>
       )}
     </div>
@@ -371,13 +379,15 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
               {(matrixData.competitors || []).map((c, i) => (
                 <div key={i} onMouseDown={e => { e.preventDefault(); draggingRef.current = { type: 'competitor', index: i } }} onTouchStart={e => { e.preventDefault(); draggingRef.current = { type: 'competitor', index: i } }} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)', cursor: 'grab', zIndex: 2 }}>
                   <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#888780', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }} />
-                  <div style={{ position: 'absolute', left: 16, top: -5, fontSize: 11, color: '#444', whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '1px 4px', borderRadius: 3 }}>{c.name || `Competitor ${i + 1}`}</div>
+                  <div style={getLabelStyle(c.labelPos || 'right', false)}>{c.name || `Competitor ${i + 1}`}</div>
+                  <button onClick={e => { e.stopPropagation(); setMatrixData(prev => { const competitors = [...prev.competitors]; const cycle = { right: 'left', left: 'top', top: 'bottom', bottom: 'right' }; competitors[i] = { ...competitors[i], labelPos: cycle[competitors[i].labelPos || 'right'] }; return { ...prev, competitors }; }); }} style={{ position: 'absolute', top: -18, left: -6, fontSize: 9, background: 'rgba(255,255,255,0.9)', border: '0.5px solid rgba(123,159,247,0.4)', borderRadius: 3, padding: '1px 3px', cursor: 'pointer', color: '#7b9ff7', lineHeight: 1, zIndex: 10 }} title="Move label">⊕</button>
                 </div>
               ))}
               {matrixData.self && (
                 <div onMouseDown={e => { e.preventDefault(); draggingRef.current = { type: 'self', index: -1 } }} onTouchStart={e => { e.preventDefault(); draggingRef.current = { type: 'self', index: -1 } }} style={{ position: 'absolute', left: `${matrixData.self.x * 100}%`, top: `${(1 - matrixData.self.y) * 100}%`, transform: 'translate(-50%,-50%)', cursor: 'grab', zIndex: 3 }}>
                   <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#7b9ff7', border: '2px solid #fff', boxShadow: '0 1px 6px rgba(123,159,247,0.5)' }} />
-                  <div style={{ position: 'absolute', left: 20, top: -5, fontSize: 11, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '1px 4px', borderRadius: 3 }}>{ideaTitle || 'Your idea'}</div>
+                  <div style={getLabelStyle(matrixData.self.labelPos || 'right', true)}>{ideaTitle || 'Your idea'}</div>
+                  <button onClick={e => { e.stopPropagation(); setMatrixData(prev => { const cycle = { right: 'left', left: 'top', top: 'bottom', bottom: 'right' }; return { ...prev, self: { ...prev.self, labelPos: cycle[prev.self.labelPos || 'right'] } }; }); }} style={{ position: 'absolute', top: -18, left: -6, fontSize: 9, background: 'rgba(255,255,255,0.9)', border: '0.5px solid rgba(123,159,247,0.4)', borderRadius: 3, padding: '1px 3px', cursor: 'pointer', color: '#7b9ff7', lineHeight: 1, zIndex: 10 }} title="Move label">⊕</button>
                 </div>
               )}
             </div>
