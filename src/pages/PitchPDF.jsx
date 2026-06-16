@@ -318,11 +318,15 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
           const dots = competitors.map(c => {
             const cx = Math.round(40 + c.x * (W - 60))
             const cy = Math.round(10 + (1 - c.y) * (H - 40))
-            return `<circle cx="${cx}" cy="${cy}" r="5" fill="#888780" opacity="0.8"/><text x="${cx + 8}" y="${cy + 4}" font-size="9" fill="#555" font-family="Inter,sans-serif">${escH(c.name)}</text>`
+            const labelAnchor = cx > W * 0.6 ? 'end' : 'start'
+            const labelX = cx > W * 0.6 ? cx - 8 : cx + 8
+            return `<circle cx="${cx}" cy="${cy}" r="5" fill="#888780" opacity="0.8"/><text x="${labelX}" y="${cy + 4}" font-size="9" fill="#555" text-anchor="${labelAnchor}" font-family="Inter,sans-serif">${escH(c.name)}</text>`
           }).join('')
           const selfCx = Math.round(40 + self.x * (W - 60))
           const selfCy = Math.round(10 + (1 - self.y) * (H - 40))
-          const selfDot = `<circle cx="${selfCx}" cy="${selfCy}" r="8" fill="#7b9ff7"/><text x="${selfCx + 12}" y="${selfCy + 4}" font-size="9" fill="#7b9ff7" font-weight="700" font-family="Inter,sans-serif">${escH(idea.title || 'Your idea')}</text>`
+          const selfLabelAnchor = selfCx > W * 0.6 ? 'end' : 'start'
+          const selfLabelX = selfCx > W * 0.6 ? selfCx - 12 : selfCx + 12
+          const selfDot = `<circle cx="${selfCx}" cy="${selfCy}" r="8" fill="#7b9ff7"/><text x="${selfLabelX}" y="${selfCy + 4}" font-size="9" fill="#7b9ff7" font-weight="700" text-anchor="${selfLabelAnchor}" font-family="Inter,sans-serif">${escH(idea.title || 'Your idea')}</text>`
           const svg = `<svg width="${W}" height="${H + 30}" xmlns="http://www.w3.org/2000/svg"><line x1="40" y1="${H - 30}" x2="${W - 10}" y2="${H - 30}" stroke="#e5e5e5" stroke-width="1"/><line x1="40" y1="10" x2="40" y2="${H - 30}" stroke="#e5e5e5" stroke-width="1"/><text x="${W / 2}" y="${H + 20}" text-anchor="middle" font-size="10" fill="#888780" font-family="Inter,sans-serif">${escH(axisX)} →</text><text x="12" y="${H / 2}" text-anchor="middle" font-size="10" fill="#888780" font-family="Inter,sans-serif" transform="rotate(-90,12,${H / 2})">↑ ${escH(axisY)}</text>${dots}${selfDot}</svg>`
           return { type: 'competitive_landscape', html: `${sH('🏁', 'COMPETITIVE LANDSCAPE')}<div style="overflow-x:auto">${svg}</div>` }
         }
