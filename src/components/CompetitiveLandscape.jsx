@@ -21,6 +21,11 @@ function getLabelStyle(pos, isOwn) {
   return { ...base, left: 16, top: -6 }
 }
 
+function snapLabelPos(dx, dy) {
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'right' : 'left'
+  return dy >= 0 ? 'bottom' : 'top'
+}
+
 function TableReadOnly({ data, ideaTitle }) {
   if (!data || !data.competitors?.length) return null
   const hasColumns = data.columns?.length > 0
@@ -379,15 +384,97 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
               {(matrixData.competitors || []).map((c, i) => (
                 <div key={i} onMouseDown={e => { e.preventDefault(); draggingRef.current = { type: 'competitor', index: i } }} onTouchStart={e => { e.preventDefault(); draggingRef.current = { type: 'competitor', index: i } }} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)', cursor: 'grab', zIndex: 2 }}>
                   <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#888780', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }} />
-                  <div style={getLabelStyle(c.labelPos || 'right', false)}>{c.name || `Competitor ${i + 1}`}</div>
-                  <button onClick={e => { e.stopPropagation(); setMatrixData(prev => { const competitors = [...prev.competitors]; const cycle = { right: 'left', left: 'top', top: 'bottom', bottom: 'right' }; competitors[i] = { ...competitors[i], labelPos: cycle[competitors[i].labelPos || 'right'] }; return { ...prev, competitors }; }); }} style={{ position: 'absolute', top: -18, left: -6, fontSize: 9, background: 'rgba(255,255,255,0.9)', border: '0.5px solid rgba(123,159,247,0.4)', borderRadius: 3, padding: '1px 3px', cursor: 'pointer', color: '#7b9ff7', lineHeight: 1, zIndex: 10 }} title="Move label">⊕</button>
+                  <div
+                    style={{ ...getLabelStyle(c.labelPos || 'right', false), cursor: 'grab', userSelect: 'none', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}
+                    onMouseDown={e => {
+                      e.stopPropagation()
+                      const startX = e.clientX
+                      const startY = e.clientY
+                      function onMove(ev) {
+                        const dx = ev.clientX - startX
+                        const dy = ev.clientY - startY
+                        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+                          setMatrixData(prev => {
+                            const competitors = [...prev.competitors]
+                            competitors[i] = { ...competitors[i], labelPos: snapLabelPos(dx, dy) }
+                            return { ...prev, competitors }
+                          })
+                        }
+                      }
+                      function onUp() {
+                        window.removeEventListener('mousemove', onMove)
+                        window.removeEventListener('mouseup', onUp)
+                      }
+                      window.addEventListener('mousemove', onMove)
+                      window.addEventListener('mouseup', onUp)
+                    }}
+                    onTouchStart={e => {
+                      e.stopPropagation()
+                      const startX = e.touches[0].clientX
+                      const startY = e.touches[0].clientY
+                      function onMove(ev) {
+                        const dx = ev.touches[0].clientX - startX
+                        const dy = ev.touches[0].clientY - startY
+                        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+                          setMatrixData(prev => {
+                            const competitors = [...prev.competitors]
+                            competitors[i] = { ...competitors[i], labelPos: snapLabelPos(dx, dy) }
+                            return { ...prev, competitors }
+                          })
+                        }
+                      }
+                      function onUp() {
+                        window.removeEventListener('touchmove', onMove)
+                        window.removeEventListener('touchend', onUp)
+                      }
+                      window.addEventListener('touchmove', onMove, { passive: false })
+                      window.addEventListener('touchend', onUp)
+                    }}
+                  >{c.name || `Competitor ${i + 1}`}</div>
                 </div>
               ))}
               {matrixData.self && (
                 <div onMouseDown={e => { e.preventDefault(); draggingRef.current = { type: 'self', index: -1 } }} onTouchStart={e => { e.preventDefault(); draggingRef.current = { type: 'self', index: -1 } }} style={{ position: 'absolute', left: `${matrixData.self.x * 100}%`, top: `${(1 - matrixData.self.y) * 100}%`, transform: 'translate(-50%,-50%)', cursor: 'grab', zIndex: 3 }}>
                   <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#7b9ff7', border: '2px solid #fff', boxShadow: '0 1px 6px rgba(123,159,247,0.5)' }} />
-                  <div style={getLabelStyle(matrixData.self.labelPos || 'right', true)}>{ideaTitle || 'Your idea'}</div>
-                  <button onClick={e => { e.stopPropagation(); setMatrixData(prev => { const cycle = { right: 'left', left: 'top', top: 'bottom', bottom: 'right' }; return { ...prev, self: { ...prev.self, labelPos: cycle[prev.self.labelPos || 'right'] } }; }); }} style={{ position: 'absolute', top: -18, left: -6, fontSize: 9, background: 'rgba(255,255,255,0.9)', border: '0.5px solid rgba(123,159,247,0.4)', borderRadius: 3, padding: '1px 3px', cursor: 'pointer', color: '#7b9ff7', lineHeight: 1, zIndex: 10 }} title="Move label">⊕</button>
+                  <div
+                    style={{ ...getLabelStyle(matrixData.self.labelPos || 'right', true), cursor: 'grab', userSelect: 'none', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}
+                    onMouseDown={e => {
+                      e.stopPropagation()
+                      const startX = e.clientX
+                      const startY = e.clientY
+                      function onMove(ev) {
+                        const dx = ev.clientX - startX
+                        const dy = ev.clientY - startY
+                        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+                          setMatrixData(prev => ({ ...prev, self: { ...prev.self, labelPos: snapLabelPos(dx, dy) } }))
+                        }
+                      }
+                      function onUp() {
+                        window.removeEventListener('mousemove', onMove)
+                        window.removeEventListener('mouseup', onUp)
+                      }
+                      window.addEventListener('mousemove', onMove)
+                      window.addEventListener('mouseup', onUp)
+                    }}
+                    onTouchStart={e => {
+                      e.stopPropagation()
+                      const startX = e.touches[0].clientX
+                      const startY = e.touches[0].clientY
+                      function onMove(ev) {
+                        const dx = ev.touches[0].clientX - startX
+                        const dy = ev.touches[0].clientY - startY
+                        if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+                          setMatrixData(prev => ({ ...prev, self: { ...prev.self, labelPos: snapLabelPos(dx, dy) } }))
+                        }
+                      }
+                      function onUp() {
+                        window.removeEventListener('touchmove', onMove)
+                        window.removeEventListener('touchend', onUp)
+                      }
+                      window.addEventListener('touchmove', onMove, { passive: false })
+                      window.addEventListener('touchend', onUp)
+                    }}
+                  >{ideaTitle || 'Your idea'}</div>
                 </div>
               )}
             </div>
