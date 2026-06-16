@@ -98,7 +98,7 @@ function GapReadOnly({ data, ideaTitle }) {
   const competitorsByStage = stages.map((_, i) => (data.competitors || []).filter(c => c.stage === i))
   return (
     <div style={{ padding: '0 1rem 1rem' }}>
-      <div style={{ position: 'relative', marginTop: '3rem' }}>
+      <div style={{ position: 'relative', marginTop: '3rem', minHeight: Math.max(...stages.map((_, i) => (competitorsByStage[i] || []).length)) * 28 + 140 }}>
         <div style={{ position: 'relative', height: 4, background: '#e5e5e5', borderRadius: 2, margin: '0 0 0' }}>
           <div style={{ position: 'absolute', left: pct(gapStart), width: `calc(${pct(gapEnd)} - ${pct(gapStart)})`, height: '100%', background: 'rgba(123,159,247,0.3)', borderRadius: 2 }} />
         </div>
@@ -119,7 +119,6 @@ function GapReadOnly({ data, ideaTitle }) {
         })}
         <div style={{ position: 'absolute', left: `calc((${pct(gapStart)} + ${pct(gapEnd)}) / 2)`, transform: 'translateX(-50%)', top: -42, fontSize: 12, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.95)', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(123,159,247,0.3)' }}>{ideaTitle || 'Your idea'}</div>
       </div>
-      <div style={{ height: Math.max(...stages.map((_, i) => (competitorsByStage[i] || []).length)) * 28 + 60 }} />
     </div>
   )
 }
