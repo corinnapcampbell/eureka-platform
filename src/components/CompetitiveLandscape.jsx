@@ -14,16 +14,23 @@ function parseValue(v) {
 }
 
 function getLabelStyle(pos, isSelf = false) {
-  const threshold = 0.55
-  const flip = pos > threshold
-  return {
+  const base = {
     position: 'absolute',
-    ...(flip ? { right: 14, left: 'auto' } : { left: 14 }),
+    fontSize: 12,
+    whiteSpace: 'nowrap',
+    background: 'rgba(255,255,255,0.92)',
+    padding: '2px 5px',
+    borderRadius: 4,
+    color: isSelf ? '#7b9ff7' : '#444',
+    fontWeight: isSelf ? 600 : 400,
     maxWidth: isSelf ? 140 : 110,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   }
+  if (pos === 'left')   return { ...base, right: 20, left: 'auto', top: -6 }
+  if (pos === 'top')    return { ...base, left: '50%', transform: 'translateX(-50%)', bottom: 20, top: 'auto' }
+  if (pos === 'bottom') return { ...base, left: '50%', transform: 'translateX(-50%)', top: 16 }
+  return { ...base, left: 16, top: -6 }
 }
 
 function snapLabelPos(dx, dy) {
