@@ -63,13 +63,13 @@ function MatrixReadOnly({ data, ideaTitle }) {
       {(data.competitors || []).map((c, i) => (
         <div key={i} style={{ position: 'absolute', left: `${c.x * 100}%`, top: `${(1 - c.y) * 100}%`, transform: 'translate(-50%,-50%)', zIndex: 2 }}>
           <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#888780', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }} />
-          <div style={{ position: 'absolute', left: 16, top: -6, fontSize: 12, color: '#444', whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '2px 5px', borderRadius: 4 }}>{c.name}</div>
+          <div style={{ position: 'absolute', ...(c.x > 0.65 ? { right: 20, left: 'auto' } : { left: 16 }), top: -6, fontSize: 12, color: '#444', whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '2px 5px', borderRadius: 4 }}>{c.name}</div>
         </div>
       ))}
       {data.self && (
         <div style={{ position: 'absolute', left: `${data.self.x * 100}%`, top: `${(1 - data.self.y) * 100}%`, transform: 'translate(-50%,-50%)', zIndex: 3 }}>
           <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#7b9ff7', border: '2px solid #fff', boxShadow: '0 1px 6px rgba(123,159,247,0.5)' }} />
-          <div style={{ position: 'absolute', left: 20, top: -6, fontSize: 12, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '2px 5px', borderRadius: 4 }}>{ideaTitle || 'Your idea'}</div>
+          <div style={{ position: 'absolute', ...(data.self.x > 0.65 ? { right: 24, left: 'auto' } : { left: 20 }), top: -6, fontSize: 12, color: '#7b9ff7', fontWeight: 600, whiteSpace: 'nowrap', background: 'rgba(255,255,255,0.92)', padding: '2px 5px', borderRadius: 4 }}>{ideaTitle || 'Your idea'}</div>
         </div>
       )}
     </div>
@@ -98,7 +98,7 @@ function GapReadOnly({ data, ideaTitle }) {
               <div style={{ fontSize: 11, color: inGap ? '#7b9ff7' : '#888780', textAlign: 'center', marginTop: 10, fontWeight: inGap ? 600 : 400, whiteSpace: 'nowrap' }}>{s}</div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginTop: 8 }}>
                 {stageCompetitors.map((c, j) => (
-                  <div key={j} style={{ background: '#f5f5f3', borderRadius: 5, padding: '3px 8px', fontSize: 11, color: '#555', whiteSpace: 'nowrap', border: '0.5px solid rgba(44,44,42,0.1)' }}>{c.name}</div>
+                  <div key={j} style={{ background: '#f5f5f3', borderRadius: 5, padding: '3px 8px', fontSize: 11, color: '#555', whiteSpace: 'nowrap', border: '0.5px solid rgba(44,44,42,0.1)', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
                 ))}
               </div>
             </div>
