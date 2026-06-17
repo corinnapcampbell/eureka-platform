@@ -39,24 +39,26 @@ function BMReadView({ raw }) {
         ))}
       </div>
       {models.includes('Freemium / SaaS') && freemium && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: 12 }}>
-          {freemium.freeTier && (
-            <div style={{ borderRadius: 10, border: '0.5px solid rgba(20,184,166,0.25)', borderTop: '3px solid #14b8a6', padding: '0.85rem 1rem' }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#14b8a6', marginBottom: '0.6rem' }}>🆓 Free Tier{freemium.paidPrice ? '' : ''}</p>
-              {freemium.freeTier.split('\n').filter(Boolean).map((line, i) => (
-                <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}><span style={{ color: '#14b8a6', fontWeight: 700, flexShrink: 0 }}>·</span><span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{line}</span></div>
+        (() => {
+          const displayTiers = (freemium.tiers && freemium.tiers.length)
+            ? freemium.tiers
+            : [
+                { name: 'Free Tier', features: freemium.freeTier || '' },
+                { name: `Paid Tier${freemium.paidPrice ? ' · ' + freemium.paidPrice : ''}`, features: [freemium.paidFeatures, freemium.paidLimits].filter(Boolean).join('\n') },
+              ].filter(t => t.features)
+          const tierColors = ['#14b8a6', '#8b5cf6', '#7b9ff7', '#f59e0b', '#22c55e']
+          return displayTiers.map((tier, ti) => (
+            <div key={ti} style={{ background: ti === 0 ? 'rgba(20,184,166,0.06)' : 'rgba(139,92,246,0.06)', border: `0.5px solid ${ti === 0 ? 'rgba(20,184,166,0.25)' : 'rgba(139,92,246,0.22)'}`, borderRadius: 10, padding: '0.75rem 1rem', flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: tierColors[ti] || '#7b9ff7', marginBottom: '0.6rem' }}>{tier.name || `Tier ${ti + 1}`}</p>
+              {(tier.features || '').split('\n').filter(Boolean).map((line, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 4 }}>
+                  <span style={{ color: tierColors[ti] || '#7b9ff7', fontSize: 10, marginTop: 3, flexShrink: 0 }}>•</span>
+                  <span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{line.trim()}</span>
+                </div>
               ))}
             </div>
-          )}
-          {(freemium.paidFeatures || freemium.paidPrice) && (
-            <div style={{ borderRadius: 10, border: '0.5px solid rgba(139,92,246,0.25)', borderTop: '3px solid #8b5cf6', padding: '0.85rem 1rem' }}>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#8b5cf6', marginBottom: '0.6rem' }}>⭐ Paid Tier{freemium.paidPrice ? ` · ${freemium.paidPrice}` : ''}</p>
-              {(freemium.paidFeatures || '').split('\n').filter(Boolean).map((line, i) => (
-                <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}><span style={{ color: '#8b5cf6', fontWeight: 700, flexShrink: 0 }}>·</span><span style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.5 }}>{line}</span></div>
-              ))}
-            </div>
-          )}
-        </div>
+          ))
+        })()
       )}
       {models.filter(m => m !== 'Freemium / SaaS').map(m => {
         const dataMap = { Marketplace: marketplace, Subscription: subscription, 'One-time Purchase': oneTime, Advertising: advertising, Licensing: licensing, 'Transaction Fees': transactionFees, 'Hardware + Software': hardwareSoftware, Other: other }
@@ -977,8 +979,14 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', margin: 0 }}>Revenue Projections</p>
-                  {idea.revenue_potential && <span style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 5, padding: '2px 8px', fontWeight: 500 }}>{idea.revenue_potential}</span>}
-                  {idea.business_stage && <span style={{ fontSize: 11, background: 'rgba(44,44,42,0.06)', color: '#555', borderRadius: 5, padding: '2px 8px', fontWeight: 500 }}>{idea.business_stage}</span>}
+                  {isOwner && inlineEdit.revenue_potential !== undefined
+                    ? <input value={inlineEdit.revenue_potential} onChange={e => setInlineEdit(v => ({ ...v, revenue_potential: e.target.value }))} onBlur={() => saveInlineField('revenue_potential')} style={{ fontSize: 11, borderRadius: 5, padding: '2px 8px', border: '1px solid #7b9ff7', color: '#7b9ff7', background: 'rgba(123,159,247,0.1)', width: 90, fontFamily: 'inherit' }} autoFocus />
+                    : <span onClick={() => isOwner && setInlineEdit(v => ({ ...v, revenue_potential: idea.revenue_potential || '' }))} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 5, padding: '2px 8px', fontWeight: 500, cursor: isOwner ? 'pointer' : 'default', border: isOwner ? '1px dashed rgba(123,159,247,0.4)' : 'none' }}>{idea.revenue_potential || (isOwner ? '+ revenue potential' : '')}</span>
+                  }
+                  {isOwner && inlineEdit.business_stage !== undefined
+                    ? <input value={inlineEdit.business_stage} onChange={e => setInlineEdit(v => ({ ...v, business_stage: e.target.value }))} onBlur={() => saveInlineField('business_stage')} style={{ fontSize: 11, borderRadius: 5, padding: '2px 8px', border: '1px solid #aaa', color: '#555', background: 'rgba(44,44,42,0.06)', width: 90, fontFamily: 'inherit' }} autoFocus />
+                    : <span onClick={() => isOwner && setInlineEdit(v => ({ ...v, business_stage: idea.business_stage || '' }))} style={{ fontSize: 11, background: 'rgba(44,44,42,0.06)', color: '#555', borderRadius: 5, padding: '2px 8px', fontWeight: 500, cursor: isOwner ? 'pointer' : 'default', border: isOwner ? '1px dashed rgba(44,44,42,0.2)' : 'none' }}>{idea.business_stage || (isOwner ? '+ stage' : '')}</span>
+                  }
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   {isOwner && isPaid && <button onClick={handleRevenueAISuggest} disabled={aiRevenueLoading} style={{ background: aiRevenueLoading ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '4px 10px', fontSize: 12, color: '#7b9ff7', cursor: aiRevenueLoading ? 'not-allowed' : 'pointer', fontWeight: 500 }}>{aiRevenueLoading ? '…thinking' : '✨ AI Suggest'}</button>}

@@ -70,9 +70,16 @@ export function extractBMChips(bmValue) {
   const free = [], paid = []
 
   if (models.includes('Freemium / SaaS') && freemium) {
-    if (freemium.freeTier) free.push(...freemium.freeTier.split('\n').map(s => s.trim()).filter(Boolean))
-    if (freemium.paidPrice) paid.push(freemium.paidPrice)
-    if (freemium.paidFeatures) paid.push(...freemium.paidFeatures.split('\n').map(s => s.trim()).filter(Boolean))
+    if (freemium.tiers && freemium.tiers.length) {
+      freemium.tiers.forEach((tier, ti) => {
+        const target = ti === 0 ? free : paid
+        if (tier.features) target.push(...tier.features.split('\n').map(s => s.trim()).filter(Boolean))
+      })
+    } else {
+      if (freemium.freeTier) free.push(...freemium.freeTier.split('\n').map(s => s.trim()).filter(Boolean))
+      if (freemium.paidPrice) paid.push(freemium.paidPrice)
+      if (freemium.paidFeatures) paid.push(...freemium.paidFeatures.split('\n').map(s => s.trim()).filter(Boolean))
+    }
   }
   if (models.includes('Subscription') && subscription?.tiers) {
     subscription.tiers.forEach(t => {
