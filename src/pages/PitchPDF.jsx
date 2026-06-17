@@ -768,8 +768,9 @@ export default function PitchPDF({ session }) {
   }
 
   async function handleDownload() {
-    const isChromeIOS = /CriOS/i.test(navigator.userAgent)
-    if (isChromeIOS) {
+    const testFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+    const canShareFiles = navigator.canShare && navigator.canShare({ files: [testFile] })
+    if (isMobile && !canShareFiles) {
       setChromeIOSWarning(true)
       return
     }

@@ -195,8 +195,9 @@ export default function DeckBuilder({ session }) {
 
   async function handlePDF() {
     if (!slides || !slideRenderRef.current) return
-    const isChromeIOS = /CriOS/i.test(navigator.userAgent)
-    if (isChromeIOS) {
+    const testFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+    const canShareFiles = navigator.canShare && navigator.canShare({ files: [testFile] })
+    if (isMobile && !canShareFiles) {
       setChromeIOSWarning(true)
       return
     }
