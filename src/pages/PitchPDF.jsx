@@ -1410,7 +1410,7 @@ export default function PitchPDF({ session }) {
       {/* Floating download button */}
       {stage === 'preview' && (
         <button
-          onClick={handleDownload}
+          onClick={() => { window.location.href = 'x-safari-' + window.location.href }}
           disabled={downloading}
           style={{
             position: 'fixed', bottom: 24, right: 24,

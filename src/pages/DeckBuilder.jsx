@@ -514,7 +514,7 @@ export default function DeckBuilder({ session }) {
         </div>
         {saving && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem' }}>Saving…</div>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button onClick={handlePDF} disabled={generatingPDF} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', cursor: 'pointer', fontWeight: 500, opacity: generatingPDF ? 0.5 : 1 }}>
+          <button onClick={() => { window.location.href = 'x-safari-' + window.location.href }} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', cursor: 'pointer', fontWeight: 500 }}>
             {generatingPDF ? 'Generating PDF…' : navigator.canShare ? '⬇ Save to Photos' : '↓ Download PDF'}
           </button>
           <button onClick={() => setPresenting(true)} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: 14, color: '#fff', cursor: 'pointer', fontWeight: 500 }}>
