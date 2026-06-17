@@ -514,9 +514,9 @@ export default function DeckBuilder({ session }) {
         </div>
         {saving && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: '0.75rem' }}>Saving…</div>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button onClick={() => { window.location.href = 'x-safari-' + window.location.href }} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', cursor: 'pointer', fontWeight: 500 }}>
-            {generatingPDF ? 'Generating PDF…' : navigator.canShare ? '⬇ Save to Photos' : '↓ Download PDF'}
-          </button>
+          <a href={'x-safari-https://myeurekaidea.com' + window.location.pathname} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+            ⬇ Save to Photos
+          </a>
           <button onClick={() => setPresenting(true)} style={{ width: '100%', minHeight: 44, background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: 14, color: '#fff', cursor: 'pointer', fontWeight: 500 }}>
             ▶ Present
           </button>

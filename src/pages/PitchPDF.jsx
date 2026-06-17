@@ -1409,22 +1409,18 @@ export default function PitchPDF({ session }) {
 
       {/* Floating download button */}
       {stage === 'preview' && (
-        <button
-          onClick={() => { window.location.href = 'x-safari-' + window.location.href }}
-          disabled={downloading}
+        <a
+          href={'x-safari-https://myeurekaidea.com' + window.location.pathname}
           style={{
             position: 'fixed', bottom: 24, right: 24,
             background: 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
             color: '#fff', border: 'none', borderRadius: 50, padding: '13px 20px',
-            fontSize: 14, fontWeight: 600, cursor: downloading ? 'not-allowed' : 'pointer',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer',
             boxShadow: '0 4px 20px rgba(123,159,247,0.45)',
-            opacity: downloading ? 0.7 : 1,
             display: 'flex', alignItems: 'center', gap: 6,
-            transition: 'opacity 0.15s',
+            textDecoration: 'none',
           }}
-        >
-          {downloading ? '…Generating' : isMobile ? '⬇ Save to Photos' : '⬇ Download PDF'}
-        </button>
+        >⬇ Save to Photos</a>
       )}
 
       {stage === 'preview-desktop' && (
