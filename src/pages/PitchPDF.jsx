@@ -536,7 +536,7 @@ export default function PitchPDF({ session }) {
   const [generating,       setGenerating]       = useState(false)
   const [savingProgress,   setSavingProgress]   = useState(false)
   const previewRef = useRef(null)
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent)
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
 
   const [bmValue,           setBmValue]           = useState(null)
 
@@ -872,6 +872,10 @@ export default function PitchPDF({ session }) {
   }
 
   async function handleDownloadDesktop() {
+    if (/CriOS/i.test(navigator.userAgent)) {
+      window.location.href = 'x-safari-' + window.location.href
+      return
+    }
     if (!previewHTML) return
     setDownloading(true)
     try {
