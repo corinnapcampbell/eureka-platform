@@ -195,21 +195,56 @@ function Shell({ title, onRemove, t, children }) {
 // ─── Pre-built model cards ────────────────────────────────────────────────────
 
 function FreemiumCard({ data, onChange, onRemove, t }) {
-  const u = (k, v) => onChange({ ...data, [k]: v })
+  // Migrate old shape {freeTier, paidFeatures, paidPrice, paidLimits} to new tiers shape
+  const rawTiers = data.tiers && data.tiers.length
+    ? data.tiers
+    : [
+        { name: 'Free tier', features: data.freeTier || '' },
+        { name: 'Paid tier', features: [data.paidPrice, data.paidFeatures, data.paidLimits].filter(Boolean).join('\n') },
+      ].filter(t => t.name || t.features)
+
+  const tiers = rawTiers.length ? rawTiers : [{ name: 'Free tier', features: '' }]
+
+  function updTier(i, k, v) {
+    onChange({ ...data, tiers: tiers.map((tier, idx) => idx === i ? { ...tier, [k]: v } : tier) })
+  }
+  function addTier() {
+    onChange({ ...data, tiers: [...tiers, { name: '', features: '' }] })
+  }
+  function delTier(i) {
+    if (tiers.length <= 1) return
+    onChange({ ...data, tiers: tiers.filter((_, idx) => idx !== i) })
+  }
+
   return (
     <Shell title="Freemium / SaaS" onRemove={onRemove} t={t}>
-      <Fld label="Free tier — what's included" t={t}>
-        <textarea style={textareaStyle(t)} rows={3} value={data.freeTier || ''} onChange={e => u('freeTier', e.target.value)} placeholder="List features available for free" />
-      </Fld>
-      <Fld label="Paid tier — price point" t={t}>
-        <input style={inputStyle(t)} value={data.paidPrice || ''} onChange={e => u('paidPrice', e.target.value)} placeholder="e.g. $9/mo, $99/yr" />
-      </Fld>
-      <Fld label="Paid tier — what's included" t={t}>
-        <textarea style={textareaStyle(t)} rows={3} value={data.paidFeatures || ''} onChange={e => u('paidFeatures', e.target.value)} placeholder="List premium features" />
-      </Fld>
-      <Fld label="Paid tier — limits / caps" t={t}>
-        <textarea style={textareaStyle(t)} rows={2} value={data.paidLimits || ''} onChange={e => u('paidLimits', e.target.value)} placeholder="e.g. up to 5 users, 10GB storage" />
-      </Fld>
+      {tiers.map((tier, i) => (
+        <div key={i} style={{ background: T[t].innerBg, border: T[t].innerBorder, borderRadius: 8, padding: '0.75rem 1rem', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <input
+              style={{ ...inputStyle(t), fontWeight: 500, fontSize: 12, flex: 1, marginRight: 8 }}
+              value={tier.name || ''}
+              onChange={e => updTier(i, 'name', e.target.value)}
+              placeholder={`Tier ${i + 1} name (e.g. Free, Pro, Enterprise)`}
+            />
+            {tiers.length > 1 && (
+              <button onClick={() => delTier(i)} style={{ background: 'none', border: 'none', color: T[t].removeColor, cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}>✕</button>
+            )}
+          </div>
+          <Fld label="What's included (one item per line)" t={t}>
+            <textarea
+              style={textareaStyle(t)}
+              rows={4}
+              value={tier.features || ''}
+              onChange={e => updTier(i, 'features', e.target.value)}
+              placeholder={`List features for this tier, one per line`}
+            />
+          </Fld>
+        </div>
+      ))}
+      <button onClick={addTier} style={{ width: '100%', background: 'none', border: T[t].addBorder, borderRadius: 7, padding: '8px', fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontFamily: 'inherit' }}>
+        + Add tier
+      </button>
     </Shell>
   )
 }

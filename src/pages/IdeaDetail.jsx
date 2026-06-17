@@ -1189,7 +1189,11 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 </div>
               </>
             ) : idea.risks ? (
-              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.risks}</p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>
+                {idea.risks.split('\n').filter(l => l.trim()).map((line, i) => (
+                  <li key={i}>{line.trim()}</li>
+                ))}
+              </ul>
             ) : (
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to list your risks & challenges</p>
             )}
@@ -1214,7 +1218,11 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 </div>
               </>
             ) : idea.next_steps ? (
-              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>{idea.next_steps}</p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.8, color: '#2c2c2a' }}>
+                {idea.next_steps.split('\n').filter(l => l.trim()).map((line, i) => (
+                  <li key={i}>{line.trim()}</li>
+                ))}
+              </ul>
             ) : (
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to outline your next steps</p>
             )}
