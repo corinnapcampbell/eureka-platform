@@ -44,6 +44,7 @@ export default function DeckBuilder({ session }) {
   const [current, setCurrent] = useState(0)
   const [presenting, setPresenting] = useState(false)
   const [shareModal, setShareModal] = useState(false)
+  const [chromeIOSWarning, setChromeIOSWarning] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -194,6 +195,11 @@ export default function DeckBuilder({ session }) {
 
   async function handlePDF() {
     if (!slides || !slideRenderRef.current) return
+    const isChromeIOS = /CriOS/i.test(navigator.userAgent)
+    if (isChromeIOS) {
+      setChromeIOSWarning(true)
+      return
+    }
     setGeneratingPDF(true)
 
     if (isMobile) {
@@ -292,6 +298,19 @@ export default function DeckBuilder({ session }) {
 
   return (
     <div className={`pb-view-${mobileView}`} style={{ background: '#12121f' }}>
+      {chromeIOSWarning && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+          background: '#0e0e1f', color: '#fff', textAlign: 'center',
+          padding: '14px 20px', fontSize: 14, fontWeight: 500,
+        }}>
+          To save to Photos, please open this page in Safari.
+          <button onClick={() => setChromeIOSWarning(false)} style={{
+            marginLeft: 12, background: 'none', border: '1px solid rgba(255,255,255,0.4)',
+            color: '#fff', borderRadius: 6, padding: '2px 10px', cursor: 'pointer', fontSize: 13,
+          }}>✕</button>
+        </div>
+      )}
       <style>{DECK_CSS}</style>
 
       {/* ── DESKTOP FULL LAYOUT (hidden on mobile) ─────────────────────────── */}
