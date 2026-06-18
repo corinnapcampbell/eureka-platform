@@ -43,7 +43,7 @@ export default function Auth() {
         <Logo size={24} variant="light" />
       </div>
 
-      {isSignup ? (
+      {isSignup || planStep ? (
         <div style={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
           <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink)', marginBottom: '0.75rem' }}>Coming Soon</h2>
           <p style={{ fontSize: 15, color: 'var(--muted)', lineHeight: 1.6, marginBottom: '2rem' }}>
@@ -155,10 +155,10 @@ export default function Auth() {
         </form>
  
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: 14, color: 'var(--muted)' }}>
-          {isSignup ? 'Already have an account? ' : "Don't have an account? "}
-          <span onClick={() => { setIsSignup(!isSignup); setError(''); setMessage('') }}
+          Already have an account?{' '}
+          <span onClick={() => { setIsSignup(false); setPlanStep(false); setError(''); setMessage('') }}
             style={{ color: 'var(--gold)', cursor: 'pointer', fontWeight: 500 }}>
-            {isSignup ? 'Sign in' : 'Sign up free'}
+            Sign in
           </span>
         </p>
       </div>
