@@ -42,7 +42,19 @@ export default function Auth() {
       <div onClick={() => navigate('/')} style={{ marginBottom: '2rem', cursor: 'pointer' }}>
         <Logo size={24} variant="light" />
       </div>
- 
+
+      {isSignup ? (
+        <div style={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
+          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink)', marginBottom: '0.75rem' }}>Coming Soon</h2>
+          <p style={{ fontSize: 15, color: 'var(--muted)', lineHeight: 1.6, marginBottom: '2rem' }}>
+            eurekAIdea is currently in private beta. We'll let you know when we're ready for you.
+          </p>
+          <button onClick={() => { setIsSignup(false) }} style={{ background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 28px', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+            Sign in instead
+          </button>
+        </div>
+      ) : (
+
       {isSignup && planStep ? (
         <div style={{ width: '100%', maxWidth: 720 }}>
           <h2 className="serif animate-fadeUp" style={{ fontSize: 28, textAlign: 'center', marginBottom: '0.5rem' }}>Choose your plan</h2>
@@ -150,6 +162,8 @@ export default function Auth() {
           </span>
         </p>
       </div>
+      )}
+    </div>
       )}
     </div>
   )
