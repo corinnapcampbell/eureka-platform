@@ -627,19 +627,24 @@ export default function SharedIdea() {
 
         {(idea.who_pays || idea.revenue_streams || idea.pricing_power || idea.revenue_potential || idea.business_stage) && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Revenue Details</p>
-            {[
-              { key: 'who_pays', label: 'Who pays' },
-              { key: 'revenue_streams', label: 'Revenue streams' },
-              { key: 'pricing_power', label: 'Pricing power' },
-              { key: 'revenue_potential', label: 'Revenue potential' },
-              { key: 'business_stage', label: 'Business stage' },
-            ].filter(({ key }) => idea[key]).map(({ key, label }) => (
-              <div key={key} style={{ marginBottom: '0.75rem' }}>
-                <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#aaa', marginBottom: 3 }}>{label}</p>
-                <p style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.6, margin: 0 }}>{idea[key]}</p>
-              </div>
-            ))}
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1.25rem' }}>Revenue Details</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+              {[
+                { key: 'who_pays', label: 'Who pays', icon: '👤' },
+                { key: 'revenue_streams', label: 'Revenue streams', icon: '💰' },
+                { key: 'pricing_power', label: 'Pricing power', icon: '⚡' },
+                { key: 'revenue_potential', label: 'Revenue potential', icon: '📈' },
+                { key: 'business_stage', label: 'Business stage', icon: '🎯' },
+              ].filter(({ key }) => idea[key]).map(({ key, label, icon }) => (
+                <div key={key} style={{ background: 'rgba(123,159,247,0.04)', border: '0.5px solid rgba(123,159,247,0.12)', borderRadius: 10, padding: '0.875rem 1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 12 }}>{icon}</span>
+                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#7b9ff7', margin: 0 }}>{label}</p>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.6, margin: 0 }}>{idea[key]}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -653,12 +658,14 @@ export default function SharedIdea() {
 
         {/* Competitive Landscape */}
         {idea.competitive_landscape && (
-          <CompetitiveLandscape
-            value={idea.competitive_landscape}
-            isOwner={false}
-            isPaid={false}
-            ideaTitle={idea.title}
-          />
+          <div style={{ marginBottom: '1.25rem' }}>
+            <CompetitiveLandscape
+              value={idea.competitive_landscape}
+              isOwner={false}
+              isPaid={false}
+              ideaTitle={idea.title}
+            />
+          </div>
         )}
 
         {/* Team */}
@@ -802,6 +809,30 @@ export default function SharedIdea() {
             </div>
           )
         })()}
+
+        {/* Risks & Challenges */}
+        {idea.risks && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Risks & Challenges</p>
+            <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+              {idea.risks.split('\n').filter(r => r.trim()).map((risk, i) => (
+                <li key={i} style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.75, marginBottom: 4 }}>{risk.replace(/^[-•*]\s*/, '')}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Next Steps */}
+        {idea.next_steps && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem' }}>Next Steps</p>
+            <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+              {idea.next_steps.split('\n').filter(s => s.trim()).map((step, i) => (
+                <li key={i} style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.75, marginBottom: 4 }}>{step.replace(/^[-•*]\s*/, '')}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Card 5: Pitch Documents — only shown when at least one is published */}
         {(idea.pdf_published || idea.deck_published) && (
