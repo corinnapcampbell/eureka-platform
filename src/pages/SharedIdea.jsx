@@ -618,7 +618,8 @@ export default function SharedIdea() {
           const renderTiers = () => {
             const tiers = []
             for (const modelType of bmVal.models) {
-              const key = modelType.toLowerCase().replace(/\s*\/\s*/g,'_').replace(/\s+/g,'_').replace(/[^a-z_]/g,'')
+              const BM_TYPE_KEY = {'Freemium / SaaS':'freemium','Marketplace':'marketplace','Subscription':'subscription','One-time Purchase':'oneTime','Advertising':'advertising','Licensing':'licensing','Transaction Fees':'transactionFees','Hardware + Software':'hardwareSoftware','Other':'other'}
+              const key = BM_TYPE_KEY[modelType] || modelType.toLowerCase().replace(/[^a-z]/g,'')
               const data = bmVal[key] || bmVal[modelType] || {}
               if (modelType === 'Freemium / SaaS') {
                 const freeItems = (data.freeTier||'').split('\n').map(s=>s.trim()).filter(Boolean)
