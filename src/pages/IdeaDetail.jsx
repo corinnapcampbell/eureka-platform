@@ -126,6 +126,9 @@ export default function IdeaDetail({ session }) {
   const [teaseSuggesting, setTeaseSuggesting] = useState(false)
   const [teaseSuggestion, setTeaseSuggestion] = useState(null)
   const [publishingScore, setPublishingScore] = useState(false)
+  const [prePublishModal, setPrePublishModal] = useState(false)
+  const [prePublishLoading, setPrePublishLoading] = useState(false)
+  const [prePublishSuggestions, setPrePublishSuggestions] = useState([])
   const [scorecardKey, setScorecardKey] = useState(0)
 
   const startEditRef = useRef(null)
@@ -381,6 +384,60 @@ export default function IdeaDetail({ session }) {
       setDeckInfo(null)
     }
     setPublishing(null)
+  }
+
+  async function handlePrePublish() {
+    if (!isPaid) { publishAndScore(); return }
+    setPrePublishModal(true)
+    setPrePublishLoading(true)
+    setPrePublishSuggestions([])
+    try {
+      const prompt = `You are an expert startup pitch coach. Review this idea pitch and return ONLY a JSON array of exactly 3 improvement suggestions for the weakest sections. No explanation, no markdown, just the JSON array.
+
+Idea: "${idea.title}"
+Problem: ${idea.problem || 'not filled in'}
+Solution: ${idea.solution || 'not filled in'}
+How it works: ${idea.how_it_works || 'not filled in'}
+Target audience: ${idea.target_audience || 'not filled in'}
+Market size: ${idea.market_size || 'not filled in'}
+Competitive advantage: ${idea.competitive_advantage || 'not filled in'}
+Business model: ${idea.business_model || 'not filled in'}
+Risks: ${idea.risks || 'not filled in'}
+Next steps: ${idea.next_steps || 'not filled in'}
+
+Return exactly this format:
+[
+  { "field": "problem", "label": "Problem", "issue": "one sentence describing the weakness", "rewrite": "improved version of the text" },
+  { "field": "solution", "label": "Solution", "issue": "one sentence describing the weakness", "rewrite": "improved version of the text" },
+  { "field": "competitive_advantage", "label": "Competitive Advantage", "issue": "one sentence describing the weakness", "rewrite": "improved version of the text" }
+]
+
+Pick the 3 weakest fields from: problem, solution, how_it_works, competitive_advantage, risks, next_steps, target_audience. Return only the JSON array.`
+
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-scorecard`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = await res.json()
+      const text = typeof data === 'string' ? data : JSON.stringify(data)
+      const clean = text.replace(/```json|```/g, '').trim()
+      const suggestions = JSON.parse(clean.startsWith('[') ? clean : clean.slice(clean.indexOf('[')))
+      setPrePublishSuggestions(suggestions)
+    } catch (e) {
+      console.error('Pre-publish review failed:', e)
+      setPrePublishSuggestions([])
+    }
+    setPrePublishLoading(false)
+  }
+
+  async function applyPrePublishSuggestion(field, rewrite) {
+    await supabase.from('ideas').update({ [field]: rewrite }).eq('id', id)
+    setIdea(prev => ({ ...prev, [field]: rewrite }))
+    setPrePublishSuggestions(prev => prev.filter(s => s.field !== field))
   }
 
   async function publishAndScore() {
@@ -655,6 +712,62 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
         </div>
       </div>
 
+      {prePublishModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,14,31,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 560, maxHeight: '85vh', overflowY: 'auto', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+              <div>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0e0e1f', margin: 0 }}>✨ AI Pitch Review</h2>
+                <p style={{ fontSize: 13, color: '#888780', margin: '4px 0 0' }}>Review suggestions before your idea gets scored</p>
+              </div>
+              <button onClick={() => setPrePublishModal(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#888', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {prePublishLoading ? (
+              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div className="spinner" style={{ margin: '0 auto 1rem' }} />
+                <p style={{ fontSize: 14, color: '#888780' }}>Reviewing your pitch…</p>
+              </div>
+            ) : prePublishSuggestions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '1rem 0 2rem' }}>
+                <p style={{ fontSize: 15, color: '#2c2c2a', marginBottom: '1.5rem' }}>Your pitch looks strong! Ready to publish and score.</p>
+                <button
+                  onClick={() => { setPrePublishModal(false); publishAndScore() }}
+                  style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+                >✨ Publish & Score</button>
+              </div>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: '#888780', marginBottom: '1.25rem' }}>We found {prePublishSuggestions.length} section{prePublishSuggestions.length > 1 ? 's' : ''} to strengthen. Apply suggestions or skip and publish.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: '1.5rem' }}>
+                  {prePublishSuggestions.map((s, i) => (
+                    <div key={i} style={{ background: 'rgba(123,159,247,0.04)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 12, padding: '1rem 1.25rem' }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#7b9ff7', marginBottom: 4 }}>{s.label}</p>
+                      <p style={{ fontSize: 13, color: '#e24b4a', marginBottom: 8, lineHeight: 1.5 }}>⚠ {s.issue}</p>
+                      <p style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.6, marginBottom: 10, fontStyle: 'italic' }}>"{s.rewrite}"</p>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          onClick={() => applyPrePublishSuggestion(s.field, s.rewrite)}
+                          style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 7, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+                        >Apply</button>
+                        <button
+                          onClick={() => setPrePublishSuggestions(prev => prev.filter((_, j) => j !== i))}
+                          style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#888780', cursor: 'pointer' }}
+                        >Skip</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => { setPrePublishModal(false); publishAndScore() }}
+                  style={{ width: '100%', background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 10, padding: '12px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+                >✨ Publish & Score</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* White content area */}
       <div style={{ maxWidth: 820, margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
 
@@ -663,7 +776,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             {((idea.publish_count || 0) < 3 || !idea.is_published) ? (
               <div style={{ marginBottom: '1.25rem' }}>
                 <button
-                  onClick={publishAndScore}
+                  onClick={handlePrePublish}
                   disabled={publishingScore}
                   style={{
                     background: publishingScore ? 'rgba(123,159,247,0.4)' : 'linear-gradient(90deg,#7b9ff7,#9b7ff7)',
