@@ -7,7 +7,6 @@ import { parseBMValue, buildBMHtml, buildSnapshotHTML } from '../utils/businessM
 import { ScaledSlide } from '../components/DeckSlides'
 import AIScorecard from '../components/AIScorecard'
 import CompetitiveLandscape from '../components/CompetitiveLandscape'
-import BusinessModelSection from '../components/BusinessModelSection'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 
@@ -604,24 +603,64 @@ export default function SharedIdea() {
         {/* Card 4: Business Model (conditional) */}
         {idea.business_model && (() => {
           const bmVal = parseBMValue(idea.business_model)
-          const bmHtml = buildBMHtml(bmVal)
-          if (!bmHtml) return null
+          if (!bmVal?.models?.length) return null
+          const TIER_COLORS = {
+            'Free': '#22c55e', 'Free Tier': '#22c55e',
+            'Protection Pack': '#7b9ff7', 'Score Insights': '#9b7ff7',
+            'Pro': '#f59e0b', 'Paid': '#9b7ff7', 'Paid Tier': '#9b7ff7',
+          }
+          const getColor = (label) => {
+            for (const [k, v] of Object.entries(TIER_COLORS)) {
+              if (label?.toLowerCase().includes(k.toLowerCase())) return v
+            }
+            return '#7b9ff7'
+          }
+          const renderTiers = () => {
+            const tiers = []
+            for (const modelType of bmVal.models) {
+              const key = modelType.toLowerCase().replace(/\s*\/\s*/g,'_').replace(/\s+/g,'_').replace(/[^a-z_]/g,'')
+              const data = bmVal[key] || bmVal[modelType] || {}
+              if (modelType === 'Freemium / SaaS') {
+                const freeItems = (data.freeTier||'').split('\n').map(s=>s.trim()).filter(Boolean)
+                const paidItems = (data.paidFeatures||'').split('\n').map(s=>s.trim()).filter(Boolean)
+                if (freeItems.length) tiers.push({ label: 'Free Tier', items: freeItems, color: '#22c55e' })
+                if (paidItems.length) tiers.push({ label: `Paid Tier${data.paidPrice ? ` — ${data.paidPrice}` : ''}`, items: paidItems, color: '#9b7ff7' })
+              } else if (modelType === 'Subscription' && data.tiers?.length) {
+                data.tiers.forEach(t => {
+                  const items = (t.features||'').split('\n').map(s=>s.trim()).filter(Boolean)
+                  if (items.length) tiers.push({ label: `${t.name||'Tier'}${t.price ? ` — ${t.price}` : ''}`, items, color: getColor(t.name) })
+                })
+              } else if (data.cards?.length) {
+                data.cards.forEach(c => {
+                  const items = (c.items||[]).map(s=>s.trim()).filter(Boolean)
+                  if (items.length) tiers.push({ label: c.title||modelType, items, color: getColor(c.title) })
+                })
+              } else {
+                const entries = Object.entries(data).filter(([k,v])=>typeof v==='string'&&v&&k!=='name')
+                if (entries.length) tiers.push({ label: data.name||modelType, items: entries.map(([k,v])=>v), color: getColor(modelType) })
+              }
+            }
+            return tiers
+          }
+          const tiers = renderTiers()
+          if (!tiers.length) return null
+          const modelLabel = bmVal.models.join(' / ')
           return (
             <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-              <style>{`
-                .bm-investor .twocards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-                .bm-investor .card{background:#f8f8fc;border-radius:8px;padding:11px;box-sizing:border-box}
-                .bm-investor .card.bl{border-top:3px solid #7b9ff7}
-                .bm-investor .card.pu{border-top:3px solid #9b7ff7}
-                .bm-investor .cicon{font-size:18px;margin-bottom:5px}
-                .bm-investor .clabel{font-size:8px;letter-spacing:2px;color:#9b7ff7;text-transform:uppercase;font-weight:600;margin-bottom:5px}
-                .bm-investor .ctext{font-size:11px;color:#555;line-height:1.6}
-                .bm-investor .stext{font-size:12px;color:#333;line-height:1.7}
-                .bm-investor .bm-model-title{font-family:'Outfit',sans-serif;font-weight:400;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#7b9ff7;margin:14px 0 8px 0;padding-bottom:5px;border-bottom:1px solid rgba(123,159,247,0.2)}
-                .bm-investor .bm-model-title:first-child{margin-top:0}
-              `}</style>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Business Model</p>
-              <BusinessModelSection value={bmVal} onChange={null} readOnly={true} />
+              <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 500, color: '#7b9ff7', background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 20, padding: '3px 12px', marginBottom: '1.25rem' }}>{modelLabel}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {tiers.map((tier, i) => (
+                  <div key={i} style={{ background: tier.color + '08', border: `0.5px solid ${tier.color}30`, borderRadius: 10, padding: '0.875rem 1rem', borderLeft: `3px solid ${tier.color}` }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: tier.color, marginBottom: 8 }}>{tier.label}</p>
+                    <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+                      {tier.items.map((item, j) => (
+                        <li key={j} style={{ fontSize: 13, color: '#2c2c2a', lineHeight: 1.7, marginBottom: 2 }}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             </div>
           )
         })()}
