@@ -7,6 +7,7 @@ import { parseBMValue, buildBMHtml, buildSnapshotHTML } from '../utils/businessM
 import { ScaledSlide } from '../components/DeckSlides'
 import AIScorecard from '../components/AIScorecard'
 import CompetitiveLandscape from '../components/CompetitiveLandscape'
+import BusinessModelSection from '../components/BusinessModelSection'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 
@@ -620,7 +621,7 @@ export default function SharedIdea() {
                 .bm-investor .bm-model-title:first-child{margin-top:0}
               `}</style>
               <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '0.75rem' }}>Business Model</p>
-              <div className="bm-investor" dangerouslySetInnerHTML={{ __html: bmHtml }} />
+              <BusinessModelSection value={bmVal} onChange={null} readOnly={true} />
             </div>
           )
         })()}
