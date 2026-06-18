@@ -767,7 +767,6 @@ export default function PitchPDF({ session }) {
   }
 
   async function handleDownload() {
-    alert('UA: ' + navigator.userAgent.slice(0, 120) + ' | isMobile: ' + isMobile + ' | CriOS: ' + /CriOS/i.test(navigator.userAgent))
     if (isMobile && /CriOS/i.test(navigator.userAgent)) {
       window.location.href = 'x-safari-' + window.location.href
       return
