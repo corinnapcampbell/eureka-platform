@@ -773,7 +773,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
 
         {isOwner && (
           <>
-            {((idea.publish_count || 0) < 3 || !idea.is_published) ? (
+            {(isPaid || (idea.publish_count || 0) < 3 || !idea.is_published) ? (
               <div style={{ marginBottom: '1.25rem' }}>
                 <button
                   onClick={handlePrePublish}
