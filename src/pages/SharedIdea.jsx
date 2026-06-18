@@ -348,6 +348,11 @@ export default function SharedIdea() {
             {idea.title}
           </h1>
         </div>
+          {idea.product_image_url && (
+            <div style={{ marginBottom: '1.25rem', borderRadius: 14, overflow: 'hidden' }}>
+              <img src={idea.product_image_url} alt="Product" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', display: 'block' }} />
+            </div>
+          )}
 
         {/* Blurred preview card */}
         <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
@@ -881,6 +886,21 @@ export default function SharedIdea() {
                 <li key={i} style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.75, marginBottom: 4 }}>{step.replace(/^[-•*]\s*/, '')}</li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {idea.support_files && idea.support_files.length > 0 && (
+          <div style={{ background: '#fff', border: '0.5px solid rgba(0,0,0,0.08)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#888780', marginBottom: '1rem' }}>Support Files</p>
+            {idea.support_files.map((f) => (
+              <div key={f.id} style={{ marginBottom: 12 }}>
+                <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 14, color: '#7b9ff7', fontWeight: 500, textDecoration: 'none' }}>{f.name} ↗</a>
+                {f.show_preview && f.type === 'image' && <img src={f.url} alt={f.name} style={{ width: '100%', borderRadius: 8, marginTop: 8, display: 'block' }} />}
+                {f.show_preview && f.type === 'video_link' && (
+                  <iframe src={f.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').replace('vimeo.com/', 'player.vimeo.com/video/')} style={{ width: '100%', height: 220, borderRadius: 8, marginTop: 8, border: 'none' }} allowFullScreen />
+                )}
+              </div>
+            ))}
           </div>
         )}
 

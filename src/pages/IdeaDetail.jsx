@@ -130,6 +130,9 @@ export default function IdeaDetail({ session }) {
   const [prePublishLoading, setPrePublishLoading] = useState(false)
   const [prePublishSuggestions, setPrePublishSuggestions] = useState([])
   const [scorecardKey, setScorecardKey] = useState(0)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const [supportFiles, setSupportFiles] = useState([])
 
   const startEditRef = useRef(null)
 
@@ -151,6 +154,7 @@ export default function IdeaDetail({ session }) {
         .eq('id', id)
         .single()
       setIdea(data)
+      if (data?.support_files) setSupportFiles(data.support_files)
       if (data) setEditForm({
         title: data.title || '',
         category: data.category || [],
@@ -625,6 +629,41 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               </div>
             )}
           </div>
+          {/* HERO IMAGE */}
+          {(idea.product_image_url || isOwner) && (
+            <div style={{ marginBottom: '1.25rem', borderRadius: 14, overflow: 'hidden', background: '#fff', border: '0.5px solid rgba(0,0,0,0.08)' }}>
+              {idea.product_image_url ? (
+                <div style={{ position: 'relative' }}>
+                  <img src={idea.product_image_url} alt="Product" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', display: 'block' }} />
+                  {isOwner && (
+                    <button onClick={async () => {
+                      await supabase.from('ideas').update({ product_image_url: null }).eq('id', id)
+                      setIdea(v => ({ ...v, product_image_url: null }))
+                    }} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Remove</button>
+                  )}
+                </div>
+              ) : isOwner ? (
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '1.25rem', cursor: 'pointer', color: '#7b9ff7', fontSize: 14, fontWeight: 500 }}>
+                  {uploadingImage ? 'Uploading…' : '+ Add product image'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                    const file = e.target.files[0]
+                    if (!file) return
+                    setUploadingImage(true)
+                    const ext = file.name.split('.').pop()
+                    const path = `${id}/hero.${ext}`
+                    const { error } = await supabase.storage.from('idea-assets').upload(path, file, { upsert: true })
+                    if (!error) {
+                      const { data: { publicUrl } } = supabase.storage.from('idea-assets').getPublicUrl(path)
+                      await supabase.from('ideas').update({ product_image_url: publicUrl }).eq('id', id)
+                      setIdea(v => ({ ...v, product_image_url: publicUrl }))
+                    }
+                    setUploadingImage(false)
+                  }} />
+                </label>
+              ) : null}
+            </div>
+          )}
+
           {/* Tagline */}
           {(idea.tagline || isOwner) && (
             <div id="section-tagline" style={{ marginBottom: '0.5rem' }}>
@@ -1351,6 +1390,71 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             <AIChallenge sectionKey="next_steps" sectionLabel="Next Steps" content={idea.next_steps} isPaid={isPaid} />
           </div>
         )}
+
+          {/* SUPPORT FILES */}
+          {(supportFiles.length > 0 || isOwner) && (
+            <div style={{ background: '#fff', border: '0.5px solid rgba(0,0,0,0.08)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#888780', marginBottom: '1rem' }}>Support Files</p>
+              {supportFiles.map((f, i) => (
+                <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '0.65rem 0.85rem', borderRadius: 10, border: '0.5px solid rgba(0,0,0,0.07)', background: 'rgba(123,159,247,0.03)' }}>
+                  <input value={f.name} onChange={async (e) => {
+                    const updated = supportFiles.map((x, xi) => xi === i ? { ...x, name: e.target.value } : x)
+                    setSupportFiles(updated)
+                    await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                  }} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13, color: '#2c2c2a', fontWeight: 500, outline: 'none' }} />
+                  <button onClick={() => {
+                    const updated = supportFiles.map((x, xi) => xi === i ? { ...x, show_preview: !x.show_preview } : x)
+                    setSupportFiles(updated)
+                    supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                  }} style={{ fontSize: 11, color: f.show_preview ? '#7b9ff7' : '#aaa', border: '0.5px solid currentColor', borderRadius: 6, padding: '2px 8px', background: 'transparent', cursor: 'pointer' }}>{f.show_preview ? 'Preview ON' : 'Preview OFF'}</button>
+                  <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#7b9ff7', textDecoration: 'none' }}>Open ↗</a>
+                  <button onClick={async () => {
+                    const updated = supportFiles.filter((_, xi) => xi !== i)
+                    setSupportFiles(updated)
+                    await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                  }} style={{ fontSize: 11, color: '#e57373', background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>
+                  {f.show_preview && f.type === 'image' && <img src={f.url} alt={f.name} style={{ width: '100%', borderRadius: 8, marginTop: 6, display: 'block' }} />}
+                  {f.show_preview && f.type === 'video_link' && (
+                    <iframe src={f.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').replace('vimeo.com/', 'player.vimeo.com/video/')} style={{ width: '100%', height: 220, borderRadius: 8, marginTop: 6, border: 'none' }} allowFullScreen />
+                  )}
+                </div>
+              ))}
+              {isOwner && (
+                <div style={{ display: 'flex', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+                  <label style={{ fontSize: 13, color: '#7b9ff7', fontWeight: 500, cursor: 'pointer', padding: '6px 14px', border: '0.5px solid #7b9ff7', borderRadius: 8 }}>
+                    {uploadingFile ? 'Uploading…' : '+ Upload file'}
+                    <input type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={async (e) => {
+                      const file = e.target.files[0]
+                      if (!file) return
+                      setUploadingFile(true)
+                      const fileId = crypto.randomUUID()
+                      const ext = file.name.split('.').pop()
+                      const path = `${id}/files/${fileId}.${ext}`
+                      const isImage = file.type.startsWith('image/')
+                      const { error } = await supabase.storage.from('idea-assets').upload(path, file, { upsert: false })
+                      if (!error) {
+                        const { data: { publicUrl } } = supabase.storage.from('idea-assets').getPublicUrl(path)
+                        const newFile = { id: fileId, name: file.name.replace(`.${ext}`, ''), url: publicUrl, type: isImage ? 'image' : 'doc', show_preview: isImage }
+                        const updated = [...supportFiles, newFile]
+                        setSupportFiles(updated)
+                        await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                      }
+                      setUploadingFile(false)
+                    }} />
+                  </label>
+                  <button onClick={() => {
+                    const url = prompt('Paste a YouTube, Vimeo, or Loom URL:')
+                    if (!url) return
+                    const fileId = crypto.randomUUID()
+                    const newFile = { id: fileId, name: 'Video', url, type: 'video_link', show_preview: false }
+                    const updated = [...supportFiles, newFile]
+                    setSupportFiles(updated)
+                    supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                  }} style={{ fontSize: 13, color: '#7b9ff7', fontWeight: 500, cursor: 'pointer', padding: '6px 14px', border: '0.5px solid #7b9ff7', borderRadius: 8, background: 'transparent' }}>+ Add video link</button>
+                </div>
+              )}
+            </div>
+          )}
 
         {/* Team */}
         {(idea.team || isOwner) && (() => {
