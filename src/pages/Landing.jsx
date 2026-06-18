@@ -85,7 +85,7 @@ export default function Landing() {
           <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--gold)', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Your idea vault</span>
         </div>
  
-        <h1 className="serif animate-fadeUp" style={{ fontSize: 56, lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: '1.25rem', animationDelay: '0.1s' }}>
+        <h1 className="serif animate-fadeUp" style={{ fontSize: 'clamp(32px, 7vw, 56px)', lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: '1.25rem', animationDelay: '0.1s' }}>
           To make your idea real,<br />you have to share it.<br /><em style={{ color: 'var(--gold)' }}>eurekAIdea makes sure sharing it doesn't mean losing it.</em>
         </h1>
 
