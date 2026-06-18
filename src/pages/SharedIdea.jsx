@@ -622,10 +622,19 @@ export default function SharedIdea() {
               const key = BM_TYPE_KEY[modelType] || modelType.toLowerCase().replace(/[^a-z]/g,'')
               const data = bmVal[key] || bmVal[modelType] || {}
               if (modelType === 'Freemium / SaaS') {
-                const freeItems = (data.freeTier||'').split('\n').map(s=>s.trim()).filter(Boolean)
-                const paidItems = (data.paidFeatures||'').split('\n').map(s=>s.trim()).filter(Boolean)
-                if (freeItems.length) tiers.push({ label: 'Free Tier', items: freeItems, color: '#22c55e' })
-                if (paidItems.length) tiers.push({ label: `Paid Tier${data.paidPrice ? ` — ${data.paidPrice}` : ''}`, items: paidItems, color: '#9b7ff7' })
+                if (data.tiers?.length) {
+                  const TIER_COLORS_MAP = { 'free': '#22c55e', 'protection': '#7b9ff7', 'score': '#9b7ff7', 'pro': '#f59e0b', 'paid': '#9b7ff7' }
+                  data.tiers.forEach(tier => {
+                    const colorKey = Object.keys(TIER_COLORS_MAP).find(k => tier.name?.toLowerCase().includes(k)) || 'paid'
+                    const items = (tier.features||'').split('\n').map(s=>s.trim()).filter(Boolean)
+                    if (items.length) tiers.push({ label: `${tier.name}${tier.price ? ` — ${tier.price}` : ''}`, items, color: TIER_COLORS_MAP[colorKey] })
+                  })
+                } else {
+                  const freeItems = (data.freeTier||'').split('\n').map(s=>s.trim()).filter(Boolean)
+                  const paidItems = (data.paidFeatures||'').split('\n').map(s=>s.trim()).filter(Boolean)
+                  if (freeItems.length) tiers.push({ label: 'Free Tier', items: freeItems, color: '#22c55e' })
+                  if (paidItems.length) tiers.push({ label: `Paid Tier${data.paidPrice ? ` — ${data.paidPrice}` : ''}`, items: paidItems, color: '#9b7ff7' })
+                }
               } else if (modelType === 'Subscription' && data.tiers?.length) {
                 data.tiers.forEach(t => {
                   const items = (t.features||'').split('\n').map(s=>s.trim()).filter(Boolean)
