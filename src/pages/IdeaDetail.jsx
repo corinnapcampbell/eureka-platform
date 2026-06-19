@@ -654,8 +654,12 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                     const { error } = await supabase.storage.from('idea-assets').upload(path, file, { upsert: true })
                     if (!error) {
                       const { data: { publicUrl } } = supabase.storage.from('idea-assets').getPublicUrl(path)
-                      await supabase.from('ideas').update({ product_image_url: publicUrl }).eq('id', id)
+                      console.log('UPLOAD SUCCESS — publicUrl:', publicUrl)
+                      const { error: updateError } = await supabase.from('ideas').update({ product_image_url: publicUrl }).eq('id', id)
+                      console.log('UPDATE ERROR:', updateError)
                       setIdea(v => ({ ...v, product_image_url: publicUrl }))
+                    } else {
+                      console.log('STORAGE ERROR:', error)
                     }
                     setUploadingImage(false)
                   }} />
