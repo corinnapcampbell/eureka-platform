@@ -1038,6 +1038,16 @@ export default function SharedIdea() {
 
         <AIScorecard idea={idea} ideaId={idea.id} isPaid={false} readOnly={true} />
 
+        {idea.blueprint_2d?.svg && (
+          <div style={{ marginTop: '3rem' }}>
+            <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '0.5rem' }}>Product Blueprint</div>
+            <div style={{ fontSize: 20, fontWeight: 300, color: '#fff', marginBottom: '1.5rem' }}>Technical Drawing</div>
+            <div style={{ background: '#0d1b3e', borderRadius: 12, padding: '1.5rem', overflow: 'auto' }}
+              dangerouslySetInnerHTML={{ __html: idea.blueprint_2d.svg }}
+            />
+          </div>
+        )}
+
         {/* Footer */}
         <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem 1.75rem', textAlign: 'center' }}>
           {idea.blockchain_hash && (

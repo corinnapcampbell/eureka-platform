@@ -20,6 +20,7 @@ import Pricing from './pages/Pricing'
 import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
 import NotFound from './pages/NotFound'
+import Blueprint from './pages/Blueprint'
  
 function ProtectedRoute({ session, children }) {
   if (!session) return <Navigate to="/auth" replace />
@@ -79,6 +80,7 @@ export default function App() {
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/notifications" element={<Notifications session={session} />} />
+      <Route path="/blueprint/:ideaId" element={<ProtectedRoute session={session}><Blueprint session={session} /></ProtectedRoute>} />
       <Route path="*" element={<NotFound session={session} />} />
     </Routes>
   )

@@ -749,6 +749,12 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             >
               📊 Build Pitch Deck
             </button>
+            <button
+              onClick={() => navigate(`/blueprint/${id}`)}
+              style={{ padding: '10px 20px', borderRadius: 8, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontWeight: 300 }}
+            >
+              Create Blueprint
+            </button>
             {isOwner && <Scorecard idea={idea} />}
           </div>
         </div>
