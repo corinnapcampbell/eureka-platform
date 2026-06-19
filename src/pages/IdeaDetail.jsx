@@ -1400,6 +1400,25 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           </div>
         )}
 
+      {/* BLUEPRINT */}
+      {idea.blueprint_2d?.svg && (
+        <div style={{ background: '#0d1b3e', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Product Blueprint</p>
+              <p style={{ fontSize: 16, fontWeight: 300, color: '#fff', margin: 0 }}>{idea.blueprint_2d?.answers?.product_name || idea.title} — Technical Drawing</p>
+            </div>
+            <button
+              onClick={() => navigate(`/blueprint/${id}`)}
+              style={{ padding: '8px 16px', borderRadius: 8, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontWeight: 300 }}
+            >
+              Edit blueprint
+            </button>
+          </div>
+          <div style={{ overflow: 'auto', borderRadius: 8 }} dangerouslySetInnerHTML={{ __html: idea.blueprint_2d.svg }} />
+        </div>
+      )}
+
           {/* SUPPORT FILES */}
           {(supportFiles.length > 0 || isOwner) && (
             <div style={{ background: '#fff', border: '0.5px solid rgba(0,0,0,0.08)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
