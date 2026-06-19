@@ -12,86 +12,107 @@ serve(async (req) => {
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!apiKey) return new Response(JSON.stringify({ error: 'Missing ANTHROPIC_API_KEY' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-    const prompt = `You are an expert industrial design illustrator and mechanical engineer creating a technical blueprint SVG. Your job is to interpret a product description and produce an accurate, detailed engineering drawing — even filling in plausible engineering details the inventor hasn't specified.
+    const prompt = `You are an expert industrial designer and technical illustrator. Your job is to create a clear, intuitive technical blueprint SVG that a non-engineer can understand at a glance. This is NOT a generic shape diagram — it must show the SPECIFIC product, how it looks, how it works, and what makes it unique.
 
-PRODUCT DESCRIPTION:
+PRODUCT INFORMATION:
 Name: ${answers.product_name || 'Unnamed'}
 Summary: ${answers.product_summary}
-Primary shape: ${answers.primary_shape}
+Shape hint (use as starting point only, not literally): ${answers.primary_shape}
 Secondary features: ${(answers.secondary_shapes || []).join(', ')}
 Size: ${answers.size_ref} — ${answers.size_custom}
 Proportions: ${answers.proportions}
 Exterior notes: ${answers.silhouette_notes}
 Parts: ${(answers.parts_named || []).filter(Boolean).join(', ')}
 Internal parts: ${answers.internal_desc}
-Interior type: ${answers.interior_view}
-Symmetry: ${answers.symmetry}
+Interior: ${answers.interior_view}
 Mechanism type: ${answers.mechanism_type}
 How it works: ${answers.mechanism_plain}
 What moves: ${answers.moving_parts}
 Trigger: ${answers.trigger}
 Energy source: ${answers.energy_source}
 Internal layout: ${answers.internal_layout}
-Interaction: ${(answers.interaction_primary || []).join(', ')}
-Use steps: ${(answers.use_steps || []).filter(Boolean).join(' → ')}
-Outer materials: ${(answers.materials_outer || []).join(', ')}
-Inner materials: ${answers.materials_inner}
-Weight feel: ${answers.weight_feel}
+Materials outside: ${(answers.materials_outer || []).join(', ')}
+Materials inside: ${answers.materials_inner}
+Weight distribution: ${answers.weight_feel}
 Similar to: ${answers.existing_similar}
-What makes it different: ${answers.differentiator}
+Key differentiator: ${answers.differentiator}
 
-STEP 1 — REASON BEFORE DRAWING (do this mentally, do not output it):
-- What is the true shape of this product? Do not default to a plain cylinder. Infer the actual silhouette from the description. A vase has a wider mouth than body. A bottle tapers. A box has corners. Match the shape to the product type.
-- Where is the weight? A mechanism in the base means the base is heavier and wider for stability.
-- What internal components must exist for the mechanism to work, even if not explicitly described? Infer them (blade, shaft, gear, seal, spring, etc.) and draw them as dashed internal lines.
-- What would a cross-section slice vertically through the center reveal? Draw that in the SECTION A-A view with all layers visible.
-- What are the 8-10 most important features to annotate?
+BEFORE DRAWING — reason through these (do not output this reasoning):
+1. SHAPE: The "primary shape" field is a rough hint only. Combine ALL product information to determine the true silhouette. A vase holds water and flowers — it needs a wider opening at top, slightly curved or tapered body, and a distinctly heavier/wider base for stability. A pepper grinder tapers at top. A bottle has a neck. Never draw a plain uniform cylinder when the product description implies otherwise.
+2. WEIGHT AND PHYSICS: Where is the weight concentrated? The base of a vase with a heavy mechanism must be wider and visually heavier than the body. Show this in the proportions.
+3. MECHANISM: What components must physically exist for this mechanism to work? Even if not described, infer them. A rotating blade needs: a blade element, a central shaft, a sealed chamber, a coupling between outer shell and shaft. Draw ALL of these.
+4. MOVEMENT: Which parts move? Each moving part needs a curved arrow or motion indicator showing direction and range of movement. A rotating base gets a curved double-headed arrow around it. A blade gets a rotational sweep arc.
+5. COMPONENT CALLOUTS: Pick the 2-3 most important or novel components. Each gets a small isolated detail drawing in the right panel showing that component alone, enlarged, with its own label. For a cutting mechanism: show the blade in isolation, show how it sits on the shaft, show the cut angle.
+6. ANNOTATIONS: What are the 8-10 most important features to label? Every visible part, material transition, mechanism element, and functional feature needs a label.
 
-STEP 2 — DRAW THE SVG:
-Output ONLY a raw SVG element. No explanation, no markdown, no backticks. Start with <svg and end with </svg>.
+OUTPUT ONLY raw SVG. Start with <svg and end with </svg>. No explanation, no markdown, no backticks.
 
-TECHNICAL REQUIREMENTS:
-- viewBox="0 0 800 580" width="800" height="580"
-- Background: <rect width="800" height="580" fill="#0d1b3e"/>
-- Grid: lines every 40px, stroke="#1a2d5a" stroke-width="0.5" opacity="0.7"
+SVG SPECIFICATION:
+- viewBox="0 0 900 620" width="900" height="620"
+- Background: <rect width="900" height="620" fill="#0d1b3e"/>
+- Subtle grid every 40px: stroke="#1a2d5a" stroke-width="0.5" opacity="0.6"
 
-MAIN FRONT VIEW (x=80 to x=460, y=20 to y=460):
-- Draw the ACTUAL silhouette of the product — not a generic shape. If it is a vase: wider elliptical opening at top, slightly curved or tapered body, distinct heavier base section that is wider than the body for stability, grip ring at very bottom.
-- Outer walls: stroke="#7eb8f7" stroke-width="1.8"
-- Wall thickness shown as double lines: stroke="#7eb8f7" stroke-width="0.8"
-- Distinct sections separated by visible dividing lines where materials or components change
-- Internal components shown as dashed lines INSIDE the product outline: stroke="#3a7ab8" stroke-width="1" stroke-dasharray="5,3"
-- For ANY rotating mechanism: draw the blade as a horizontal dashed line near the base, draw the central shaft as a vertical dashed centerline, draw the sealed chamber boundary
-- Water fill line if applicable: stroke="#4a8fd4" stroke-width="0.8" stroke-dasharray="6,2" opacity="0.7"
-- Centerline: stroke="#2a5a8a" stroke-width="0.5" stroke-dasharray="8,4"
+MAIN FRONT VIEW (x=60 to x=480, y=20 to y=490):
+Draw the actual product silhouette — NOT a generic shape. Use curves, varying widths, distinct sections wherever the product description implies them.
+- Outer walls: stroke="#7eb8f7" stroke-width="2"
+- Show wall thickness as double lines where relevant
+- Distinct sections (body vs base vs cap) separated by clear horizontal dividing lines
+- Different materials shown with different line weights
+- Internal hidden components as dashed lines INSIDE the outline: stroke="#3a7ab8" stroke-width="1.2" stroke-dasharray="5,3"
+- Centerline axis: stroke="#2a5a8a" stroke-width="0.6" stroke-dasharray="10,4"
+- Water or fill level if applicable: stroke="#4a8fd4" stroke-width="1" stroke-dasharray="6,2" opacity="0.8"
 
-SECTION A-A — CROSS SECTION VIEW (x=500 to x=770, y=20 to y=320):
-- This is NOT an outline — it is a vertical slice through the center showing ALL internal layers
-- Draw hatching on solid material walls (diagonal lines at 45°, 4px spacing): stroke="#2a4a7a" stroke-width="0.4"
-- Show: outer wall cross-section (hatched), inner hollow cavity, any internal components at their correct vertical positions (blade at bottom, shaft through center, perforated plate above blade, water chamber above that)
-- All internal components clearly drawn as solid lines: stroke="#7eb8f7" stroke-width="1.2"
+MOVEMENT INDICATORS (mandatory for any moving part):
+- Rotating parts: draw a curved arrow arc around the rotating element showing direction. Use a path with an arrowhead. stroke="#a8d4f5" stroke-width="1.2" fill="none"
+- For blade rotation: show a sweep arc at the blade level inside the base section
+- For twist activation: show curved arrows around the base exterior indicating twist direction
+- Label movement arrows with short text like "TWIST TO ACTIVATE" or "BLADE ROTATES 360°" font-family="monospace" font-size="9" fill="#a8d4f5"
+
+RIGHT PANEL — two sub-panels stacked (x=510 to x=870):
+
+TOP: CROSS SECTION A–A (x=510 to x=870, y=20 to y=290):
+This is a vertical slice through the center. It MUST show internal layers, not just an outline.
+- Draw the outer wall cross-section with diagonal hatching (45° lines, 5px spacing) to indicate solid material: stroke="#2a5a8a" stroke-width="0.5"
+- Show the hollow interior cavity clearly
+- Draw every internal component at its correct vertical position:
+  * If there is a blade: horizontal solid line near the bottom with a small circle at center for the shaft mount
+  * If there is a shaft: vertical line through the center from blade up
+  * If there is a sealed chamber: boundary lines with hatching showing the seal material
+  * If there is a perforated plate or stem guide: show as a line with small gaps
+  * If it holds liquid: show the water level as a dashed horizontal line
+- All internal components: stroke="#7eb8f7" stroke-width="1.5"
 - Label: "SECTION A–A" font-family="monospace" font-size="10" fill="#a8d4f5"
-- Cutting plane line on main view showing where section is taken: stroke="#a8d4f5" stroke-width="0.6" stroke-dasharray="10,3,2,3"
+- Show cutting plane line on main view: stroke="#a8d4f5" stroke-width="0.8" stroke-dasharray="12,3,2,3"
 
-ANNOTATIONS (MANDATORY — embed directly in SVG, 8 to 10 total):
-- Each annotation: dashed leader line stroke="#5a9fd8" stroke-width="0.7" stroke-dasharray="3,3", dot at product end circle r="2.5" fill="#7eb8f7", text label font-family="monospace" font-size="11" fill="#c8dff8"
-- Annotate every distinct visible feature: opening, body section, material transition, mechanism area, grip, base, internal components visible through dashed lines
-- Place labels clearly outside the product outline, alternating left and right sides
+BOTTOM: COMPONENT DETAIL PANELS (x=510 to x=870, y=300 to y=490):
+Pick the 2 most important/novel components. Draw each one isolated and enlarged.
+- Dividing line between the two panels
+- Each panel: component name as header font-family="monospace" font-size="10" fill="#c8dff8", enlarged drawing of just that component, 2-3 short annotation labels
+- For a blade mechanism: Panel 1 = blade element showing shape and mounting hole, Panel 2 = shaft and coupling assembly showing how rotation transfers
+- For each component show it from the most informative angle (top view for a circular blade, side view for a shaft)
+- Lines: stroke="#7eb8f7" stroke-width="1.2"
+- Label panel area: "COMPONENT DETAILS" font-family="monospace" font-size="9" fill="#5a9fd8"
+
+ANNOTATIONS ON MAIN VIEW (8-10, mandatory, embedded in SVG):
+Every distinct feature must be labeled. Alternate left and right sides.
+- Leader line: stroke="#5a9fd8" stroke-width="0.8" stroke-dasharray="4,3"
+- Dot at product: circle r="3" fill="#7eb8f7"
+- Label: font-family="monospace" font-size="11" fill="#c8dff8"
 - Each annotation <g> must have data-type="annotation"
+- Label every visible part, material zone, mechanism area, opening, grip, and any inferred internal component shown as dashed line
 
-DIMENSION LINES (5 minimum):
-- Overall height with measurement, overall width at widest point, base height, wall thickness, any key internal measurement
-- Arrows at both ends, stroke="#4a8fd4" stroke-width="0.7"
-- Text font-family="monospace" font-size="10" fill="#7eb8f7"
-- Place on left side and bottom of main view
+DIMENSION LINES (4 minimum, on left side and bottom):
+- Overall height, overall width at widest point, base section height, any key internal measurement
+- Double-ended arrows, stroke="#4a8fd4" stroke-width="0.8"
+- Text: font-family="monospace" font-size="10" fill="#7eb8f7"
 
-TITLE BLOCK (y=465 to y=580, x=0 to x=800):
-- Background rect fill="#07102a" stroke="#4a8fd4" stroke-width="0.8"
-- Vertical dividers creating 4 columns
-- Col 1 (x=10): product name font-size="16" font-weight="bold" fill="#c8dff8" font-family="monospace", below it: summary truncated to 60 chars font-size="9" fill="#7eb8f7" font-family="monospace"
-- Col 2 (x=220): "eurekAIdea" font-size="13" fill="#9b7ff7" font-family="monospace", "TECHNICAL BLUEPRINT" font-size="9" fill="#7eb8f7" font-family="monospace"
-- Col 3 (x=440): "SHEET 1 OF 3" font-size="9", "FRONT VIEW + SECTION" font-size="9", "SCALE 1:2" font-size="9" — all fill="#7eb8f7" font-family="monospace"
-- Col 4 (x=620): "DWG: EVA-001" font-size="9", "REV: A" font-size="9", "2026" font-size="9" — all fill="#7eb8f7" font-family="monospace"`
+TITLE BLOCK (y=500 to y=620, full width):
+- Background rect fill="#060f24" stroke="#4a8fd4" stroke-width="0.8"
+- 4 vertical columns with dividers
+- Col 1 (x=15): product name font-size="16" fill="#c8dff8" font-family="monospace" font-weight="bold", description font-size="9" fill="#5a9fd8" font-family="monospace" (max 70 chars)
+- Col 2 (x=240): "eurekAIdea" font-size="14" fill="#9b7ff7" font-family="monospace", "TECHNICAL BLUEPRINT" font-size="9" fill="#7eb8f7" font-family="monospace"
+- Col 3 (x=470): "SHEET 1 OF 3" font-size="9" fill="#7eb8f7" font-family="monospace", "FRONT VIEW + SECTION + DETAILS" font-size="9" fill="#7eb8f7" font-family="monospace", "SCALE 1:2" font-size="9" fill="#7eb8f7" font-family="monospace"
+- Col 4 (x=660): "DWG: EVA-001" font-size="9" fill="#7eb8f7" font-family="monospace", "REV: B" font-size="9" fill="#7eb8f7" font-family="monospace", "2026" font-size="9" fill="#7eb8f7" font-family="monospace"`
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

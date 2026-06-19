@@ -497,7 +497,7 @@ export default function Blueprint({ session }) {
   const [genErr, setGenErr] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const MAX_REGEN = 3
+  const MAX_REGEN = 999
 
   // Load existing blueprint if present
   useEffect(() => {
@@ -573,11 +573,8 @@ export default function Blueprint({ session }) {
           <BlueprintEditor svg={svg} onSave={handleSave} saving={saving} />
           {saved && <div style={{ fontSize: 13, color: '#7b9ff7', marginTop: 8 }}>Saved ✓</div>}
           <div style={s.regenRow}>
-            {regenCount < MAX_REGEN
-              ? <button style={s.btnGen} onClick={generate}>↺ Regenerate</button>
-              : <button style={{ ...s.btnGen, opacity: 0.4, pointerEvents: 'none' }}>No regenerations left</button>
-            }
-            <span style={s.regenCount}>{MAX_REGEN - regenCount} of {MAX_REGEN} remaining</span>
+            <button style={s.btnGen} onClick={generate}>↺ Regenerate</button>
+            <span style={s.regenCount}>Regenerate to improve</span>
             <button style={{ ...s.btnBack, marginLeft: 'auto' }} onClick={() => setGenerated(false)}>← Edit answers</button>
           </div>
         </div>
