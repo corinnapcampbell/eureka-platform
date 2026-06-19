@@ -1398,30 +1398,95 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           {(supportFiles.length > 0 || isOwner) && (
             <div style={{ background: '#fff', border: '0.5px solid rgba(0,0,0,0.08)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#888780', marginBottom: '1rem' }}>Support Files</p>
-              {supportFiles.map((f, i) => (
-                <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '0.65rem 0.85rem', borderRadius: 10, border: '0.5px solid rgba(0,0,0,0.07)', background: 'rgba(123,159,247,0.03)' }}>
-                  <input value={f.name} onChange={async (e) => {
-                    const updated = supportFiles.map((x, xi) => xi === i ? { ...x, name: e.target.value } : x)
-                    setSupportFiles(updated)
-                    await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
-                  }} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13, color: '#2c2c2a', fontWeight: 500, outline: 'none' }} />
-                  <button onClick={() => {
-                    const updated = supportFiles.map((x, xi) => xi === i ? { ...x, show_preview: !x.show_preview } : x)
-                    setSupportFiles(updated)
-                    supabase.from('ideas').update({ support_files: updated }).eq('id', id)
-                  }} style={{ fontSize: 11, color: f.show_preview ? '#7b9ff7' : '#aaa', border: '0.5px solid currentColor', borderRadius: 6, padding: '2px 8px', background: 'transparent', cursor: 'pointer' }}>{f.show_preview ? 'Preview ON' : 'Preview OFF'}</button>
-                  <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#7b9ff7', textDecoration: 'none' }}>Open ↗</a>
-                  <button onClick={async () => {
-                    const updated = supportFiles.filter((_, xi) => xi !== i)
-                    setSupportFiles(updated)
-                    await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
-                  }} style={{ fontSize: 11, color: '#e57373', background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>
-                  {f.show_preview && f.type === 'image' && <img src={f.url} alt={f.name} style={{ width: '100%', borderRadius: 8, marginTop: 6, display: 'block' }} />}
-                  {f.show_preview && f.type === 'video_link' && (
-                    <iframe src={f.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').replace('vimeo.com/', 'player.vimeo.com/video/')} style={{ width: '100%', height: 220, borderRadius: 8, marginTop: 6, border: 'none' }} allowFullScreen />
-                  )}
-                </div>
-              ))}
+              {(() => {
+                const imageFiles = supportFiles.filter(f => f.type === 'image')
+                const videoFiles = supportFiles.filter(f => f.type === 'video_link')
+                const docFiles = supportFiles.filter(f => f.type === 'doc')
+                return (
+                  <>
+                    {imageFiles.length > 0 && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#aaa', marginBottom: 8 }}>Images</p>
+                        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8 }}>
+                          {imageFiles.map((f, i) => {
+                            const fi = supportFiles.indexOf(f)
+                            return (
+                              <div key={f.id} style={{ flexShrink: 0, width: 200, borderRadius: 10, overflow: 'hidden', border: '0.5px solid rgba(0,0,0,0.08)', background: '#fafafa', position: 'relative' }}>
+                                <img src={f.url} alt={f.name} style={{ width: '100%', height: 130, objectFit: 'cover', display: 'block' }} />
+                                <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <input value={f.name} onChange={async (e) => {
+                                    const updated = supportFiles.map((x, xi) => xi === fi ? { ...x, name: e.target.value } : x)
+                                    setSupportFiles(updated)
+                                    await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                                  }} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 11, color: '#2c2c2a', fontWeight: 500, outline: 'none', minWidth: 0 }} />
+                                  <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#7b9ff7', textDecoration: 'none', flexShrink: 0 }}>↗</a>
+                                  <button onClick={async () => {
+                                    const updated = supportFiles.filter((_, xi) => xi !== fi)
+                                    setSupportFiles(updated)
+                                    await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                                  }} style={{ fontSize: 10, color: '#e57373', background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {videoFiles.length > 0 && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#aaa', marginBottom: 8 }}>Videos</p>
+                        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+                          {videoFiles.map((f) => {
+                            const fi = supportFiles.indexOf(f)
+                            const embedUrl = f.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').replace('vimeo.com/', 'player.vimeo.com/video/').replace('https://loom.com/share/', 'https://www.loom.com/embed/')
+                            return (
+                              <div key={f.id} style={{ flexShrink: 0, width: 300, borderRadius: 10, overflow: 'hidden', border: '0.5px solid rgba(0,0,0,0.08)', background: '#fafafa' }}>
+                                <iframe src={embedUrl} style={{ width: '100%', height: 170, border: 'none', display: 'block' }} allowFullScreen />
+                                <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <input value={f.name} onChange={async (e) => {
+                                    const updated = supportFiles.map((x, xi) => xi === fi ? { ...x, name: e.target.value } : x)
+                                    setSupportFiles(updated)
+                                    await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                                  }} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 11, color: '#2c2c2a', fontWeight: 500, outline: 'none', minWidth: 0 }} />
+                                  <button onClick={async () => {
+                                    const updated = supportFiles.filter((_, xi) => xi !== fi)
+                                    setSupportFiles(updated)
+                                    await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                                  }} style={{ fontSize: 10, color: '#e57373', background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0 }}>✕</button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {docFiles.length > 0 && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#aaa', marginBottom: 8 }}>Documents</p>
+                        {docFiles.map((f) => {
+                          const fi = supportFiles.indexOf(f)
+                          return (
+                            <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: '0.65rem 0.85rem', borderRadius: 10, border: '0.5px solid rgba(0,0,0,0.07)', background: 'rgba(123,159,247,0.03)' }}>
+                              <span style={{ fontSize: 16 }}>📄</span>
+                              <input value={f.name} onChange={async (e) => {
+                                const updated = supportFiles.map((x, xi) => xi === fi ? { ...x, name: e.target.value } : x)
+                                setSupportFiles(updated)
+                                await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                              }} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13, color: '#2c2c2a', fontWeight: 500, outline: 'none' }} />
+                              <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#7b9ff7', textDecoration: 'none' }}>Open ↗</a>
+                              <button onClick={async () => {
+                                const updated = supportFiles.filter((_, xi) => xi !== fi)
+                                setSupportFiles(updated)
+                                await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                              }} style={{ fontSize: 11, color: '#e57373', background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
               {isOwner && (
                 <div style={{ display: 'flex', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
                   <label style={{ fontSize: 13, color: '#7b9ff7', fontWeight: 500, cursor: 'pointer', padding: '6px 14px', border: '0.5px solid #7b9ff7', borderRadius: 8 }}>
@@ -1436,8 +1501,9 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                       const isImage = file.type.startsWith('image/')
                       const { error } = await supabase.storage.from('idea-assets').upload(path, file, { upsert: false })
                       if (!error) {
-                        const { data: { publicUrl } } = supabase.storage.from('idea-assets').getPublicUrl(path)
-                        const newFile = { id: fileId, name: file.name.replace(`.${ext}`, ''), url: publicUrl, type: isImage ? 'image' : 'doc', show_preview: isImage }
+                        const { data: urlData2 } = supabase.storage.from('idea-assets').getPublicUrl(path)
+                        const publicUrl2 = urlData2.publicUrl + '?t=' + Date.now()
+                        const newFile = { id: fileId, name: file.name.replace(`.${ext}`, ''), url: publicUrl2, type: isImage ? 'image' : 'doc', show_preview: isImage }
                         const updated = [...supportFiles, newFile]
                         setSupportFiles(updated)
                         await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
