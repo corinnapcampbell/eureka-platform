@@ -532,6 +532,11 @@ export default function SharedIdea() {
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(20px, 4.5vw, 42px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
             {idea.title}
           </h1>
+          {idea.product_image_url && (
+            <div style={{ marginTop: '1.25rem', marginBottom: '0.5rem', borderRadius: 14, overflow: 'hidden' }}>
+              <img src={idea.product_image_url} alt="Product" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', display: 'block' }} />
+            </div>
+          )}
           {idea.target_audience && (
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.38)', marginBottom: '0.5rem' }}>
               Built for {idea.target_audience}
