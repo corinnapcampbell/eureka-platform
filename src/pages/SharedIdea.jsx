@@ -118,7 +118,9 @@ export default function SharedIdea() {
         .select('*')
         .eq('id', link.ideas.id)
         .single()
-      setIdea(freshIdea || link.ideas)
+      const ideaToSet = freshIdea || link.ideas
+      console.log('SHARED IDEA product_image_url:', ideaToSet?.product_image_url)
+      setIdea(ideaToSet)
       setStage('nda')
 
       // Check whether the owner has published a public deck for this idea
