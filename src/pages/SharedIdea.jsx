@@ -892,15 +892,62 @@ export default function SharedIdea() {
         {idea.support_files && idea.support_files.length > 0 && (
           <div style={{ background: '#fff', border: '0.5px solid rgba(0,0,0,0.08)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#888780', marginBottom: '1rem' }}>Support Files</p>
-            {idea.support_files.map((f) => (
-              <div key={f.id} style={{ marginBottom: 12 }}>
-                <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 14, color: '#7b9ff7', fontWeight: 500, textDecoration: 'none' }}>{f.name} ↗</a>
-                {f.show_preview && f.type === 'image' && <img src={f.url} alt={f.name} style={{ width: '100%', borderRadius: 8, marginTop: 8, display: 'block' }} />}
-                {f.show_preview && f.type === 'video_link' && (
-                  <iframe src={f.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').replace('vimeo.com/', 'player.vimeo.com/video/')} style={{ width: '100%', height: 220, borderRadius: 8, marginTop: 8, border: 'none' }} allowFullScreen />
-                )}
-              </div>
-            ))}
+            {(() => {
+              const imageFiles = idea.support_files.filter(f => f.type === 'image')
+              const videoFiles = idea.support_files.filter(f => f.type === 'video_link')
+              const docFiles = idea.support_files.filter(f => f.type === 'doc')
+              return (
+                <>
+                  {imageFiles.length > 0 && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#aaa', marginBottom: 8 }}>Images</p>
+                      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8 }}>
+                        {imageFiles.map((f) => (
+                          <div key={f.id} style={{ flexShrink: 0, width: 160, borderRadius: 10, overflow: 'hidden', border: '0.5px solid rgba(0,0,0,0.08)', background: '#fafafa' }}>
+                            <a href={f.url} target="_blank" rel="noreferrer">
+                              <img src={f.url} alt={f.name} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
+                            </a>
+                            <div style={{ padding: '5px 8px' }}>
+                              <p style={{ fontSize: 11, color: '#2c2c2a', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {videoFiles.length > 0 && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#aaa', marginBottom: 8 }}>Videos</p>
+                      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+                        {videoFiles.map((f) => {
+                          const embedUrl = f.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/').replace('vimeo.com/', 'player.vimeo.com/video/').replace('https://loom.com/share/', 'https://www.loom.com/embed/')
+                          return (
+                            <div key={f.id} style={{ flexShrink: 0, width: 280, borderRadius: 10, overflow: 'hidden', border: '0.5px solid rgba(0,0,0,0.08)', background: '#fafafa' }}>
+                              <iframe src={embedUrl} style={{ width: '100%', height: 158, border: 'none', display: 'block' }} allowFullScreen />
+                              <div style={{ padding: '5px 8px' }}>
+                                <p style={{ fontSize: 11, color: '#2c2c2a', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {docFiles.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#aaa', marginBottom: 8 }}>Documents</p>
+                      {docFiles.map((f) => (
+                        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: '0.65rem 0.85rem', borderRadius: 10, border: '0.5px solid rgba(0,0,0,0.07)', background: 'rgba(123,159,247,0.03)' }}>
+                          <span style={{ fontSize: 16 }}>📄</span>
+                          <p style={{ flex: 1, fontSize: 13, color: '#2c2c2a', fontWeight: 500, margin: 0 }}>{f.name}</p>
+                          <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#7b9ff7', textDecoration: 'none' }}>Open ↗</a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         )}
 

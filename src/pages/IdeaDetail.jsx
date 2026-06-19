@@ -1411,8 +1411,8 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                           {imageFiles.map((f, i) => {
                             const fi = supportFiles.indexOf(f)
                             return (
-                              <div key={f.id} style={{ flexShrink: 0, width: 200, borderRadius: 10, overflow: 'hidden', border: '0.5px solid rgba(0,0,0,0.08)', background: '#fafafa', position: 'relative' }}>
-                                <img src={f.url} alt={f.name} style={{ width: '100%', height: 130, objectFit: 'cover', display: 'block' }} />
+                              <div key={f.id} style={{ flexShrink: 0, width: 160, borderRadius: 10, overflow: 'hidden', border: '0.5px solid rgba(0,0,0,0.08)', background: '#fafafa', position: 'relative' }}>
+                                <img src={f.url} alt={f.name} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
                                 <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
                                   <input value={f.name} onChange={async (e) => {
                                     const updated = supportFiles.map((x, xi) => xi === fi ? { ...x, name: e.target.value } : x)
@@ -1494,6 +1494,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                     <input type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: 'none' }} onChange={async (e) => {
                       const file = e.target.files[0]
                       if (!file) return
+                      if (supportFiles.length >= 10) { alert('Maximum 10 support files allowed.'); return }
                       setUploadingFile(true)
                       const fileId = crypto.randomUUID()
                       const ext = file.name.split('.').pop()
