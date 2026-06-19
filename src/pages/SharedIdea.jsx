@@ -113,7 +113,12 @@ export default function SharedIdea() {
         setStage('error')
         return
       }
-      setIdea(link.ideas)
+      const { data: freshIdea } = await supabase
+        .from('ideas')
+        .select('*')
+        .eq('id', link.ideas.id)
+        .single()
+      setIdea(freshIdea || link.ideas)
       setStage('nda')
 
       // Check whether the owner has published a public deck for this idea
