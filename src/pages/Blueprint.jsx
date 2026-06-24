@@ -246,11 +246,21 @@ export default function Blueprint({ session }) {
     })
   }, [ideaId])
 
-  // Start conversation once idea data loads
-  useEffect(() => {
-    if (!ideaData || messages.length > 0) return
-    sendMessage(null)
-  }, [ideaData])
+  const [started, setStarted] = useState(false)
+
+  function startBlueprint() {
+    setStarted(true)
+    const firstMsg = `I want to create a blueprint for my product idea. Here is what I have so far:
+
+Name: ${ideaData.title || ''}
+Tagline: ${ideaData.tagline || ''}
+Problem: ${ideaData.problem || ''}
+Solution: ${ideaData.solution || ''}
+How it works: ${ideaData.how_it_works || ''}
+
+Please start asking me questions to understand the product better so you can generate a 3D blueprint.`
+    sendMessage(firstMsg)
+  }
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -344,6 +354,21 @@ export default function Blueprint({ session }) {
               </button>
             </div>
           </>
+        )}
+
+        {/* Start button — shown before conversation begins */}
+        {!started && messages.length === 0 && ideaData && (
+          <div style={{ textAlign: 'center', padding: '3rem 0 2rem' }}>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Our AI will ask you questions about your product one at a time<br/>to understand its shape, mechanism, and function — then generate a 3D model.
+            </div>
+            <button
+              onClick={startBlueprint}
+              style={{ padding: '14px 36px', borderRadius: 12, border: 'none', background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', fontSize: 16, fontWeight: 400, color: '#fff', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+            >
+              Create Blueprint →
+            </button>
+          </div>
         )}
 
         {/* Chat */}
