@@ -242,7 +242,10 @@ export default function Blueprint({ session }) {
       // If existing blueprint conversation, restore it
       if (data.blueprint_2d?.messages) {
         setMessages(data.blueprint_2d.messages)
-        if (data.blueprint_2d.config) setBlueprintConfig(data.blueprint_2d.config)
+        if (data.blueprint_2d.messages.length > 0) setStarted(true)
+      }
+      if (data.blueprint_2d?.config) {
+        setBlueprintConfig(data.blueprint_2d.config)
       }
     })
   }, [ideaId])
