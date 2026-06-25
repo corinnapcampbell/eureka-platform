@@ -50,7 +50,8 @@ function VaseViewer({ config }) {
 
   useEffect(() => {
     if (!canvasRef.current || !config) return
-    if (typeof THREE === 'undefined') return
+    if (typeof window.THREE === 'undefined') return
+    const THREE = window.THREE
 
     const canvas = canvasRef.current
     canvas.width = 700
@@ -341,7 +342,7 @@ Please start asking me questions to understand the product better so you can gen
         )}
 
         {/* 3D Viewer — shows once config is ready */}
-        {blueprintConfig && threeLoaded && (
+        {blueprintConfig && (threeLoaded || typeof window.THREE !== 'undefined') && (
           <>
             <VaseViewer config={blueprintConfig} />
             <div style={s.saveRow}>
