@@ -291,9 +291,11 @@ Please start asking me questions to understand the product better so you can gen
       const json = await res.json()
       if (json.error) throw new Error(json.error)
 
-      const assistantMsg = { role: 'assistant', content: json.text }
-      const updated = [...newMessages, assistantMsg]
-      setMessages(updated)
+      const updated = json.text && json.text.trim()
+        ? [...newMessages, { role: 'assistant', content: json.text }]
+        : newMessages
+      if (json.text && json.text.trim()) setMessages(updated)
+      else setMessages(newMessages)
 
       if (json.blueprintConfig) {
         setBlueprintConfig(json.blueprintConfig)
