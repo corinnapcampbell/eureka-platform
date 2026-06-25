@@ -60,6 +60,7 @@ function VaseViewer({ config }) {
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
     renderer.setSize(700, 420)
     renderer.setPixelRatio(window.devicePixelRatio || 1)
+    renderer.setClearColor(0x0d1b3e, 1)
 
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x0d1b3e)
