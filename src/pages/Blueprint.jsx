@@ -45,6 +45,7 @@ const s = {
 
 // ── Three.js Vase Viewer ─────────────────────────
 function VaseViewer({ config }) {
+  console.log('VaseViewer mounted, config:', config)
   const canvasRef = useRef(null)
   const sceneRef = useRef(null)
 
@@ -356,7 +357,7 @@ Please start asking me questions to understand the product better so you can gen
         )}
 
         {/* 3D Viewer — shows once config is ready */}
-        {blueprintConfig && (threeLoaded || typeof window.THREE !== 'undefined') && (
+        {blueprintConfig && (threeLoaded || typeof window.THREE !== 'undefined') && (console.log('Rendering VaseViewer, blueprintConfig:', blueprintConfig), true) && (
           <>
             <VaseViewer config={blueprintConfig} />
             <div style={s.saveRow}>
