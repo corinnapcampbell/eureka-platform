@@ -185,6 +185,9 @@ function VaseViewer({ config }) {
     }
 
     let animId
+    console.log('Starting render loop, scene children:', scene.children.length)
+    renderer.render(scene, camera)
+    console.log('First render complete')
     function loop() {
       animId = requestAnimationFrame(loop)
       if (autoRot) { sph.theta+=0.004; updCam() }
