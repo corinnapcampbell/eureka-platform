@@ -50,8 +50,13 @@ function VaseViewer({ config }) {
 
   useEffect(() => {
     if (!canvasRef.current || !config) return
-    if (typeof window.THREE === 'undefined') return
+    if (typeof window.THREE === 'undefined') {
+      console.error('THREE not loaded')
+      return
+    }
     const THREE = window.THREE
+    console.log('THREE loaded, starting scene init')
+    try {
 
     const canvas = canvasRef.current
     canvas.width = 700
@@ -187,6 +192,9 @@ function VaseViewer({ config }) {
     loop()
     sceneRef.current = { renderer, animId }
 
+    } catch(err) {
+      console.error('THREE scene error:', err)
+    }
     return () => {
       cancelAnimationFrame(animId)
       renderer.dispose()
