@@ -58,13 +58,15 @@ function VaseViewer({ config }) {
     const THREE = window.THREE
     console.log('THREE loaded, starting scene init')
     let animId
+    let renderer
+    let drag = false
     try {
 
     const canvas = canvasRef.current
     canvas.width = 700
     canvas.height = 420
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
     renderer.setSize(700, 420)
     renderer.setPixelRatio(window.devicePixelRatio || 1)
     renderer.setClearColor(0x0d1b3e, 1)
@@ -144,7 +146,7 @@ function VaseViewer({ config }) {
     }
 
     // Orbit controls
-    let drag = false, prev = { x:0, y:0 }
+    let prev = { x:0, y:0 }
     let sph = { theta: 0.4, phi: 1.2, r: 5 }
     let autoRot = true
 
