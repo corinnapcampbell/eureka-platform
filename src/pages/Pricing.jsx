@@ -18,7 +18,7 @@ const ROWS = [
   { feature: 'Advanced pitch deck + PDF',           free: false,         protection: false,          pro: true },
   { feature: 'Investor view notifications',         free: false,         protection: false,          pro: true },
   { feature: 'Priority marketplace ranking',        free: false,         protection: false,          pro: true },
-  { feature: 'Blueprint tool',                      free: false,         protection: false,          pro: true },
+  { feature: 'Sketch tool',                          free: false,         protection: false,          pro: true },
 ]
 
 function CellValue({ value }) {

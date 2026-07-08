@@ -85,20 +85,57 @@ CONVERSATION RULES:
 
     // Check if ready to generate
     const readyMatch = text.includes('READY_TO_GENERATE')
-    let blueprintConfig = null
+    let sketchPrompt = null
     let displayText = text
 
     if (readyMatch) {
-      const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/)
-      if (jsonMatch) {
-        try {
-          blueprintConfig = JSON.parse(jsonMatch[1])
-          displayText = text.replace('READY_TO_GENERATE', '').replace(/```json[\s\S]*?```/, '').trim()
-        } catch(e) {}
+      displayText = text.replace('READY_TO_GENERATE', '').replace(/```json[\s\S]*?```/, '').trim()
+
+      const sketchSystem = `You are generating a prompt for an external AI image generator (ChatGPT/GPT Image) that will produce a hand-drawn graphite pencil exploded-view industrial design sketch, in a fixed house style, for a physical product idea. You are given a structured product description extracted from a user interview (shape, mechanism if any, dimensions, materials, use sequence, decorative details). Output ONLY the final image-generation prompt text — no preamble, no explanation.
+
+The prompt you generate must always include, in this order:
+
+1. This fixed style block, verbatim, never altered:
+"Create a single-page hand-drawn graphite pencil industrial design sketch in exploded-view style, on a plain white background — like a real page torn from a product designer's sketchbook, not a clean digital illustration. Style: loose sketchy pencil linework, visible un-erased construction guidelines (center lines, ellipse cross-axes), directional cross-hatching and parallel hatch strokes for shading (heavier on shadowed undersides), monochrome graphite only, no color, no digital smoothing."
+
+2. A one-paragraph subject description of the product, in plain language matching what the user described.
+
+3. Exactly 5 numbered panels, chosen based on what this specific product needs — do NOT force a fixed template:
+   - Always include one panel: the fully assembled product in 3/4 view.
+   - If the product has an internal moving mechanism: include a mechanism cutaway/exploded panel.
+   - If the product has no mechanism: substitute a structural/proportional panel (conceptual exploded view of component relationships, or a side-profile technical view showing scale/proportion/load path) — never fabricate a mechanism that doesn't exist.
+   - Include one panel showing the single most complex, novel, or highest-risk detail alone/exploded.
+   - Include one detail close-up of the most delicate or noteworthy small feature.
+   - Include one additional panel supporting whichever aspect of the product most needs visual explanation.
+
+4. A closing constraints line: "Proportions realistic for a [product category] (approximate real-world scale). No frame, no background elements, no text labels. Pure pencil on white paper, same hand-drawn sketchbook aesthetic throughout all five panels."
+
+Do not invent product details not present in the input. If a detail needed for a panel is missing, describe that panel more generically rather than fabricating specifics.`
+
+      const sketchRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1024,
+          system: sketchSystem,
+          messages: [
+            ...messages.map((m: {role: string, content: string}) => ({ role: m.role, content: m.content })),
+            { role: 'user', content: 'Generate the image-generation prompt for this product based on everything we discussed.' },
+          ],
+        }),
+      })
+      if (sketchRes.ok) {
+        const sketchData = await sketchRes.json()
+        sketchPrompt = sketchData.content?.[0]?.text || null
       }
     }
 
-    return new Response(JSON.stringify({ text: displayText, blueprintConfig }), {
+    return new Response(JSON.stringify({ text: displayText, sketchPrompt }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {

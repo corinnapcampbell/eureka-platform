@@ -753,7 +753,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               onClick={() => navigate(`/blueprint/${id}`)}
               style={{ padding: '10px 20px', borderRadius: 8, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontWeight: 300 }}
             >
-              Create Blueprint
+              Create Sketch
             </button>
             {isOwner && <Scorecard idea={idea} />}
           </div>
@@ -1401,21 +1401,21 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
         )}
 
       {/* BLUEPRINT */}
-      {idea.blueprint_2d?.svg && (
+      {idea.sketch_image_url && (
         <div style={{ background: '#0d1b3e', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <div>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Product Blueprint</p>
-              <p style={{ fontSize: 16, fontWeight: 300, color: '#fff', margin: 0 }}>{idea.blueprint_2d?.answers?.product_name || idea.title} — Technical Drawing</p>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Product Sketch</p>
+              <p style={{ fontSize: 16, fontWeight: 300, color: '#fff', margin: 0 }}>{idea.title}</p>
             </div>
             <button
               onClick={() => navigate(`/blueprint/${id}`)}
               style={{ padding: '8px 16px', borderRadius: 8, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontWeight: 300 }}
             >
-              Edit blueprint
+              Edit sketch
             </button>
           </div>
-          <div style={{ overflow: 'auto', borderRadius: 8 }} dangerouslySetInnerHTML={{ __html: idea.blueprint_2d.svg }} />
+          <img src={idea.sketch_image_url} alt="Product Sketch" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
         </div>
       )}
 

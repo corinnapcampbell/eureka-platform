@@ -1038,13 +1038,12 @@ export default function SharedIdea() {
 
         <AIScorecard idea={idea} ideaId={idea.id} isPaid={false} readOnly={true} />
 
-        {idea.blueprint_2d?.svg && (
+        {idea.sketch_image_url && (
           <div style={{ marginTop: '3rem' }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '0.5rem' }}>Product Blueprint</div>
-            <div style={{ fontSize: 20, fontWeight: 300, color: '#fff', marginBottom: '1.5rem' }}>Technical Drawing</div>
-            <div style={{ background: '#0d1b3e', borderRadius: 12, padding: '1.5rem', overflow: 'auto' }}
-              dangerouslySetInnerHTML={{ __html: idea.blueprint_2d.svg }}
-            />
+            <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '0.5rem' }}>Product Sketch</div>
+            <div style={{ background: '#0d1b3e', borderRadius: 12, padding: '1.5rem', overflow: 'auto' }}>
+              <img src={idea.sketch_image_url} alt="Product Sketch" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
+            </div>
           </div>
         )}
 

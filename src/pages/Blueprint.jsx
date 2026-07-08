@@ -234,6 +234,10 @@ export default function Blueprint({ session }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [threeLoaded, setThreeLoaded] = useState(false)
+  const [sketchPrompt, setSketchPrompt] = useState(null)
+  const [sketchImageUrl, setSketchImageUrl] = useState(null)
+  const [uploadingSketch, setUploadingSketch] = useState(false)
+  const [copied, setCopied] = useState(false)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -249,9 +253,10 @@ export default function Blueprint({ session }) {
   // Load idea data and existing blueprint
   useEffect(() => {
     if (!ideaId) return
-    supabase.from('ideas').select('title,tagline,problem,solution,how_it_works,category,blueprint_2d').eq('id', ideaId).single().then(({ data }) => {
+    supabase.from('ideas').select('title,tagline,problem,solution,how_it_works,category,blueprint_2d,sketch_image_url,sketch_generation_count').eq('id', ideaId).single().then(({ data }) => {
       if (!data) return
       setIdeaData(data)
+      if (data.sketch_image_url) setSketchImageUrl(data.sketch_image_url)
       // If existing blueprint conversation, restore it
       if (data.blueprint_2d?.messages) {
         setMessages(data.blueprint_2d.messages)
@@ -317,6 +322,13 @@ Please start asking me questions to understand the product better so you can gen
           blueprint_2d: { messages: updated, config: json.blueprintConfig }
         }).eq('id', ideaId)
       }
+      if (json.sketchPrompt) {
+        setSketchPrompt(json.sketchPrompt)
+        await supabase.from('ideas').update({
+          sketch_generation_count: (ideaData?.sketch_generation_count || 0) + 1
+        }).eq('id', ideaId)
+        setIdeaData(prev => ({ ...prev, sketch_generation_count: (prev?.sketch_generation_count || 0) + 1 }))
+      }
     } catch(e) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Something went wrong — please try again.' }])
     }
@@ -373,6 +385,58 @@ Please start asking me questions to understand the product better so you can gen
               </button>
             </div>
           </>
+        )}
+
+        {/* Sketch prompt — shown once AI generates it */}
+        {sketchPrompt && (
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '1.5rem', marginTop: '2rem' }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+              Paste this into ChatGPT to generate your sketch, then upload the resulting image below.
+            </div>
+            <div style={{ position: 'relative' }}>
+              <textarea
+                readOnly
+                value={sketchPrompt}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#fff', fontFamily: 'Outfit, sans-serif', fontWeight: 300, resize: 'vertical', outline: 'none', lineHeight: 1.6, minHeight: 180, boxSizing: 'border-box' }}
+              />
+              <button
+                onClick={() => { navigator.clipboard.writeText(sketchPrompt); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                style={{ position: 'absolute', top: 10, right: 10, padding: '5px 12px', borderRadius: 6, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.12)', color: '#7b9ff7', fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <div style={{ marginTop: '1rem' }}>
+              {sketchImageUrl ? (
+                <div style={{ position: 'relative' }}>
+                  <img src={sketchImageUrl} alt="Product Sketch" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
+                  <button onClick={async () => {
+                    await supabase.from('ideas').update({ sketch_image_url: null }).eq('id', ideaId)
+                    setSketchImageUrl(null)
+                  }} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Remove</button>
+                </div>
+              ) : (
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '1rem', cursor: 'pointer', color: '#7b9ff7', fontSize: 14, border: '0.5px dashed rgba(123,159,247,0.3)', borderRadius: 10 }}>
+                  {uploadingSketch ? 'Uploading…' : '+ Upload sketch image'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                    const file = e.target.files[0]
+                    if (!file) return
+                    setUploadingSketch(true)
+                    const ext = file.name.split('.').pop()
+                    const path = `${ideaId}/sketch.${ext}`
+                    const { error } = await supabase.storage.from('idea-assets').upload(path, file, { upsert: true })
+                    if (!error) {
+                      const { data: urlData } = supabase.storage.from('idea-assets').getPublicUrl(path)
+                      const publicUrl = urlData.publicUrl + '?t=' + Date.now()
+                      await supabase.from('ideas').update({ sketch_image_url: publicUrl }).eq('id', ideaId)
+                      setSketchImageUrl(publicUrl)
+                    }
+                    setUploadingSketch(false)
+                  }} />
+                </label>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Start button — shown before conversation begins */}
