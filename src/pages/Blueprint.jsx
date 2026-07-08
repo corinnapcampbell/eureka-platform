@@ -57,6 +57,7 @@ function VaseViewer({ config }) {
     }
     const THREE = window.THREE
     console.log('THREE loaded, starting scene init')
+    let animId
     try {
 
     const canvas = canvasRef.current
@@ -184,7 +185,6 @@ function VaseViewer({ config }) {
       autoRot=false; updCam()
     }
 
-    let animId
     console.log('Starting render loop, scene children:', scene.children.length)
     renderer.render(scene, camera)
     console.log('First render complete')
