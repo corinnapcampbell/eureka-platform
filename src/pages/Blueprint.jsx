@@ -240,6 +240,7 @@ export default function Blueprint({ session }) {
   const [sketchImageUrl, setSketchImageUrl] = useState(null)
   const [uploadingSketch, setUploadingSketch] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [savedSketch, setSavedSketch] = useState(false)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -373,24 +374,39 @@ Please start asking me questions to understand the product better so you can gen
           </div>
         )}
 
-        {/* 3D Viewer — shows once config is ready */}
-        {blueprintConfig && (threeLoaded || typeof window.THREE !== 'undefined') && (console.log('Rendering VaseViewer, blueprintConfig:', blueprintConfig), true) && (
-          <>
-            <VaseViewer config={blueprintConfig} />
-            <div style={s.saveRow}>
-              <button style={s.saveBtn} onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving...' : 'Save blueprint'}
-              </button>
-              {saved && <span style={s.savedTxt}>Saved ✓</span>}
-              <button style={s.continueBtn} onClick={() => setBlueprintConfig(null)}>
-                Continue refining →
-              </button>
-              <button style={s.continueBtn} onClick={() => { setBlueprintConfig(null); setMessages([]); setStarted(false) }}>
-                {(sketchPrompt || (ideaData?.sketch_generation_count > 0)) ? 'Generate sketch prompt again' : 'Generate sketch prompt'}
-              </button>
+        {/* Start button — shown before conversation begins */}
+        {!started && messages.length === 0 && ideaData && (
+          <div style={{ textAlign: 'center', padding: '3rem 0 2rem' }}>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Our AI will ask you questions about your product one at a time<br/>to understand its shape, mechanism, and function — then generate a sketch prompt you can use to create a design image.
             </div>
-          </>
+            <button
+              onClick={startBlueprint}
+              style={{ padding: '14px 36px', borderRadius: 12, border: 'none', background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', fontSize: 16, fontWeight: 400, color: '#fff', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+            >
+              Create Sketch →
+            </button>
+          </div>
         )}
+
+        {/* Chat */}
+        <div style={s.chatWrap}>
+          {messages.map((msg, i) => (
+            <div key={i} style={s.msgWrap(msg.role)}>
+              <div style={s.bubble(msg.role)}>{msg.content}</div>
+            </div>
+          ))}
+          {loading && (
+            <div style={s.msgWrap('assistant')}>
+              <div style={s.bubble('assistant')}>
+                <span style={s.typingDot} className="dot1"/>
+                <span style={s.typingDot} className="dot2"/>
+                <span style={s.typingDot} className="dot3"/>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef}/>
+        </div>
 
         {/* Sketch prompt — shown once AI generates it */}
         {sketchPrompt && (
@@ -443,48 +459,16 @@ Please start asking me questions to understand the product better so you can gen
                       const publicUrl = urlData.publicUrl + '?t=' + Date.now()
                       await supabase.from('ideas').update({ sketch_image_url: publicUrl }).eq('id', ideaId)
                       setSketchImageUrl(publicUrl)
+                      setSavedSketch(true); setTimeout(() => setSavedSketch(false), 2000)
                     }
                     setUploadingSketch(false)
                   }} />
                 </label>
               )}
+              {savedSketch && <span style={s.savedTxt}>Saved ✓</span>}
             </div>
           </div>
         )}
-
-        {/* Start button — shown before conversation begins */}
-        {!started && messages.length === 0 && ideaData && (
-          <div style={{ textAlign: 'center', padding: '3rem 0 2rem' }}>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-              Our AI will ask you questions about your product one at a time<br/>to understand its shape, mechanism, and function — then generate a sketch prompt you can use to create a design image.
-            </div>
-            <button
-              onClick={startBlueprint}
-              style={{ padding: '14px 36px', borderRadius: 12, border: 'none', background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', fontSize: 16, fontWeight: 400, color: '#fff', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
-            >
-              Create Sketch →
-            </button>
-          </div>
-        )}
-
-        {/* Chat */}
-        <div style={s.chatWrap}>
-          {messages.map((msg, i) => (
-            <div key={i} style={s.msgWrap(msg.role)}>
-              <div style={s.bubble(msg.role)}>{msg.content}</div>
-            </div>
-          ))}
-          {loading && (
-            <div style={s.msgWrap('assistant')}>
-              <div style={s.bubble('assistant')}>
-                <span style={s.typingDot} className="dot1"/>
-                <span style={s.typingDot} className="dot2"/>
-                <span style={s.typingDot} className="dot3"/>
-              </div>
-            </div>
-          )}
-          <div ref={bottomRef}/>
-        </div>
 
         {/* Input */}
         <div style={s.inputRow}>
