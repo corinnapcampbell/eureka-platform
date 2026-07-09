@@ -241,6 +241,7 @@ export default function Blueprint({ session }) {
   const [uploadingSketch, setUploadingSketch] = useState(false)
   const [copied, setCopied] = useState(false)
   const [savedSketch, setSavedSketch] = useState(false)
+  const [stagedFile, setStagedFile] = useState(null)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -376,6 +377,38 @@ Please start asking me questions to understand the product better so you can gen
           </div>
         )}
 
+        {/* Sketch summary — shown when prompt exists */}
+        {sketchPrompt && (
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '2rem' }}>
+            <div style={{ position: 'relative' }}>
+              <textarea
+                readOnly
+                value={sketchPrompt}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#fff', fontFamily: 'Outfit, sans-serif', fontWeight: 300, resize: 'vertical', outline: 'none', lineHeight: 1.6, minHeight: 180, boxSizing: 'border-box' }}
+              />
+              <button
+                onClick={() => { navigator.clipboard.writeText(sketchPrompt); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                style={{ position: 'absolute', top: 10, right: 10, padding: '5px 12px', borderRadius: 6, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.12)', color: '#7b9ff7', fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            {sketchImageUrl && (
+              <div style={{ marginTop: '1rem' }}>
+                <img src={sketchImageUrl} alt="Product Sketch" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
+              </div>
+            )}
+            <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setMessages([]); setSketchPrompt(null); setStarted(false) }}
+                style={{ background: 'none', border: '0.5px solid rgba(123,159,247,0.5)', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 500, color: '#7b9ff7', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+              >
+                Start new sketch conversation
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Start button — shown before conversation begins */}
         {!started && messages.length === 0 && ideaData && (
           <div style={{ textAlign: 'center', padding: '3rem 0 2rem' }}>
@@ -437,39 +470,48 @@ Please start asking me questions to understand the product better so you can gen
                 Generate new prompt · $0.99
               </button>
             </div>
-            {!sketchImageUrl && (
+            {!sketchImageUrl ? (
               <div style={{ marginTop: '1rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '1rem', cursor: 'pointer', color: '#7b9ff7', fontSize: 14, border: '0.5px dashed rgba(123,159,247,0.3)', borderRadius: 10 }}>
-                  {uploadingSketch ? 'Uploading…' : '+ Upload sketch image'}
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                  {stagedFile ? stagedFile.name : '+ Upload sketch image'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
                     const file = e.target.files[0]
                     if (!file) return
-                    setUploadingSketch(true)
-                    const ext = file.name.split('.').pop()
-                    const path = `${ideaId}/sketch.${ext}`
-                    const { error } = await supabase.storage.from('idea-assets').upload(path, file, { upsert: true })
-                    if (!error) {
-                      const { data: urlData } = supabase.storage.from('idea-assets').getPublicUrl(path)
-                      const publicUrl = urlData.publicUrl + '?t=' + Date.now()
-                      await supabase.from('ideas').update({ sketch_image_url: publicUrl }).eq('id', ideaId)
-                      setSketchImageUrl(publicUrl)
-                      setSavedSketch(true); setTimeout(() => setSavedSketch(false), 2000)
-                    }
-                    setUploadingSketch(false)
+                    setStagedFile(file)
                   }} />
                 </label>
+                {stagedFile && (
+                  <button
+                    onClick={async () => {
+                      setUploadingSketch(true)
+                      const ext = stagedFile.name.split('.').pop()
+                      const path = `${ideaId}/sketch.${ext}`
+                      const { error } = await supabase.storage.from('idea-assets').upload(path, stagedFile, { upsert: true })
+                      if (!error) {
+                        const { data: urlData } = supabase.storage.from('idea-assets').getPublicUrl(path)
+                        const publicUrl = urlData.publicUrl + '?t=' + Date.now()
+                        await supabase.from('ideas').update({ sketch_image_url: publicUrl }).eq('id', ideaId)
+                        setSketchImageUrl(publicUrl)
+                        setStagedFile(null)
+                        setSavedSketch(true); setTimeout(() => setSavedSketch(false), 2000)
+                      }
+                      setUploadingSketch(false)
+                    }}
+                    disabled={uploadingSketch}
+                    style={{ marginTop: '0.5rem', width: '100%', padding: '9px', borderRadius: 8, border: 'none', background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', fontSize: 13, color: '#fff', cursor: 'pointer', fontFamily: 'Outfit, sans-serif' }}
+                  >
+                    {uploadingSketch ? 'Saving…' : 'Save'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ marginTop: '1rem' }}>
+                <button onClick={async () => {
+                  await supabase.from('ideas').update({ sketch_image_url: null }).eq('id', ideaId)
+                  setSketchImageUrl(null)
+                }} style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Remove image</button>
               </div>
             )}
-          </div>
-        )}
-
-        {sketchImageUrl && (
-          <div style={{ marginTop: '1rem', position: 'relative' }}>
-            <img src={sketchImageUrl} alt="Product Sketch" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
-            <button onClick={async () => {
-              await supabase.from('ideas').update({ sketch_image_url: null }).eq('id', ideaId)
-              setSketchImageUrl(null)
-            }} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Remove</button>
           </div>
         )}
         {savedSketch && <span style={s.savedTxt}>Saved ✓</span>}
