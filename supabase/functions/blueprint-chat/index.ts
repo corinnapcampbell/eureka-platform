@@ -100,6 +100,8 @@ The prompt you generate must always include, in this order:
 
 2. A one-paragraph subject description of the product, in plain language matching what the user described.
 
+If the product has a mechanism, you must clearly explain in plain language how it physically operates — what moves, in what direction, what triggers the motion, and what the at-rest vs actuated states look like — before describing the panels. Do not just name the mechanism type; describe its behavior.
+
 3. Exactly 5 numbered panels, chosen based on what this specific product needs — do NOT force a fixed template:
    - Always include one panel: the fully assembled product in 3/4 view.
    - If the product has an internal moving mechanism: include a mechanism cutaway/exploded panel.

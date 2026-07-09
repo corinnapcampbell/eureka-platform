@@ -256,10 +256,11 @@ export default function Blueprint({ session }) {
   // Load idea data and existing blueprint
   useEffect(() => {
     if (!ideaId) return
-    supabase.from('ideas').select('title,tagline,problem,solution,how_it_works,category,blueprint_2d,sketch_image_url,sketch_generation_count').eq('id', ideaId).single().then(({ data }) => {
+    supabase.from('ideas').select('title,tagline,problem,solution,how_it_works,category,blueprint_2d,sketch_image_url,sketch_generation_count,sketch_prompt').eq('id', ideaId).single().then(({ data }) => {
       if (!data) return
       setIdeaData(data)
       if (data.sketch_image_url) setSketchImageUrl(data.sketch_image_url)
+      if (data.sketch_prompt) setSketchPrompt(data.sketch_prompt)
       // If existing blueprint conversation, restore it
       if (data.blueprint_2d?.messages) {
         setMessages(data.blueprint_2d.messages)
@@ -328,7 +329,8 @@ Please start asking me questions to understand the product better so you can gen
       if (json.sketchPrompt) {
         setSketchPrompt(json.sketchPrompt)
         await supabase.from('ideas').update({
-          sketch_generation_count: (ideaData?.sketch_generation_count || 0) + 1
+          sketch_generation_count: (ideaData?.sketch_generation_count || 0) + 1,
+          sketch_prompt: json.sketchPrompt
         }).eq('id', ideaId)
         setIdeaData(prev => ({ ...prev, sketch_generation_count: (prev?.sketch_generation_count || 0) + 1 }))
       }
@@ -368,7 +370,7 @@ Please start asking me questions to understand the product better so you can gen
 
         {ideaData && (
           <div style={s.header}>
-            <div style={s.title}>Blueprint</div>
+            <div style={s.title}>Sketch</div>
             <div style={s.ideaName}>{ideaData.title}</div>
             {ideaData.tagline && <div style={s.ideaSub}>{ideaData.tagline}</div>}
           </div>
@@ -435,16 +437,8 @@ Please start asking me questions to understand the product better so you can gen
                 Generate new prompt · $0.99
               </button>
             </div>
-            <div style={{ marginTop: '1rem' }}>
-              {sketchImageUrl ? (
-                <div style={{ position: 'relative' }}>
-                  <img src={sketchImageUrl} alt="Product Sketch" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
-                  <button onClick={async () => {
-                    await supabase.from('ideas').update({ sketch_image_url: null }).eq('id', ideaId)
-                    setSketchImageUrl(null)
-                  }} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Remove</button>
-                </div>
-              ) : (
+            {!sketchImageUrl && (
+              <div style={{ marginTop: '1rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '1rem', cursor: 'pointer', color: '#7b9ff7', fontSize: 14, border: '0.5px dashed rgba(123,159,247,0.3)', borderRadius: 10 }}>
                   {uploadingSketch ? 'Uploading…' : '+ Upload sketch image'}
                   <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
@@ -464,11 +458,21 @@ Please start asking me questions to understand the product better so you can gen
                     setUploadingSketch(false)
                   }} />
                 </label>
-              )}
-              {savedSketch && <span style={s.savedTxt}>Saved ✓</span>}
-            </div>
+              </div>
+            )}
           </div>
         )}
+
+        {sketchImageUrl && (
+          <div style={{ marginTop: '1rem', position: 'relative' }}>
+            <img src={sketchImageUrl} alt="Product Sketch" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
+            <button onClick={async () => {
+              await supabase.from('ideas').update({ sketch_image_url: null }).eq('id', ideaId)
+              setSketchImageUrl(null)
+            }} style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Remove</button>
+          </div>
+        )}
+        {savedSketch && <span style={s.savedTxt}>Saved ✓</span>}
 
         {/* Input */}
         <div style={s.inputRow}>
