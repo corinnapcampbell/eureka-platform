@@ -386,7 +386,7 @@ Please start asking me questions to understand the product better so you can gen
                 Continue refining →
               </button>
               <button style={s.continueBtn} onClick={() => { setBlueprintConfig(null); setMessages([]); setStarted(false) }}>
-                Generate a Sketch prompt instead
+                {(sketchPrompt || (ideaData?.sketch_generation_count > 0)) ? 'Generate sketch prompt again' : 'Generate sketch prompt'}
               </button>
             </div>
           </>
