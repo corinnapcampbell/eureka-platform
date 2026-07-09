@@ -853,6 +853,24 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               </div>
             )}
             <AIScorecard key={scorecardKey} idea={idea} ideaId={id} isPaid={false} readOnly={true} />
+      {/* BLUEPRINT */}
+      {idea.sketch_image_url && (
+        <div style={{ background: '#0d1b3e', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Product Sketch</p>
+              <p style={{ fontSize: 16, fontWeight: 300, color: '#fff', margin: 0 }}>{idea.title}</p>
+            </div>
+            <button
+              onClick={() => navigate(`/blueprint/${id}`)}
+              style={{ padding: '8px 16px', borderRadius: 8, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontWeight: 300 }}
+            >
+              Edit sketch
+            </button>
+          </div>
+          <img src={idea.sketch_image_url} alt="Product Sketch" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
+        </div>
+      )}
           </>
         )}
 
@@ -1399,25 +1417,6 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             <AIChallenge sectionKey="next_steps" sectionLabel="Next Steps" content={idea.next_steps} isPaid={isPaid} />
           </div>
         )}
-
-      {/* BLUEPRINT */}
-      {idea.sketch_image_url && (
-        <div style={{ background: '#0d1b3e', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>Product Sketch</p>
-              <p style={{ fontSize: 16, fontWeight: 300, color: '#fff', margin: 0 }}>{idea.title}</p>
-            </div>
-            <button
-              onClick={() => navigate(`/blueprint/${id}`)}
-              style={{ padding: '8px 16px', borderRadius: 8, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontWeight: 300 }}
-            >
-              Edit sketch
-            </button>
-          </div>
-          <img src={idea.sketch_image_url} alt="Product Sketch" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
-        </div>
-      )}
 
           {/* SUPPORT FILES */}
           {(supportFiles.length > 0 || isOwner) && (
