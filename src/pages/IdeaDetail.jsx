@@ -1147,6 +1147,12 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             return '$12'
           }
           const paidPrice = parseFloat((getPaidPrice() || '$12').replace(/[^0-9.]/g, '')) || 12
+          const isOneTime = (() => {
+            try {
+              const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model
+              return (bm?.models || []).includes('One-time Purchase')
+            } catch { return false }
+          })()
           const startingUsers = (rp?.startingUsers) || 100
           const monthlyGrowth = ((rp?.monthlyGrowthRate) || 10) / 100
           const convRate = ((rp?.conversionRate) || 5) / 100
@@ -1156,8 +1162,8 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             { label: 'Optimistic', multiplier: 2, color: '#22c55e' },
           ]
           const calc = (months, mult) => {
-            const users = startingUsers * Math.pow(1 + monthlyGrowth * mult, months)
-            return users * convRate * paidPrice
+            const units = startingUsers * Math.pow(1 + monthlyGrowth * mult, months)
+            return isOneTime ? units * paidPrice : units * convRate * paidPrice
           }
           const fmt = n => n >= 1000000 ? '$' + (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n)
           return (
@@ -1183,17 +1189,19 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                     <div>
-                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Starting users</div>
+                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>{isOneTime ? 'Starting monthly sales' : 'Starting users'}</div>
                       <input type="number" value={editVal.startingUsers ?? 100} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, startingUsers: e.target.value } }))} style={inlineTextareaStyle} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Monthly growth rate (%)</div>
+                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>{isOneTime ? 'Sales growth rate (%)' : 'Monthly growth rate (%)'}</div>
                       <input type="number" value={editVal.monthlyGrowthRate ?? 10} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, monthlyGrowthRate: e.target.value } }))} style={inlineTextareaStyle} />
                     </div>
-                    <div>
-                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Free→paid conversion (%)</div>
-                      <input type="number" value={editVal.conversionRate ?? 5} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, conversionRate: e.target.value } }))} style={inlineTextareaStyle} />
-                    </div>
+                    {!isOneTime && (
+                      <div>
+                        <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Free→paid conversion (%)</div>
+                        <input type="number" value={editVal.conversionRate ?? 5} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, conversionRate: e.target.value } }))} style={inlineTextareaStyle} />
+                      </div>
+                    )}
                     <div>
                       <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Price override (optional, auto from Business Model: {getPaidPrice()})</div>
                       <input value={editVal.paidPriceOverride || ''} onChange={e => setInlineEdit(v => ({ ...v, revenue_projections: { ...v.revenue_projections, paidPriceOverride: e.target.value } }))} placeholder={getPaidPrice()} style={inlineTextareaStyle} />
@@ -1212,8 +1220,8 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                   <div style={{ fontSize: 12, color: '#888780', marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                     <span>Starting users: <strong style={{ color: '#2c2c2a' }}>{startingUsers.toLocaleString()}</strong></span>
                     <span>Monthly growth: <strong style={{ color: '#2c2c2a' }}>{(rp?.monthlyGrowthRate) || 10}%</strong></span>
-                    <span>Conversion: <strong style={{ color: '#2c2c2a' }}>{(rp?.conversionRate) || 5}%</strong></span>
-                    <span>Price: <strong style={{ color: '#2c2c2a' }}>{getPaidPrice()}/mo</strong></span>
+                    {!isOneTime && <span>Conversion: <strong style={{ color: '#2c2c2a' }}>{(rp?.conversionRate) || 5}%</strong></span>}
+                    <span>Price: <strong style={{ color: '#2c2c2a' }}>{getPaidPrice()}{isOneTime ? '' : '/mo'}</strong></span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
                     {scenarios.map(sc => (
@@ -1221,7 +1229,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                         <div style={{ fontSize: 11, fontWeight: 700, color: sc.color, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>{sc.label}</div>
                         {[{ l: '6mo', m: 6 }, { l: '12mo', m: 12 }, { l: '24mo', m: 24 }].map(p => (
                           <div key={p.l} style={{ marginBottom: 6 }}>
-                            <div style={{ fontSize: 10, color: '#b0b0a8', textTransform: 'uppercase' }}>{p.l} MRR</div>
+                            <div style={{ fontSize: 10, color: '#b0b0a8', textTransform: 'uppercase' }}>{p.l} {isOneTime ? 'Revenue' : 'MRR'}</div>
                             <div style={{ fontSize: 16, fontWeight: 700, color: '#2c2c2a' }}>{fmt(calc(p.m, sc.multiplier))}</div>
                           </div>
                         ))}
