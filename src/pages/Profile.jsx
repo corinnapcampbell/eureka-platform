@@ -45,6 +45,8 @@ export default function Profile({ session }) {
     setProfileSaveSuccess(false)
     await supabase.from('public_profiles').upsert({
       user_id: user.id,
+      full_name: fullName,
+      avatar_url: avatarUrl,
       headline,
       bio,
       skills,
@@ -306,7 +308,8 @@ export default function Profile({ session }) {
           borderRadius: 16, padding: '2rem', marginTop: '1.5rem'
         }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 0.4rem', color: '#fff' }}>Public Inventor Profile</h2>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 1.5rem', lineHeight: 1.6 }}>Show up as a discoverable inventor across eurekAIdea — visible to anyone who views one of your shared ideas.</p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 0.5rem', lineHeight: 1.6 }}>Show up as a discoverable inventor across eurekAIdea — visible to anyone who views one of your shared ideas.</p>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)', margin: '0 0 1.5rem', lineHeight: 1.6 }}>Your name and photo are pulled from your account settings above at the moment you save this section. If you update your name or photo later, come back and hit Save Profile again to sync your public profile.</p>
 
           <div style={{ marginBottom: '1.25rem' }}>
             <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Headline</label>
