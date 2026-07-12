@@ -167,6 +167,7 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
       startingUsers: (() => { try { const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections; return rp?.startingUsers || 100 } catch { return 100 } })(),
       monthlyGrowthRate: (() => { try { const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections; return rp?.monthlyGrowthRate || 10 } catch { return 10 } })(),
       conversionRate: (() => { try { const rp = typeof idea?.revenue_projections === 'string' ? JSON.parse(idea.revenue_projections) : idea?.revenue_projections; return rp?.conversionRate || 5 } catch { return 5 } })(),
+      isOneTime: (() => { try { const bm = parseBMValue(idea?.business_model); return (bm?.models || []).includes('One-time Purchase') } catch { return false } })(),
       aiGenerated: false,
       whoPays: idea?.who_pays || '',
       revenueStreams: idea?.revenue_streams || '',
@@ -773,6 +774,7 @@ function ClosingSlide({ slide, slideNum, onUpdate }) {
 function RevenueSlide({ slide, onUpdate }) {
   const u = onUpdate ? (f, v) => onUpdate({ [f]: v }) : null
   const paidPrice = parseFloat(String(slide.paidPrice || '$12').replace(/[^0-9.]/g, '')) || 12
+  const isOneTime = slide.isOneTime || false
   const startingUsers = parseFloat(slide.startingUsers) || 100
   const monthlyGrowth = (parseFloat(slide.monthlyGrowthRate) || 10) / 100
   const convRate = (parseFloat(slide.conversionRate) || 5) / 100
@@ -782,10 +784,8 @@ function RevenueSlide({ slide, onUpdate }) {
     { label: 'Optimistic', multiplier: 2, color: '#22c55e', lightColor: 'rgba(34,197,94,0.15)' },
   ]
   function calcRevenue(months, mult) {
-    const users = startingUsers * Math.pow(1 + monthlyGrowth * mult, months)
-    const paying = users * convRate
-    const mrr = paying * paidPrice
-    return mrr
+    const units = startingUsers * Math.pow(1 + monthlyGrowth * mult, months)
+    return isOneTime ? units * paidPrice : units * convRate * paidPrice
   }
   function fmt(n) {
     if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M'
@@ -815,10 +815,10 @@ function RevenueSlide({ slide, onUpdate }) {
           </div>
         )}
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 8, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          <span>Starting users: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.startingUsers ?? 100)} onChange={v => u('startingUsers', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : startingUsers.toLocaleString()}</strong></span>
-          <span>Monthly growth: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.monthlyGrowthRate ?? 10)} onChange={v => u('monthlyGrowthRate', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.monthlyGrowthRate || 10)}%</strong></span>
-          <span>Free→paid conversion: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.conversionRate ?? 5)} onChange={v => u('conversionRate', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.conversionRate || 5)}%</strong></span>
-          <span>Paid price: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={slide.paidPrice || '$12'} onChange={v => u('paidPrice', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.paidPrice || '$12')}/mo</strong></span>
+          <span>{isOneTime ? 'Starting monthly sales' : 'Starting users'}: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.startingUsers ?? 100)} onChange={v => u('startingUsers', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : startingUsers.toLocaleString()}</strong></span>
+          <span>{isOneTime ? 'Sales growth' : 'Monthly growth'}: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.monthlyGrowthRate ?? 10)} onChange={v => u('monthlyGrowthRate', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.monthlyGrowthRate || 10)}%</strong></span>
+          {!isOneTime && <span>Free→paid conversion: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={String(slide.conversionRate ?? 5)} onChange={v => u('conversionRate', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.conversionRate || 5)}%</strong></span>}
+          <span>Paid price: <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{u ? <ET value={slide.paidPrice || '$12'} onChange={v => u('paidPrice', v)} style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700 }} /> : (slide.paidPrice || '$12')}{isOneTime ? '' : '/mo'}</strong></span>
         </div>
         {u && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginBottom: 16, fontStyle: 'italic' }}>Pulled from your idea page — edit here for this deck only.</div>}
         {!u && <div style={{ marginBottom: 16 }} />}
@@ -830,8 +830,8 @@ function RevenueSlide({ slide, onUpdate }) {
                 <div key={period.label} style={{ borderTop: `0.5px solid ${sc.color}30`, paddingTop: 12 }}>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '1px' }}>{period.label}</div>
                   <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{fmt(calcRevenue(period.months, sc.multiplier))}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>MRR</div>
-                  <div style={{ fontSize: 13, color: sc.color, marginTop: 2 }}>{fmt(calcRevenue(period.months, sc.multiplier) * 12)} ARR</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{isOneTime ? 'Revenue' : 'MRR'}</div>
+                  {!isOneTime && <div style={{ fontSize: 13, color: sc.color, marginTop: 2 }}>{fmt(calcRevenue(period.months, sc.multiplier) * 12)} ARR</div>}
                 </div>
               ))}
             </div>
