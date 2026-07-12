@@ -90,7 +90,7 @@ export default function Landing() {
         </h1>
 
         <p className="animate-fadeUp" style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 480, marginBottom: '2.5rem', animationDelay: '0.2s' }}>
-          Every idea you submit is timestamped and legally protected the moment it's saved — giving you a safe, professional way to share it with exactly who you choose.
+          Every idea you submit is timestamped the moment it's saved — creating documented proof it was yours first, and giving you a safe, professional way to share it with exactly who you choose.
         </p>
  
         <div className="animate-fadeUp" style={{ display: 'flex', gap: 12, animationDelay: '0.3s' }}>
@@ -118,13 +118,13 @@ export default function Landing() {
           borderRadius: 16, padding: '3rem',
         }}>
           <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '1rem' }}>Your idea is safe here</p>
-          <h2 className="serif" style={{ fontSize: 32, marginBottom: '1.5rem', maxWidth: 500 }}>Three layers of protection, automatic.</h2>
+          <h2 className="serif" style={{ fontSize: 32, marginBottom: '1.5rem', maxWidth: 500 }}>Built-in proof, on your terms</h2>
  
           <div className="feature-cards">
             {[
               { icon: '⬡', title: 'Blockchain timestamp', desc: 'A cryptographic fingerprint of your idea is anchored to the blockchain the moment you submit — permanent, immutable, and independently verifiable.' },
-              { icon: '◎', title: 'NDA-gated sharing', desc: 'Anyone you share with must confirm NDA terms before seeing a single word. Every viewer is logged with their identity, timestamp, and IP address.' },
-              { icon: '△', title: 'Trade secret layer', desc: 'By keeping your idea behind access controls, it qualifies as a protected trade secret under the Defend Trade Secrets Act.' },
+              { icon: '◎', title: 'Optional NDA-gated sharing', desc: 'Turn on NDA-gated sharing for any idea — anyone you share it with must confirm NDA terms before seeing details. Every viewer is logged with their identity, timestamp, and IP address.' },
+              { icon: '△', title: 'Trade secret info', desc: 'Plain-language guidance on how trade secret law can apply to what you share — protection depends on you keeping details confidential.' },
             ].map(({ icon, title, desc }) => (
               <div key={title}>
                 <div style={{ fontSize: 22, marginBottom: '0.75rem', color: 'var(--gold)' }}>{icon}</div>
@@ -135,7 +135,7 @@ export default function Landing() {
           </div>
  
           <div style={{ borderTop: '0.5px solid var(--border)', paddingTop: '1.5rem', fontSize: 13, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 640 }}>
-            <strong style={{ color: 'var(--ink)', fontWeight: 500 }}>What Eureka's protection is:</strong> a timestamped record of originality, a traceable access trail, and an NDA agreement from every viewer — together forming a paper trail with real legal weight. If someone ever tries to use your idea without permission, you won't be starting from zero. We've built the paper trail. You'd just need a lawyer to use it.
+            <strong style={{ color: 'var(--ink)', fontWeight: 500 }}>What eurekAIdea's proof consists of:</strong> a timestamped record of originality, and — for any idea where you turn on NDA-gated sharing — a traceable access trail and signed NDA from every viewer. Together they form a paper trail with real documentary weight. If someone ever tries to use your idea without permission, you won't be starting from zero. We've built the paper trail. You'd just need a lawyer to use it.
           </div>
         </div>
       </div>
@@ -145,8 +145,8 @@ export default function Landing() {
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <div style={{ display: 'inline-block', background: 'rgba(123,159,247,0.1)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 20, padding: '5px 16px', fontSize: 12, color: '#7b9ff7', fontWeight: 500, marginBottom: '1rem', letterSpacing: '0.3px' }}>PRICING</div>
-            <h2 style={{ fontSize: 32, fontWeight: 700, color: '#fff', margin: '0 0 0.75rem', letterSpacing: '-0.3px' }}>Simple pricing. Serious protection.</h2>
-            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Start free. Protect what matters. Go Pro when you're ready.</p>
+            <h2 style={{ fontSize: 32, fontWeight: 700, color: '#fff', margin: '0 0 0.75rem', letterSpacing: '-0.3px' }}>Simple pricing. Real proof.</h2>
+            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.45)', margin: 0 }}>Start free. Document what matters. Go Pro when you're ready.</p>
           </div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
 

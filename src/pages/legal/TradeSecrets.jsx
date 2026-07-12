@@ -47,7 +47,7 @@ export default function TradeSecrets() {
           {/* eurekAIdea context box */}
           <div style={{ background: 'rgba(123,159,247,0.08)', border: '1px solid rgba(123,159,247,0.2)', borderRadius: 12, padding: '1.25rem 1.5rem' }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: '#7b9ff7', margin: '0 0 0.5rem' }}>📋 How this protects your ideas on eurekAIdea</p>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, margin: 0 }}>Every idea submitted on eurekAIdea qualifies as a trade secret under California law provided it has economic value and you take reasonable steps to maintain its secrecy. Our blockchain timestamp, NDA-gated sharing, and access logs constitute those "reasonable steps" under §3426.1(d). Any unauthorized disclosure or use of your idea by a viewer may constitute misappropriation under §3426.1(b), entitling you to injunctive relief, damages, and attorney's fees.</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, margin: 0 }}>An idea can qualify as a trade secret under California law if it has economic value and you take reasonable steps to maintain its secrecy. Blockchain timestamping documents when your idea existed; turning on NDA-gated sharing for an idea adds a traceable access trail that can support a 'reasonable steps' argument under §3426.1(d). Trade secret status isn't automatic — it depends on your own choices about what you keep confidential.</p>
           </div>
         </div>
 
@@ -63,8 +63,8 @@ export default function TradeSecrets() {
           {def('Misappropriation', 'Acquisition of a trade secret of another by a person who knows or has reason to know that the trade secret was acquired by improper means; or disclosure or use of a trade secret without express or implied consent by a person who used improper means to acquire it, or knew the secret was acquired under circumstances giving rise to a duty to maintain secrecy.')}
           {def('Trade secret', 'Information, including a formula, pattern, compilation, program, device, method, technique, or process, that: (1) derives independent economic value, actual or potential, from not being generally known to the public or to other persons who can obtain economic value from its disclosure or use; and (2) is the subject of efforts that are reasonable under the circumstances to maintain its secrecy.')}
           <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(74,222,128,0.05)', borderRadius: 8, border: '0.5px solid rgba(74,222,128,0.15)' }}>
-            <p style={{ fontSize: 12, color: '#4ade80', fontWeight: 600, margin: '0 0 4px' }}>✓ Your ideas qualify</p>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.6 }}>Business ideas, product concepts, processes, and methods submitted on eurekAIdea meet this definition — they have commercial value and are kept secret via NDA-gated access and blockchain-timestamped records.</p>
+            <p style={{ fontSize: 12, color: '#4ade80', fontWeight: 600, margin: '0 0 4px' }}>✓ Your ideas can qualify</p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.6 }}>Business ideas, concepts, and methods can meet this definition when you keep them confidential — turning on NDA-gated sharing and relying on blockchain timestamping are two ways to support that.</p>
           </div>
         </>)}
 
