@@ -382,10 +382,19 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
           } catch {}
           return '$12'
         })()).replace(/[^0-9.]/g, '')) || 12
+        const isOneTime = (() => {
+          try {
+            const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model
+            return (bm?.models || []).includes('One-time Purchase')
+          } catch { return false }
+        })()
         const startingUsers = parseFloat(rev.startingUsers) || 100
         const monthlyGrowth = (parseFloat(rev.monthlyGrowthRate) || 10) / 100
         const convRate = (parseFloat(rev.conversionRate) || 5) / 100
-        const calc = (months, mult) => startingUsers * Math.pow(1 + monthlyGrowth * mult, months) * convRate * paidPrice
+        const calc = (months, mult) => {
+          const units = startingUsers * Math.pow(1 + monthlyGrowth * mult, months)
+          return isOneTime ? units * paidPrice : units * convRate * paidPrice
+        }
         const fmt = n => n >= 1000000 ? '$' + (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n)
         const scenarios = [
           { label: 'Conservative', mult: 0.5, color: '#888780' },
@@ -397,7 +406,7 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
             <div style="font-size:10px;font-weight:700;color:${sc.color};letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">${sc.label}</div>
             ${[{l:'6mo',m:6},{l:'12mo',m:12},{l:'24mo',m:24}].map(p => `
               <div style="margin-bottom:5px">
-                <div style="font-size:9px;color:#b0b0a8;text-transform:uppercase">${p.l} MRR</div>
+                <div style="font-size:9px;color:#b0b0a8;text-transform:uppercase">${p.l} ${isOneTime ? 'Revenue' : 'MRR'}</div>
                 <div style="font-size:14px;font-weight:700;color:#0e0e1f">${escH(fmt(calc(p.m, sc.mult)))}</div>
               </div>
             `).join('')}
@@ -405,7 +414,7 @@ function buildPreviewHTML(form, idea, userEmail, bmValue = null) {
         `).join('')
         return {
           type: 'revenue_projections',
-          html: `${sH('💰', 'REVENUE PROJECTIONS')}<div class="stext" style="margin-bottom:8px;font-size:11px;color:#888">Starting users: ${escH(String(startingUsers))} · Monthly growth: ${escH(String(rev.monthlyGrowthRate || 10))}% · Conversion: ${escH(String(rev.conversionRate || 5))}% · Price: ${escH(rev.paidPriceOverride || '$' + paidPrice)}/mo</div><div style="display:flex;gap:8px">${cards}</div><div class="stext" style="margin-top:8px;font-size:10px;color:#aaa;font-style:italic">Model assumptions only — actual results will vary.</div>`
+          html: `${sH('💰', 'REVENUE PROJECTIONS')}<div class="stext" style="margin-bottom:8px;font-size:11px;color:#888">Starting users: ${escH(String(startingUsers))} · Monthly growth: ${escH(String(rev.monthlyGrowthRate || 10))}%${isOneTime ? '' : ` · Conversion: ${escH(String(rev.conversionRate || 5))}%`} · Price: ${escH(rev.paidPriceOverride || '$' + paidPrice)}${isOneTime ? '' : '/mo'}</div><div style="display:flex;gap:8px">${cards}</div><div class="stext" style="margin-top:8px;font-size:10px;color:#aaa;font-style:italic">Model assumptions only — actual results will vary.</div>`
         }
       } catch { return null }
     })() : null,
