@@ -82,6 +82,7 @@ export default function SharedIdea() {
   const [accepting, setAccepting] = useState(false)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
   const [deckInfo, setDeckInfo] = useState(null)   // { share_token } if public deck exists
+  const [creatorProfile, setCreatorProfile] = useState(null)
   const [downloadingPDF, setDownloadingPDF] = useState(false)
   const [downloadingSnapshotPDF, setDownloadingSnapshotPDF] = useState(false)
   const [viewingSnapshotPDF, setViewingSnapshotPDF] = useState(false)
@@ -126,6 +127,13 @@ export default function SharedIdea() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
         body: JSON.stringify({ idea_id: ideaToSet.id }),
       }).catch(() => {})
+      const { data: profile } = await supabase
+        .from('public_profiles')
+        .select('full_name, avatar_url, headline, is_public')
+        .eq('user_id', ideaToSet.user_id)
+        .eq('is_public', true)
+        .maybeSingle()
+      if (profile) setCreatorProfile(profile)
       if (ideaToSet.nda_required === false) {
         setStage('idea')
       } else {
@@ -541,6 +549,31 @@ export default function SharedIdea() {
           <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(20px, 4.5vw, 42px)', color: '#fff', lineHeight: 1.15, marginBottom: '0.5rem', letterSpacing: '-0.5px', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }}>
             {idea.title}
           </h1>
+          {creatorProfile && (
+            <div
+              onClick={() => navigate(`/inventor/${idea.user_id}`)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: '0.75rem', marginTop: '0.25rem' }}
+            >
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                background: creatorProfile.avatar_url ? 'none' : 'linear-gradient(135deg, #7b9ff7, #9b7ff7)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, color: '#fff',
+                overflow: 'hidden', border: '1.5px solid rgba(123,159,247,0.35)',
+              }}>
+                {creatorProfile.avatar_url
+                  ? <img src={creatorProfile.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : (creatorProfile.full_name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+                }
+              </div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)', margin: 0, lineHeight: 1.2 }}>{creatorProfile.full_name}</p>
+                {creatorProfile.headline && (
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: 0 }}>{creatorProfile.headline}</p>
+                )}
+              </div>
+            </div>
+          )}
           {idea.product_image_url && (
             <div style={{ marginTop: '1.25rem', marginBottom: '0.5rem', borderRadius: 14, overflow: 'hidden' }}>
               <img src={idea.product_image_url} alt="Product" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', display: 'block' }} />
