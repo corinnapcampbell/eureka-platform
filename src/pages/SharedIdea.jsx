@@ -561,7 +561,7 @@ export default function SharedIdea() {
         <AIScorecard idea={idea} ideaId={idea.id} isPaid={false} readOnly={true} />
 
         {idea.sketch_image_url && (
-          <div style={{ marginTop: '3rem' }}>
+          <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
             <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: '0.5rem' }}>Product Sketch</div>
             <div style={{ background: '#0d1b3e', borderRadius: 12, padding: '1.5rem', overflow: 'auto' }}>
               <img src={idea.sketch_image_url} alt="Product Sketch" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
