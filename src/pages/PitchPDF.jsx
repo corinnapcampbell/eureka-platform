@@ -1217,24 +1217,36 @@ export default function PitchPDF({ session }) {
                 <div style={{ fontSize: 12, color: '#b0b0a8' }}>Pulled from your idea page — edit here for this PDF only</div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div>
-                <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Starting users</div>
-                <input type="number" value={revenueForm.startingUsers} onChange={e => setRevenueForm(v => ({ ...v, startingUsers: e.target.value }))} placeholder="100" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Monthly growth rate (%)</div>
-                <input type="number" value={revenueForm.monthlyGrowthRate} onChange={e => setRevenueForm(v => ({ ...v, monthlyGrowthRate: e.target.value }))} placeholder="10" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Free→paid conversion (%)</div>
-                <input type="number" value={revenueForm.conversionRate} onChange={e => setRevenueForm(v => ({ ...v, conversionRate: e.target.value }))} placeholder="5" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Price override (optional)</div>
-                <input value={revenueForm.paidPriceOverride} onChange={e => setRevenueForm(v => ({ ...v, paidPriceOverride: e.target.value }))} placeholder="$12" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
-              </div>
-            </div>
+            {(() => {
+              const isOneTime = (() => {
+                try {
+                  const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model
+                  return (bm?.models || []).includes('One-time Purchase')
+                } catch { return false }
+              })()
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>{isOneTime ? 'Starting monthly sales' : 'Starting users'}</div>
+                    <input type="number" value={revenueForm.startingUsers} onChange={e => setRevenueForm(v => ({ ...v, startingUsers: e.target.value }))} placeholder="100" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>{isOneTime ? 'Sales growth rate (%)' : 'Monthly growth rate (%)'}</div>
+                    <input type="number" value={revenueForm.monthlyGrowthRate} onChange={e => setRevenueForm(v => ({ ...v, monthlyGrowthRate: e.target.value }))} placeholder="10" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+                  </div>
+                  {!isOneTime && (
+                    <div>
+                      <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Free→paid conversion (%)</div>
+                      <input type="number" value={revenueForm.conversionRate} onChange={e => setRevenueForm(v => ({ ...v, conversionRate: e.target.value }))} placeholder="5" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontSize: 11, color: '#888780', marginBottom: 4 }}>Price override (optional)</div>
+                    <input value={revenueForm.paidPriceOverride} onChange={e => setRevenueForm(v => ({ ...v, paidPriceOverride: e.target.value }))} placeholder="$12" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+                  </div>
+                </div>
+              )
+            })()}
           </div>
 
           {/* Competitive Landscape Preview */}
