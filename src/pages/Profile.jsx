@@ -16,6 +16,46 @@ export default function Profile({ session }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
   const fileRef = useRef()
+  const [headline, setHeadline] = useState('')
+  const [bio, setBio] = useState('')
+  const [skills, setSkills] = useState([])
+  const [isPublic, setIsPublic] = useState(false)
+  const [contactable, setContactable] = useState(true)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false)
+
+  const SKILL_OPTIONS = ['Mechanical Engineering', 'Product Design', 'Software Engineering', 'Consumer Hardware', 'Packaging Design', 'Branding & Marketing', 'Business Strategy', 'Manufacturing', 'Electronics/Hardware', 'Other']
+
+  useEffect(() => {
+    async function fetchProfile() {
+      const { data } = await supabase.from('public_profiles').select('*').eq('user_id', user.id).maybeSingle()
+      if (data) {
+        setHeadline(data.headline || '')
+        setBio(data.bio || '')
+        setSkills(data.skills || [])
+        setIsPublic(data.is_public || false)
+        setContactable(data.contactable ?? true)
+      }
+    }
+    fetchProfile()
+  }, [])
+
+  async function saveProfileSection() {
+    setProfileSaving(true)
+    setProfileSaveSuccess(false)
+    await supabase.from('public_profiles').upsert({
+      user_id: user.id,
+      headline,
+      bio,
+      skills,
+      is_public: isPublic,
+      contactable,
+      updated_at: new Date(),
+    }, { onConflict: 'user_id' })
+    setProfileSaveSuccess(true)
+    setTimeout(() => setProfileSaveSuccess(false), 3000)
+    setProfileSaving(false)
+  }
 
   const initials = fullName
     ? fullName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -258,6 +298,123 @@ export default function Profile({ session }) {
               opacity: saving || uploading ? 0.7 : 1
             }}
           >{saving ? 'Saving…' : 'Save Changes'}</button>
+        </div>
+
+        {/* Public Inventor Profile */}
+        <div style={{
+          background: 'rgba(255,255,255,0.04)', border: '0.5px solid var(--border)',
+          borderRadius: 16, padding: '2rem', marginTop: '1.5rem'
+        }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 0.4rem', color: '#fff' }}>Public Inventor Profile</h2>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '0 0 1.5rem', lineHeight: 1.6 }}>Show up as a discoverable inventor across eurekAIdea — visible to anyone who views one of your shared ideas.</p>
+
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Headline</label>
+            <input
+              value={headline}
+              onChange={e => setHeadline(e.target.value)}
+              placeholder="e.g. Mechanical design, 3 ideas published"
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.06)',
+                border: '0.5px solid var(--border)', borderRadius: 10,
+                padding: '12px 14px', fontSize: 15, color: '#fff',
+                outline: 'none', boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Bio</label>
+            <textarea
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              placeholder="A short description of who you are and what you work on..."
+              rows={4}
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.06)',
+                border: '0.5px solid var(--border)', borderRadius: 10,
+                padding: '12px 14px', fontSize: 14, color: '#fff',
+                outline: 'none', boxSizing: 'border-box', resize: 'vertical',
+                fontFamily: 'Outfit, sans-serif', lineHeight: 1.6
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Skills</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {SKILL_OPTIONS.map(skill => {
+                const selected = skills.includes(skill)
+                return (
+                  <button
+                    key={skill}
+                    onClick={() => setSkills(s => selected ? s.filter(x => x !== skill) : [...s, skill])}
+                    style={{
+                      background: selected ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.06)',
+                      border: selected ? 'none' : '0.5px solid rgba(255,255,255,0.15)',
+                      borderRadius: 20, padding: '6px 14px', fontSize: 13,
+                      color: selected ? '#fff' : 'rgba(255,255,255,0.55)',
+                      cursor: 'pointer', fontWeight: selected ? 500 : 400,
+                      transition: 'all 0.15s'
+                    }}
+                  >{skill}</button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', marginBottom: '0.85rem' }}>
+              <div
+                onClick={() => setIsPublic(v => !v)}
+                style={{
+                  width: 40, height: 22, borderRadius: 11, flexShrink: 0, position: 'relative', cursor: 'pointer',
+                  background: isPublic ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.15)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 3, left: isPublic ? 21 : 3,
+                  width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s',
+                }} />
+              </div>
+              <span style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>Make my profile public</span>
+            </label>
+            {isPublic && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+                <div
+                  onClick={() => setContactable(v => !v)}
+                  style={{
+                    width: 40, height: 22, borderRadius: 11, flexShrink: 0, position: 'relative', cursor: 'pointer',
+                    background: contactable ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.15)',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: 3, left: contactable ? 21 : 3,
+                    width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                    transition: 'left 0.2s',
+                  }} />
+                </div>
+                <span style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>Allow others to message me</span>
+              </label>
+            )}
+          </div>
+
+          {profileSaveSuccess && <p style={{ color: '#4ade80', fontSize: 13, marginBottom: '1rem' }}>✓ Profile updated</p>}
+
+          <button
+            onClick={saveProfileSection}
+            disabled={profileSaving}
+            style={{
+              width: '100%', background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
+              border: 'none', borderRadius: 10, padding: '13px',
+              fontSize: 15, fontWeight: 600, color: '#fff',
+              cursor: profileSaving ? 'not-allowed' : 'pointer',
+              opacity: profileSaving ? 0.7 : 1
+            }}
+          >{profileSaving ? 'Saving…' : 'Save Profile'}</button>
         </div>
 
         {/* My Plan */}
