@@ -20,6 +20,7 @@ import Pricing from './pages/Pricing'
 import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
 import NotFound from './pages/NotFound'
+import InventorProfile from './pages/InventorProfile'
 import Blueprint from './pages/Blueprint'
  
 function ProtectedRoute({ session, children }) {
@@ -68,6 +69,7 @@ export default function App() {
         </ProtectedRoute>
       } />
       <Route path="/share/:token" element={<SharedIdea />} />
+      <Route path="/inventor/:userId" element={<InventorProfile />} />
       <Route path="/deck/view/:shareToken" element={<DeckViewer />} />
       <Route path="/pitch/:ideaId" element={<PitchPDF session={session} />} />
       <Route path="/pitch-builder/:ideaId" element={<PitchBuilder session={session} />} />
