@@ -133,6 +133,7 @@ export default function IdeaDetail({ session }) {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadingFile, setUploadingFile] = useState(false)
   const [supportFiles, setSupportFiles] = useState([])
+  const [ndaInfoExpanded, setNdaInfoExpanded] = useState(false)
 
   const startEditRef = useRef(null)
 
@@ -226,6 +227,12 @@ export default function IdeaDetail({ session }) {
     navigator.clipboard.writeText(shareLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function toggleNdaRequired() {
+    const newVal = !(idea.nda_required ?? true)
+    await supabase.from('ideas').update({ nda_required: newVal }).eq('id', id)
+    setIdea(prev => ({ ...prev, nda_required: newVal }))
   }
 
   async function saveEdit() {
@@ -1794,6 +1801,52 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: '1.25rem', lineHeight: 1.65 }}>
             Generate a protected link. Anyone who opens it must agree to NDA terms before viewing — their access is logged automatically.
           </p>
+
+          {/* NDA toggle */}
+          <div style={{ marginBottom: '0.75rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <div
+                onClick={toggleNdaRequired}
+                style={{
+                  width: 40, height: 22, borderRadius: 11, flexShrink: 0, position: 'relative', cursor: 'pointer',
+                  background: (idea.nda_required ?? true) ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.15)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 3, left: (idea.nda_required ?? true) ? 21 : 3,
+                  width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s',
+                }} />
+              </div>
+              <span style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>Require NDA to view</span>
+            </label>
+          </div>
+
+          {/* Read before you decide collapsible */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <button
+              onClick={() => setNdaInfoExpanded(v => !v)}
+              style={{
+                background: 'rgba(123,159,247,0.12)', border: '0.5px solid rgba(123,159,247,0.35)',
+                borderRadius: 50, padding: '6px 16px', fontSize: 12, color: '#7b9ff7',
+                cursor: 'pointer', fontWeight: 500, letterSpacing: '0.2px',
+              }}
+            >
+              {ndaInfoExpanded ? '✦ Hide' : '✦ Read before you decide'}
+            </button>
+            {ndaInfoExpanded && (
+              <div style={{
+                background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)',
+                borderRadius: 14, padding: '1.25rem 1.5rem', marginTop: '0.75rem',
+              }}>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.75, margin: '0 0 0.75rem' }}>
+                  Many investors won't sign an NDA before reviewing a pitch — requiring one can mean some serious investors skip your idea entirely. Turning NDA off doesn't remove protection: every view of this idea is still logged automatically with the time and IP address, giving you a documented record of who saw it and when. Turning NDA on adds a signed agreement and identity capture on top of that record — stronger, but with more friction for viewers.
+                </p>
+                <a href="/legal/nda" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#7b9ff7', textDecoration: 'underline' }}>Read the NDA text →</a>
+              </div>
+            )}
+          </div>
 
           {!shareLink ? (
             <button onClick={generateShareLink} disabled={generatingLink} style={{

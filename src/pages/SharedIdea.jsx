@@ -121,7 +121,16 @@ export default function SharedIdea() {
       const ideaToSet = freshIdea || link.ideas
       console.log('SHARED IDEA product_image_url:', ideaToSet?.product_image_url)
       setIdea(ideaToSet)
-      setStage('nda')
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/log-view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ idea_id: ideaToSet.id }),
+      }).catch(() => {})
+      if (ideaToSet.nda_required === false) {
+        setStage('idea')
+      } else {
+        setStage('nda')
+      }
 
       // Check whether the owner has published a public deck for this idea
       const { data: deck } = await supabase
