@@ -103,14 +103,6 @@ export default function Landing() {
         <WaitlistForm />
       </div>
 
-      {/* Why we built this */}
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 2rem 4rem' }}>
-        <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '1rem' }}>Why we built this</p>
-        <p style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 600 }}>
-          In college, I pitched a scooter-sharing concept to Enel, one of Europe's largest energy companies. Three months later, they launched it. No NDA. No timestamp. No recourse. eurekAIdea exists so that never happens to anyone again.
-        </p>
-      </div>
-
       {/* Protection section */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 2rem 6rem' }}>
         <div style={{
