@@ -403,6 +403,12 @@ export default function Profile({ session }) {
                 <span style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>Allow others to message me</span>
               </label>
             )}
+            {isPublic && (
+              <span
+                onClick={() => navigate(`/inventor/${user.id}`)}
+                style={{ display: 'inline-block', marginTop: '0.85rem', fontSize: 13, color: '#7b9ff7', cursor: 'pointer' }}
+              >View my public profile →</span>
+            )}
           </div>
 
           {profileSaveSuccess && <p style={{ color: '#4ade80', fontSize: 13, marginBottom: '1rem' }}>✓ Profile updated</p>}
