@@ -178,6 +178,20 @@ export default function DeckBuilder({ session }) {
     setSavingProgress(false)
   }
 
+  async function handleStartOver() {
+    if (!window.confirm('This will discard all your customizations and rebuild this deck from your idea page. Your share link stays the same. Continue?')) return
+    const { data: freshIdea } = await supabase.from('ideas').select('*').eq('id', ideaId).single()
+    if (!freshIdea || !deckId) return
+    setIdea(freshIdea)
+    setBmValue(parseBMValue(freshIdea?.business_model))
+    const presenterName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Founder'
+    const ownerEmail = session?.user?.email || ''
+    const fresh = buildDefaultSlides(freshIdea, presenterName, ownerEmail)
+    setSlides(fresh)
+    setCurrent(0)
+    await supabase.from('pitch_decks').update({ slides: fresh }).eq('id', deckId)
+  }
+
   async function handleShare() {
     setShareModal(true)
     if (!isPublic && deckId) {
@@ -312,6 +326,7 @@ export default function DeckBuilder({ session }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>Deck Builder — {SLIDE_NAMES[current]}</span>
                 {saving && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Saving…</span>}
+                <button onClick={handleStartOver} style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>↺ Start over</button>
                 <button onClick={handlePDF} disabled={generatingPDF} style={{ background: 'rgba(255,255,255,0.06)', border: '0.5px solid rgba(255,255,255,0.12)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: 'rgba(255,255,255,0.65)', cursor: 'pointer', opacity: generatingPDF ? 0.5 : 1 }}>{generatingPDF ? 'Generating PDF…' : '↓ PDF'}</button>
                 <button onClick={() => setPresenting(true)} style={{ background: 'rgba(255,255,255,0.08)', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: '#fff', cursor: 'pointer' }}>▶ Present</button>
                 <button onClick={saveProgress} disabled={savingProgress} style={{ background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 7, padding: '7px 16px', fontSize: 13, color: 'rgba(255,255,255,0.55)', cursor: savingProgress ? 'not-allowed' : 'pointer', opacity: savingProgress ? 0.6 : 1 }}>{savingProgress ? 'Saving...' : '💾 Save Progress'}</button>
@@ -525,6 +540,9 @@ export default function DeckBuilder({ session }) {
           </button>
           <button onClick={handleShare} style={{ width: '100%', minHeight: 44, background: 'rgba(123,159,247,0.15)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 8, fontSize: 14, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500 }}>
             Share Deck
+          </button>
+          <button onClick={handleStartOver} style={{ width: '100%', minHeight: 44, background: 'none', border: '0.5px solid rgba(255,255,255,0.18)', borderRadius: 8, fontSize: 14, color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>
+            ↺ Start over
           </button>
         </div>
       </div>
