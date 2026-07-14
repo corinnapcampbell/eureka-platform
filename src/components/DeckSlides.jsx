@@ -147,6 +147,7 @@ export function buildDefaultSlides(idea, presenterName = '', ownerEmail = '') {
       freeTierChips: (() => { try { const bm = parseBMValue(idea?.business_model); const { free } = extractBMChips(bm); return free } catch { return [] } })(),
       paidTierChips: (() => { try { const bm = parseBMValue(idea?.business_model); const { paid } = extractBMChips(bm); return paid } catch { return [] } })(),
       note: bizLines.slice(2).join(' ') || 'Revenue scales with adoption and market growth.',
+      bmData: (() => { try { return parseBMValue(idea?.business_model) } catch { return null } })(),
     },
     {
       type: 'revenue',
@@ -573,6 +574,30 @@ function BusinessSlide({ slide, slideNum, onUpdate }) {
   const paidChips = slide.paidTierChips || []
   const [freeInput, setFreeInput] = useState('')
   const [paidInput, setPaidInput] = useState('')
+  const bm = slide.bmData
+  const models = bm?.models || []
+
+  function updateBmField(mKey, fKey, val) {
+    u('bmData', { ...bm, [mKey]: { ...(bm[mKey] || {}), [fKey]: val } })
+  }
+
+  const MODEL_KEY = {
+    'Freemium / SaaS': 'freemium', 'Subscription': 'subscription',
+    'Marketplace': 'marketplace', 'One-time Purchase': 'oneTime',
+    'Advertising': 'advertising', 'Licensing': 'licensing',
+    'Transaction Fees': 'transactionFees', 'Hardware + Software': 'hardwareSoftware',
+    'Other': 'other',
+  }
+  const FIELD_LABELS = {
+    oneTime: { price: 'Price point', included: "What's included", upsells: 'Upsells / add-ons' },
+    freemium: { freeTier: 'Free tier', paidPrice: 'Paid price', paidFeatures: 'Paid features', paidLimits: 'Limits' },
+    marketplace: { buyers: 'Who transacts', commission: 'Commission', feeStructure: 'Fee structure' },
+    advertising: { revenue: 'Revenue', formats: 'Ad formats' },
+    licensing: { royalties: 'Royalties', licensees: 'Licensees' },
+    transactionFees: { fee: 'Fee', whoPays: 'Who pays' },
+    hardwareSoftware: { hardwarePrice: 'Hardware price', softwarePrice: 'Software price', recurring: 'Recurring' },
+  }
+
   return (
     <div style={{ width: SLIDE_W, height: SLIDE_H, background: NAVY, position: 'relative', overflow: 'hidden', fontFamily: "'DM Sans', sans-serif", boxSizing: 'border-box' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: GRAD }} />
@@ -581,48 +606,90 @@ function BusinessSlide({ slide, slideNum, onUpdate }) {
         <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', lineHeight: 1.3, marginBottom: 28 }}>
           {u ? <ET value={slide.title} onChange={v => u('title', v)} multiline style={{ fontSize: 22, color: '#fff' }} /> : slide.title}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, flex: 1, minHeight: 0 }}>
-          <div style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ height: 3, background: 'linear-gradient(90deg,#1db47c,#16a368)', flexShrink: 0 }} />
-            <div style={{ padding: '20px 24px', flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#1db47c', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ background: 'rgba(29,180,124,0.15)', borderRadius: 6, padding: '3px 10px' }}>FREE</span>
-              </div>
-              {u ? (
-                <DeckChipInput chips={freeChips} onChipsChange={v => u('freeTierChips', v)} inputVal={freeInput} setInputVal={setFreeInput} placeholder="Add free feature…" chipBg="rgba(29,180,124,0.1)" chipBorder="rgba(29,180,124,0.3)" chipText="#1db47c" inputColor="rgba(255,255,255,0.4)" />
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {freeChips.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1db47c', flexShrink: 0, marginTop: 5 }} />
-                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{item}</span>
-                    </div>
-                  ))}
+        {models.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: models.length === 1 ? '1fr' : 'repeat(2, 1fr)', gap: 16, flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            {models.map(modelName => {
+              const mKey = MODEL_KEY[modelName] || 'other'
+              const mData = bm[mKey] || {}
+              return (
+                <div key={modelName} style={{ background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 12, padding: '14px 16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '1.5px' }}>{modelName}</div>
+                  {mKey === 'subscription' ? (
+                    (mData.tiers || []).map((tier, i) => (
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>{tier.name}{tier.price ? ` · ${tier.price}` : ''}</div>
+                        <div style={{ maxHeight: '66px', overflow: 'hidden' }}>
+                          {u ? <ET value={tier.features || ''} onChange={v => u('bmData', { ...bm, subscription: { ...mData, tiers: mData.tiers.map((t, j) => j === i ? { ...t, features: v } : t) } })} multiline style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }} /> : <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>{tier.features || ''}</span>}
+                        </div>
+                      </div>
+                    ))
+                  ) : mKey === 'other' ? (
+                    (mData.cards || []).map((card, i) => (
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>{card.title}</div>
+                        <div style={{ maxHeight: '66px', overflow: 'hidden' }}>
+                          {u ? <ET value={(card.items || []).join(', ')} onChange={v => u('bmData', { ...bm, other: { ...mData, cards: mData.cards.map((c, j) => j === i ? { ...c, items: v.split(',').map(s => s.trim()).filter(Boolean) } : c) } })} multiline style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }} /> : <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>{(card.items || []).join(', ')}</span>}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    Object.entries(FIELD_LABELS[mKey] || {}).map(([fKey, label]) => (
+                      <div key={fKey} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{label}</div>
+                        <div style={{ maxHeight: '66px', overflow: 'hidden' }}>
+                          {u ? <ET value={mData[fKey] || ''} onChange={v => updateBmField(mKey, fKey, v)} multiline style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }} /> : <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>{mData[fKey] || ''}</span>}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              )}
+              )
+            })}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, flex: 1, minHeight: 0 }}>
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ height: 3, background: 'linear-gradient(90deg,#1db47c,#16a368)', flexShrink: 0 }} />
+              <div style={{ padding: '20px 24px', flex: 1, overflow: 'hidden' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#1db47c', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ background: 'rgba(29,180,124,0.15)', borderRadius: 6, padding: '3px 10px' }}>FREE</span>
+                </div>
+                {u ? (
+                  <DeckChipInput chips={freeChips} onChipsChange={v => u('freeTierChips', v)} inputVal={freeInput} setInputVal={setFreeInput} placeholder="Add free feature…" chipBg="rgba(29,180,124,0.1)" chipBorder="rgba(29,180,124,0.3)" chipText="#1db47c" inputColor="rgba(255,255,255,0.4)" />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {freeChips.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1db47c', flexShrink: 0, marginTop: 5 }} />
+                        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{ background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ height: 3, background: GRAD, flexShrink: 0 }} />
+              <div style={{ padding: '20px 24px', flex: 1, overflow: 'hidden' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ background: 'rgba(123,159,247,0.15)', borderRadius: 6, padding: '3px 10px' }}>PRO ✦</span>
+                </div>
+                {u ? (
+                  <DeckChipInput chips={paidChips} onChipsChange={v => u('paidTierChips', v)} inputVal={paidInput} setInputVal={setPaidInput} placeholder="Add pro feature…" chipBg="rgba(123,159,247,0.12)" chipBorder="rgba(123,159,247,0.35)" chipText="#7b9ff7" inputColor="rgba(255,255,255,0.4)" />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {paidChips.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#7b9ff7', flexShrink: 0, marginTop: 5 }} />
+                        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <div style={{ background: 'rgba(123,159,247,0.08)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ height: 3, background: GRAD, flexShrink: 0 }} />
-            <div style={{ padding: '20px 24px', flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ background: 'rgba(123,159,247,0.15)', borderRadius: 6, padding: '3px 10px' }}>PRO ✦</span>
-              </div>
-              {u ? (
-                <DeckChipInput chips={paidChips} onChipsChange={v => u('paidTierChips', v)} inputVal={paidInput} setInputVal={setPaidInput} placeholder="Add pro feature…" chipBg="rgba(123,159,247,0.12)" chipBorder="rgba(123,159,247,0.35)" chipText="#7b9ff7" inputColor="rgba(255,255,255,0.4)" />
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {paidChips.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#7b9ff7', flexShrink: 0, marginTop: 5 }} />
-                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        )}
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', borderTop: '0.5px solid rgba(255,255,255,0.07)', paddingTop: 12, marginTop: 16 }}>
           {u ? <ET value={slide.note} onChange={v => u('note', v)} style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }} /> : slide.note}
         </div>
