@@ -580,6 +580,33 @@ export default function PitchPDF({ session }) {
       if (!user || !data || data.user_id !== user.id) { redirectAway(); return }
 
       setIdea(data)
+      if (data.pdf_draft) {
+        const d = data.pdf_draft
+        setForm({
+          tagline:               d.tagline               || '',
+          problem:               d.problem               || '',
+          solution:              d.solution              || '',
+          how_it_works:          d.how_it_works          || '',
+          market_size:           d.market_size           || '',
+          target_audience:       d.target_audience       || '',
+          business_model:        d.business_model        || '',
+          competitive_advantage: d.competitive_advantage || '',
+          risks:                 d.risks                 || '',
+          next_steps:            d.next_steps            || '',
+        })
+        setBmValue(parseBMValue(d.business_model) || { models: [] })
+        setHowItWorksChips(d.howItWorksChips || [])
+        setTargetMarketChips(d.targetMarketChips || [])
+        setRisksChips(d.risksChips || [])
+        setNextStepsChips(d.nextStepsChips || [])
+        if (d.teamMembers) setTeamMembers(d.teamMembers)
+        if (d.originStory !== undefined) setOriginStory(d.originStory)
+        if (d.cvForm) setCvForm(d.cvForm)
+        if (d.tractionMilestones) setTractionMilestones(d.tractionMilestones)
+        if (d.revenueForm) setRevenueForm(d.revenueForm)
+        setLoading(false)
+        return
+      }
       setForm({
         tagline:               data.tagline               || '',
         problem:               data.problem               || '',
@@ -702,27 +729,28 @@ export default function PitchPDF({ session }) {
 
   async function saveProgress() {
     setSavingProgress(true)
-    const updates = {
+    const draft = {
       tagline:               form.tagline,
       problem:               form.problem,
       solution:              form.solution,
       market_size:           form.market_size,
       competitive_advantage: form.competitive_advantage,
-      how_it_works:          howItWorksChips.length
-        ? howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n')
-        : form.how_it_works,
-      target_audience:       targetMarketChips.length
-        ? targetMarketChips.join(', ')
-        : form.target_audience,
+      how_it_works:          form.how_it_works,
+      target_audience:       form.target_audience,
       business_model:        bmValue ? serializeBMValue(bmValue) : form.business_model,
-      risks:                 risksChips.length
-        ? risksChips.join('\n')
-        : form.risks,
-      next_steps:            nextStepsChips.length
-        ? nextStepsChips.join('\n')
-        : form.next_steps,
+      risks:                 form.risks,
+      next_steps:            form.next_steps,
+      howItWorksChips,
+      targetMarketChips,
+      risksChips,
+      nextStepsChips,
+      teamMembers,
+      originStory,
+      cvForm,
+      tractionMilestones,
+      revenueForm,
     }
-    await supabase.from('ideas').update(updates).eq('id', ideaId)
+    await supabase.from('ideas').update({ pdf_draft: draft }).eq('id', ideaId)
     setSavingProgress(false)
   }
 
@@ -1097,7 +1125,6 @@ export default function PitchPDF({ session }) {
               value={bmValue}
               onChange={(val) => {
                 setBmValue(val)
-                supabase.from('ideas').update({ business_model: serializeBMValue(val) }).eq('id', ideaId)
               }}
               theme="light"
             />
