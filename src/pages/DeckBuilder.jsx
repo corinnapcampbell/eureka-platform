@@ -31,6 +31,7 @@ function getSlideExcerpt(slide) {
 }
 
 export default function DeckBuilder({ session }) {
+  const SHOW_DECK_TIER_CARD = false // hidden until Pro deck features ship
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
   const { ideaId } = useParams()
   const navigate = useNavigate()
@@ -345,6 +346,7 @@ export default function DeckBuilder({ session }) {
                 <Thumbnail key={i} slide={slide} slideNum={i + 1} selected={current === i} onClick={() => setCurrent(i)} />
               ))}
             </div>
+            {SHOW_DECK_TIER_CARD && (
             <div style={{ marginTop: 14, padding: '14px 12px', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.14)', borderRadius: 10, flexShrink: 0 }}>
               <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'rgba(255,255,255,0.22)', marginBottom: 10 }}>Deck Builder</div>
               <div style={{ marginBottom: 10 }}>
@@ -364,6 +366,7 @@ export default function DeckBuilder({ session }) {
                 ))}
               </div>
             </div>
+            )}
           </div>
 
           {/* Main slide */}
