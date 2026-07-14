@@ -803,6 +803,12 @@ export default function PitchPDF({ session }) {
     setPublishSuccess(true)
   }
 
+  async function handleStartOverPDF() {
+    if (!window.confirm('This will discard your PDF draft and re-pull everything from your idea page. Your published PDF snapshot is not affected. Continue?')) return
+    await supabase.from('ideas').update({ pdf_draft: null }).eq('id', ideaId)
+    window.location.reload()
+  }
+
   async function handleDownload() {
     if (isMobile && /CriOS/i.test(navigator.userAgent)) {
       window.location.href = 'x-safari-' + window.location.href
@@ -1335,6 +1341,15 @@ export default function PitchPDF({ session }) {
 
           <div style={{ display: 'flex', gap: 10, marginTop: '0.5rem' }}>
             <button
+              onClick={handleStartOverPDF}
+              style={{
+                flex: '0 0 auto', background: 'none',
+                border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 12, padding: '16px 22px',
+                fontSize: 14, fontWeight: 500, color: '#888780',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >↺ Start over</button>
+            <button
               onClick={saveProgress}
               disabled={savingProgress}
               style={{
@@ -1387,6 +1402,14 @@ export default function PitchPDF({ session }) {
               ✏️ Edit
             </button>
             <button
+              onClick={handleStartOverPDF}
+              style={{
+                flex: 1, background: '#fff', border: '0.5px solid rgba(44,44,42,0.2)',
+                borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 600,
+                color: '#888780', cursor: 'pointer',
+              }}
+            >↺ Start over</button>
+            <button
               onClick={handlePublish}
               disabled={publishing || publishSuccess}
               style={{
@@ -1430,6 +1453,14 @@ export default function PitchPDF({ session }) {
             >
               ✏️  Edit
             </button>
+            <button
+              onClick={handleStartOverPDF}
+              style={{
+                flex: 1, background: '#fff', border: '0.5px solid rgba(44,44,42,0.2)',
+                borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 600,
+                color: '#888780', cursor: 'pointer',
+              }}
+            >↺ Start over</button>
             <button
               onClick={handlePublish}
               disabled={publishing || publishSuccess}
