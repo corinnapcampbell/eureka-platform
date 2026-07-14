@@ -824,14 +824,14 @@ function RevenueSlide({ slide, onUpdate }) {
         {!u && <div style={{ marginBottom: 16 }} />}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {scenarios.map(sc => (
-            <div key={sc.label} style={{ background: sc.lightColor, border: `0.5px solid ${sc.color}40`, borderRadius: 16, padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: sc.color, letterSpacing: '2px', textTransform: 'uppercase' }}>{sc.label}</div>
+            <div key={sc.label} style={{ background: sc.lightColor, border: `0.5px solid ${sc.color}40`, borderRadius: 16, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: sc.color, letterSpacing: '2px', textTransform: 'uppercase' }}>{sc.label}</div>
               {[{ label: '6 months', months: 6 }, { label: '12 months', months: 12 }, { label: '24 months', months: 24 }].map(period => (
-                <div key={period.label} style={{ borderTop: `0.5px solid ${sc.color}30`, paddingTop: 12 }}>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '1px' }}>{period.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{fmt(calcRevenue(period.months, sc.multiplier))}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{isOneTime ? 'Revenue' : 'MRR'}</div>
-                  {!isOneTime && <div style={{ fontSize: 13, color: sc.color, marginTop: 2 }}>{fmt(calcRevenue(period.months, sc.multiplier) * 12)} ARR</div>}
+                <div key={period.label} style={{ borderTop: `0.5px solid ${sc.color}30`, paddingTop: 8 }}>
+                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.4)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '1px' }}>{period.label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{fmt(calcRevenue(period.months, sc.multiplier))}</div>
+                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)' }}>{isOneTime ? 'Revenue' : 'MRR'}</div>
+                  {!isOneTime && <div style={{ fontSize: 9, color: sc.color, marginTop: 2 }}>{fmt(calcRevenue(period.months, sc.multiplier) * 12)} ARR</div>}
                 </div>
               ))}
             </div>
