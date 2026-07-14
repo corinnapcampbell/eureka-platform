@@ -801,15 +801,15 @@ function RevenueSlide({ slide, onUpdate }) {
         {hasQualitative && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Who pays', val: slide.whoPays },
-              { label: 'Revenue streams', val: slide.revenueStreams },
-              { label: 'Pricing power', val: slide.pricingPower },
-              { label: 'Revenue potential', val: slide.revenuePotential },
-              { label: 'Stage', val: slide.businessStage },
+              { label: 'Who pays', val: slide.whoPays, key: 'whoPays' },
+              { label: 'Revenue streams', val: slide.revenueStreams, key: 'revenueStreams' },
+              { label: 'Pricing power', val: slide.pricingPower, key: 'pricingPower' },
+              { label: 'Revenue potential', val: slide.revenuePotential, key: 'revenuePotential' },
+              { label: 'Stage', val: slide.businessStage, key: 'businessStage' },
             ].filter(r => r.val).map((r, i) => (
               <div key={i} style={{ background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 8, padding: '10px 12px' }}>
                 <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(123,159,247,0.6)', marginBottom: 4 }}>{r.label}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{r.val}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, maxHeight: '49.5px', overflow: 'hidden' }}>{u ? <ET value={r.val} multiline onChange={v => u(r.key, v)} style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }} /> : r.val}</div>
               </div>
             ))}
           </div>
@@ -822,7 +822,7 @@ function RevenueSlide({ slide, onUpdate }) {
         </div>
         {u && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginBottom: 16, fontStyle: 'italic' }}>Pulled from your idea page — edit here for this deck only.</div>}
         {!u && <div style={{ marginBottom: 16 }} />}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {scenarios.map(sc => (
             <div key={sc.label} style={{ background: sc.lightColor, border: `0.5px solid ${sc.color}40`, borderRadius: 16, padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: sc.color, letterSpacing: '2px', textTransform: 'uppercase' }}>{sc.label}</div>
