@@ -534,7 +534,15 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
     setAiRevenueLoading(true)
     setRevenueSuggestionReason('')
     try {
-      const prompt = `For this startup idea: "${idea.title}" — ${idea.problem || ''} ${idea.solution || ''}. Market size info: ${idea.market_size || 'unknown'}. Stage: ${idea.stage || 'unknown'}. Target audience: ${idea.target_audience || 'unknown'}. Business model: ${idea.business_model || 'unknown'}. Suggest realistic revenue projection assumptions for a financial model. Return ONLY JSON with no markdown, no backticks, no explanation: {"startingUsers": <number>, "monthlyGrowthRate": <number, percent e.g. 8>, "conversionRate": <number, percent e.g. 4>, "reasoning": "<one sentence explaining these numbers based on the idea's market and stage>"}`
+      const isOneTime = (() => {
+        try {
+          const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model
+          return (bm?.models || []).includes('One-time Purchase')
+        } catch { return false }
+      })()
+      const prompt = isOneTime
+        ? `For this one-time purchase product idea: "${idea.title}" — ${idea.problem || ''} ${idea.solution || ''}. Market size info: ${idea.market_size || 'unknown'}. Stage: ${idea.stage || 'unknown'}. Target audience: ${idea.target_audience || 'unknown'}. Business model: ${idea.business_model || 'unknown'}. This is a one-time purchase, not a subscription. Suggest realistic monthly sales projection assumptions. Return ONLY JSON with no markdown, no backticks, no explanation: {"startingUsers": <number, meaning starting monthly unit sales>, "monthlyGrowthRate": <number, percent monthly sales growth e.g. 8>, "reasoning": "<one sentence explaining these numbers based on the idea's market and stage>"}`
+        : `For this startup idea: "${idea.title}" — ${idea.problem || ''} ${idea.solution || ''}. Market size info: ${idea.market_size || 'unknown'}. Stage: ${idea.stage || 'unknown'}. Target audience: ${idea.target_audience || 'unknown'}. Business model: ${idea.business_model || 'unknown'}. Suggest realistic revenue projection assumptions for a financial model. Return ONLY JSON with no markdown, no backticks, no explanation: {"startingUsers": <number>, "monthlyGrowthRate": <number, percent e.g. 8>, "conversionRate": <number, percent e.g. 4>, "reasoning": "<one sentence explaining these numbers based on the idea's market and stage>"}`
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/revenue-suggest`, {
         method: 'POST',
         headers: {
@@ -549,7 +557,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
         setInlineEdit(v => ({ ...v, revenue_projections: {
           startingUsers: data.startingUsers,
           monthlyGrowthRate: data.monthlyGrowthRate || 10,
-          conversionRate: data.conversionRate || 5,
+          ...(!isOneTime && { conversionRate: data.conversionRate || 5 }),
           paidPriceOverride: v.revenue_projections?.paidPriceOverride || '',
         }}))
         setRevenueSuggestionReason(data.reasoning || '')
