@@ -425,11 +425,12 @@ Return exactly this format:
 
 Pick the 3 weakest fields from: problem, solution, how_it_works, competitive_advantage, risks, next_steps, target_audience. Return only the JSON array.`
 
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-scorecard`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ prompt }),
       })
@@ -489,13 +490,14 @@ Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
 
 Keys must be exactly: originality, problem_clarity, solution_fit, feasibility, market_size, market_timing, competition_level, revenue_potential, business_model, go_to_market, team_fit, next_steps, ip_defensibility, scalability, regulatory_risk, customer_validation, capital_efficiency, impact.
 Score 1 = very weak, 10 = exceptional. Be honest and direct.`
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-scorecard`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({ prompt }),
         }
@@ -543,11 +545,12 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
       const prompt = isOneTime
         ? `For this one-time purchase product idea: "${idea.title}" — ${idea.problem || ''} ${idea.solution || ''}. Market size info: ${idea.market_size || 'unknown'}. Stage: ${idea.stage || 'unknown'}. Target audience: ${idea.target_audience || 'unknown'}. Business model: ${idea.business_model || 'unknown'}. This is a one-time purchase, not a subscription. Suggest realistic monthly sales projection assumptions. Return ONLY JSON with no markdown, no backticks, no explanation: {"startingUsers": <number, meaning starting monthly unit sales>, "monthlyGrowthRate": <number, percent monthly sales growth e.g. 8>, "reasoning": "<one sentence explaining these numbers based on the idea's market and stage>"}`
         : `For this startup idea: "${idea.title}" — ${idea.problem || ''} ${idea.solution || ''}. Market size info: ${idea.market_size || 'unknown'}. Stage: ${idea.stage || 'unknown'}. Target audience: ${idea.target_audience || 'unknown'}. Business model: ${idea.business_model || 'unknown'}. Suggest realistic revenue projection assumptions for a financial model. Return ONLY JSON with no markdown, no backticks, no explanation: {"startingUsers": <number>, "monthlyGrowthRate": <number, percent e.g. 8>, "conversionRate": <number, percent e.g. 4>, "reasoning": "<one sentence explaining these numbers based on the idea's market and stage>"}`
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/revenue-suggest`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session?.access_token}`,
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({ prompt }),

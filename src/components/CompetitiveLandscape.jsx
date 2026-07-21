@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from '../supabase'
 
 const CARD_STYLE = { background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }
 const LABEL_STYLE = { fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: '1rem', display: 'block' }
@@ -255,9 +256,10 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
     setAiReason('')
     try {
       const prompt = `You are a startup analyst. Given this idea: Title: ${ideaTitle}. Problem: ${ideaProblem}. Solution: ${ideaSolution}. Return JSON only, no markdown, no explanation. JSON must have these keys: recommended_format (one of: table, matrix, gap), reason (one line explaining why this format fits), competitors (array of 4-6 objects). Each competitor object must have: name (string), for_table: { capabilities: array of booleans matching 4 columns }, for_matrix: { x: float 0-1, y: float 0-1 }, for_gap: { stage: integer 0-3 }. Also include a self object with for_matrix: { x: float 0-1, y: float 0-1 } representing where this idea sits on the matrix. Also include table_columns: array of 4 strings naming the capability columns.`
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/competitive-suggest`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({ prompt }),
       })
       const data = await res.json()

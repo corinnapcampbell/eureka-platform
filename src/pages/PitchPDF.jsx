@@ -665,13 +665,14 @@ export default function PitchPDF({ session }) {
     const loadSuggestions = async () => {
       setLoadingSuggestions(true)
       try {
+        const { data: { session } } = await supabase.auth.getSession()
         const res = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pitch-suggestion`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              Authorization: `Bearer ${session?.access_token}`,
             },
             body: JSON.stringify({ prompt: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}. Team: ${idea.team || ''}. Customer validation: ${idea.customer_validation || ''}. Traction: ${idea.traction || ''}. Generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]}` }),
           }
