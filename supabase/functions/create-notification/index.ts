@@ -9,16 +9,28 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { user_id, type, title, message } = await req.json()
+    const { idea_id, type, title, message } = await req.json()
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!
     )
 
+    const { data: idea, error: ideaError } = await supabase
+      .from('ideas')
+      .select('user_id')
+      .eq('id', idea_id)
+      .single()
+    if (ideaError || !idea) {
+      return new Response(JSON.stringify({ error: 'Idea not found' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     const { error } = await supabase
       .from('notifications')
-      .insert({ user_id, type, title, message })
+      .insert({ user_id: idea.user_id, type, title, message })
 
     if (error) throw error
 

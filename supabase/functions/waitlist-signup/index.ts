@@ -32,17 +32,18 @@ Deno.serve(async (req) => {
     }
 
     // Send confirmation email via Resend
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'eurekAIdea <noreply@myeurekaidea.com>',
-        to: email,
-        subject: "You're on the eurekAIdea waitlist",
-        html: `
+    if (res.status !== 409) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'eurekAIdea <noreply@myeurekaidea.com>',
+          to: email,
+          subject: "You're on the eurekAIdea waitlist",
+          html: `
           <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8f0;">
             <div style="background: #0e0e1f; padding: 32px 40px; text-align: center;">
               <span style="font-size: 24px; font-weight: 300; color: #ffffff; letter-spacing: -0.5px;">Eurek<span style="color: #9b7ff7;">AI</span>dea</span>
@@ -64,8 +65,9 @@ Deno.serve(async (req) => {
             </div>
           </div>
         `,
-      }),
-    })
+        }),
+      })
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -235,7 +235,7 @@ export default function SharedIdea() {
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        user_id: idea.user_id,
+        idea_id: idea.id,
         type: 'idea_viewed',
         title: '👀 Your idea was viewed',
         message: `${name.trim()} (${email.trim()}) accepted the NDA and accessed "${idea.title}"`,
