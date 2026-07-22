@@ -35,9 +35,7 @@ export default function InventorProfile() {
 
       if (publishedIdeas?.length) {
         const { data: links } = await supabase
-          .from('shared_links')
-          .select('idea_id, token')
-          .in('idea_id', publishedIdeas.map(i => i.id))
+          .rpc('get_share_tokens_for_published_ideas', { p_idea_ids: publishedIdeas.map(i => i.id) })
 
         const tokenMap = {}
         links?.forEach(l => { tokenMap[l.idea_id] = l.token })

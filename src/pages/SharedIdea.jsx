@@ -103,23 +103,20 @@ export default function SharedIdea() {
 
   useEffect(() => {
     async function fetchLink() {
-      const { data: link, error } = await supabase
-        .from('shared_links')
-        .select('*, ideas(*)')
-        .eq('token', token)
-        .maybeSingle()
+      const { data: ideaId, error } = await supabase
+        .rpc('get_idea_id_by_token', { p_token: token })
 
       if (error) console.error('shared_links fetch error:', error.message, error.code)
-      if (!link || !link.ideas) {
+      if (!ideaId) {
         setStage('error')
         return
       }
       const { data: freshIdea } = await supabase
         .from('ideas')
         .select('*')
-        .eq('id', link.ideas.id)
+        .eq('id', ideaId)
         .single()
-      const ideaToSet = freshIdea || link.ideas
+      const ideaToSet = freshIdea
       console.log('SHARED IDEA product_image_url:', ideaToSet?.product_image_url)
       setIdea(ideaToSet)
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/log-view`, {
@@ -144,7 +141,7 @@ export default function SharedIdea() {
       const { data: deck } = await supabase
         .from('pitch_decks')
         .select('share_token, is_public')
-        .eq('idea_id', link.ideas.id)
+        .eq('idea_id', ideaId)
         .eq('is_public', true)
         .maybeSingle()
       if (deck?.share_token) setDeckInfo(deck)
