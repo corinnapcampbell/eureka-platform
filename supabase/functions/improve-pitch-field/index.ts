@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Expose-Headers': 'X-AI-Remaining',
 }
 
 serve(async (req) => {
@@ -21,6 +22,15 @@ serve(async (req) => {
   if (authError || !user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
+  const body = await req.clone().json().catch(() => ({}))
+  const targetKey = body.target_key || body.ideaId || body.idea?.id || 'unknown'
+  const { data: usageCheck } = await supabaseAuth.rpc('check_ai_usage', {
+    p_user_id: user.id, p_action_type: 'improve_pitch_field', p_target_key: String(targetKey)
+  })
+  if (!usageCheck?.allowed) {
+    return new Response(JSON.stringify({ error: 'usage_limit', reason: usageCheck?.reason }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+  const aiRemaining = usageCheck?.remaining ?? null
 
   try {
     const { idea, field, currentValue } = await req.json()
@@ -68,7 +78,7 @@ Return ONLY the improved text. No explanation, no label, no markdown, no surroun
 
     const data = await response.json()
     const improved = data.content?.[0]?.text?.trim() || ''
-    return new Response(JSON.stringify({ improved }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ improved }), { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-AI-Remaining': String(aiRemaining ?? '') } })
 
   } catch (err) {
     console.error('improve-pitch-field error:', err)

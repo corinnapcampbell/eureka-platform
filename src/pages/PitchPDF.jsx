@@ -674,9 +674,10 @@ export default function PitchPDF({ session }) {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${session?.access_token}`,
             },
-            body: JSON.stringify({ prompt: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}. Team: ${idea.team || ''}. Customer validation: ${idea.customer_validation || ''}. Traction: ${idea.traction || ''}. Generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]}` }),
+            body: JSON.stringify({ prompt: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}. Team: ${idea.team || ''}. Customer validation: ${idea.customer_validation || ''}. Traction: ${idea.traction || ''}. Generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]}`, target_key: ideaId }),
           }
         )
+        if (res.status === 429) { setLoadingSuggestions(false); return }
         const parsed = await res.json()
         setSuggestions({
           howItWorks:   parsed.howItWorks   || [],
@@ -716,9 +717,14 @@ export default function PitchPDF({ session }) {
           'Authorization': `Bearer ${aiSession?.access_token}`,
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ idea: { ...idea, ...form }, field: fieldKey, currentValue: form[fieldKey] }),
+        body: JSON.stringify({ idea: { ...idea, ...form }, field: fieldKey, currentValue: form[fieldKey], target_key: `${ideaId}_${fieldKey}` }),
       })
-      if (res.ok) {
+      if (res.status === 429) {
+        const errData = await res.json().catch(() => ({}))
+        if (errData.reason === 'countdown_exhausted' || errData.reason === 'pool_exhausted') {
+          setAiSuggestions(s => ({ ...s, [`${fieldKey}_locked`]: true }))
+        }
+      } else if (res.ok) {
         const { improved } = await res.json()
         if (improved) setAiSuggestions(s => ({ ...s, [fieldKey]: improved }))
       }
@@ -1038,21 +1044,32 @@ export default function PitchPDF({ session }) {
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>{label}</div>
                   <div style={{ fontSize: 12, color: '#b0b0a8' }}>{hint}</div>
                 </div>
-                <button
-                  onClick={() => aiSuggest(key)}
-                  disabled={!!suggesting}
-                  style={{
-                    background: suggesting === key ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)',
-                    border: '0.5px solid rgba(123,159,247,0.28)',
-                    borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7',
-                    cursor: suggesting ? 'not-allowed' : 'pointer',
-                    fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
-                    opacity: suggesting && suggesting !== key ? 0.45 : 1,
-                    transition: 'opacity 0.15s',
-                  }}
-                >
-                  {suggesting === key ? '…thinking' : '✨ AI Suggest'}
-                </button>
+                {aiSuggestions[`${key}_locked`] ? (
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+                    <button disabled title="Coming soon" style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid rgba(220,38,38,0.3)', background: 'transparent', color: 'rgba(220,38,38,0.5)', cursor: 'not-allowed', whiteSpace: 'nowrap' }}>
+                      Get 10 more for $2.99
+                    </button>
+                    <a href="/pricing" style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                      Upgrade →
+                    </a>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => aiSuggest(key)}
+                    disabled={!!suggesting}
+                    style={{
+                      background: suggesting === key ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)',
+                      border: '0.5px solid rgba(123,159,247,0.28)',
+                      borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7',
+                      cursor: suggesting ? 'not-allowed' : 'pointer',
+                      fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
+                      opacity: suggesting && suggesting !== key ? 0.45 : 1,
+                      transition: 'opacity 0.15s',
+                    }}
+                  >
+                    {suggesting === key ? '…thinking' : '✨ AI Suggest'}
+                  </button>
+                )}
               </div>
               <textarea
                 value={form[key]}

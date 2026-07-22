@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Expose-Headers': 'X-AI-Remaining',
 }
 
 serve(async (req) => {
@@ -21,6 +22,15 @@ serve(async (req) => {
   if (authError || !user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
+  const body = await req.clone().json().catch(() => ({}))
+  const targetKey = body.target_key || body.ideaId || body.idea?.id || 'unknown'
+  const { data: usageCheck } = await supabaseAuth.rpc('check_ai_usage', {
+    p_user_id: user.id, p_action_type: 'blueprint_chat', p_target_key: String(targetKey)
+  })
+  if (!usageCheck?.allowed) {
+    return new Response(JSON.stringify({ error: 'usage_limit', reason: usageCheck?.reason }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+  }
+  const aiRemaining = usageCheck?.remaining ?? null
   try {
     const { messages, ideaData } = await req.json()
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
@@ -152,7 +162,7 @@ Do not invent product details not present in the input. If a detail needed for a
     }
 
     return new Response(JSON.stringify({ text: displayText, sketchPrompt }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-AI-Remaining': String(aiRemaining ?? '') },
     })
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

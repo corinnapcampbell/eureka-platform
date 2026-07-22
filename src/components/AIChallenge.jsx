@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { supabase } from '../supabase'
 
 
-export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid }) {
+export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid, ideaId }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [locked, setLocked] = useState(false)
+  const [remaining, setRemaining] = useState(null)
 
   if (!isPaid) return null
 
@@ -24,8 +26,19 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
           'Authorization': `Bearer ${session?.access_token}`,
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ sectionLabel, content })
+        body: JSON.stringify({ sectionLabel, content, target_key: ideaId ? `${ideaId}_${sectionKey}` : sectionKey })
       })
+      if (response.status === 429) {
+        const errData = await response.json().catch(() => ({}))
+        if (errData.reason === 'countdown_exhausted' || errData.reason === 'pool_exhausted') {
+          setLocked(true)
+        } else {
+          setError('Usage limit reached. Please try again later.')
+        }
+        return
+      }
+      const rem = parseInt(response.headers.get('X-AI-Remaining'))
+      if (!isNaN(rem)) setRemaining(rem)
       const raw = await response.text()
       console.log('RAW:', raw.substring(0, 200))
       let parsed
@@ -69,11 +82,36 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid 
     <div style={{ marginTop: 14 }}>
       <style>{`@keyframes aicPulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
 
-      {!result && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      {!result && !locked && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+          {remaining !== null && (
+            <span style={{ fontSize: 11, color: 'rgba(123,159,247,0.6)', fontFamily: "'Outfit', sans-serif" }}>
+              {isPaid && remaining >= 10 ? null : `${remaining} refreshes left`}
+            </span>
+          )}
           <button onClick={handleChallenge} disabled={loading || !content?.trim()} style={btnStyle}>
             {loading ? 'Analysing…' : '⚡ Challenge with AI'}
           </button>
+        </div>
+      )}
+
+      {locked && (
+        <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '12px 16px', marginTop: 8 }}>
+          <p style={{ fontSize: 12, color: '#ef4444', fontFamily: "'Outfit', sans-serif", margin: '0 0 10px' }}>
+            You've used all your free AI refreshes for this section.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              disabled
+              title="Coming soon"
+              style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.3)', background: 'transparent', color: 'rgba(239,68,68,0.5)', cursor: 'not-allowed', fontFamily: "'Outfit', sans-serif" }}
+            >
+              {isPaid ? 'Get 10 more for $1.99' : 'Get 10 more for $2.99'}
+            </button>
+            <a href="/pricing" style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.1)', color: '#a5b4fc', textDecoration: 'none', fontFamily: "'Outfit', sans-serif" }}>
+              Upgrade to Pro →
+            </a>
+          </div>
         </div>
       )}
 

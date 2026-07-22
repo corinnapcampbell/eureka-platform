@@ -19,6 +19,8 @@ const ROWS = [
   { feature: 'Investor view notifications',         free: false,         protection: false,          pro: true },
   { feature: 'Priority marketplace ranking',        free: false,         protection: false,          pro: true },
   { feature: 'Sketch tool',                          free: false,         protection: false,          pro: true },
+  { feature: 'AI actions (Scorecard, Challenge, Suggest, etc.)', free: '1 free + 3 refreshes per action', protection: '1 free + 3 refreshes per action', pro: '50/month included' },
+  { feature: 'Extra AI refreshes',                  free: '10 for $2.99', protection: '10 for $2.99',  pro: '10 for $1.99 (after 50/mo)' },
 ]
 
 function CellValue({ value }) {

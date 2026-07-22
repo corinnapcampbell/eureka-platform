@@ -274,6 +274,8 @@ export default function Blueprint({ session }) {
   }, [ideaId])
 
   const [started, setStarted] = useState(false)
+  const [chatLocked, setChatLocked] = useState(false)
+  const [chatRemaining, setChatRemaining] = useState(null)
 
   function startBlueprint() {
     setStarted(true)
@@ -309,8 +311,19 @@ Please start asking me questions to understand the product better so you can gen
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/blueprint-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
-        body: JSON.stringify({ messages: newMessages, ideaData: ideaData || {} }),
+        body: JSON.stringify({ messages: newMessages, ideaData: ideaData || {}, target_key: ideaId }),
       })
+      if (res.status === 429) {
+        const errData = await res.json().catch(() => ({}))
+        if (errData.reason === 'countdown_exhausted' || errData.reason === 'pool_exhausted') {
+          setChatLocked(true)
+          setMessages(prev => [...prev, { role: 'assistant', content: 'You\'ve used all your free AI blueprint chat messages for this idea. Upgrade to Pro or purchase more to continue.' }])
+        }
+        setLoading(false)
+        return
+      }
+      const rem = parseInt(res.headers.get('X-AI-Remaining'))
+      if (!isNaN(rem)) setChatRemaining(rem)
       const json = await res.json()
       if (json.error) throw new Error(json.error)
 
@@ -516,7 +529,32 @@ Please start asking me questions to understand the product better so you can gen
         )}
         {savedSketch && <span style={s.savedTxt}>Saved ✓</span>}
 
+        {/* Remaining hint */}
+        {chatRemaining !== null && !chatLocked && (
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textAlign: 'right', marginTop: 6, fontFamily: 'Outfit, sans-serif' }}>
+            {chatRemaining} messages left
+          </p>
+        )}
+
+        {/* Locked state */}
+        {chatLocked && (
+          <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '12px 16px', marginTop: 12 }}>
+            <p style={{ fontSize: 13, color: '#ef4444', margin: '0 0 10px', fontFamily: 'Outfit, sans-serif' }}>
+              You've used all your free blueprint chat messages for this idea.
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button disabled title="Coming soon" style={{ fontSize: 12, padding: '7px 16px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)', background: 'transparent', color: 'rgba(239,68,68,0.5)', cursor: 'not-allowed', fontFamily: 'Outfit, sans-serif' }}>
+                Get 10 more for $2.99
+              </button>
+              <a href="/pricing" style={{ fontSize: 12, padding: '7px 16px', borderRadius: 8, border: '1px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', textDecoration: 'none', fontFamily: 'Outfit, sans-serif' }}>
+                Upgrade to Pro →
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Input */}
+        {!chatLocked && (
         <div style={s.inputRow}>
           <textarea
             ref={textareaRef}
@@ -535,6 +573,7 @@ Please start asking me questions to understand the product better so you can gen
             Send
           </button>
         </div>
+        )}
       </div>
     </div>
   )

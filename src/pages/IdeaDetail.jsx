@@ -432,8 +432,9 @@ Pick the 3 weakest fields from: problem, solution, how_it_works, competitive_adv
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, target_key: id }),
       })
+      if (res.status === 429) { setPrePublishLoading(false); return }
       const data = await res.json()
       const text = typeof data === 'string' ? data : JSON.stringify(data)
       const clean = text.replace(/```json|```/g, '').trim()
@@ -499,9 +500,10 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session?.access_token}`,
           },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, target_key: id }),
         }
       )
+      if (res.status === 429) { setPublishingScore(false); return }
       const parsed = await res.json()
       const DIM_WEIGHTS = {originality:0.06,problem_clarity:0.06,solution_fit:0.06,feasibility:0.06,market_size:0.06,market_timing:0.06,competition_level:0.05,revenue_potential:0.06,business_model:0.06,go_to_market:0.05,team_fit:0.05,next_steps:0.05,ip_defensibility:0.05,scalability:0.06,regulatory_risk:0.05,customer_validation:0.05,capital_efficiency:0.05,impact:0.04}
       const overall = parsed.scores.reduce((acc, s) => acc + (DIM_WEIGHTS[s.key] || 0) * s.score, 0)
@@ -553,8 +555,16 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           'Authorization': `Bearer ${session?.access_token}`,
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, target_key: id }),
       })
+      if (res.status === 429) {
+        const errData = await res.json().catch(() => ({}))
+        if (errData.reason === 'countdown_exhausted' || errData.reason === 'pool_exhausted') {
+          setRevenueSuggestionReason('Revenue AI suggestions exhausted. Upgrade to Pro or purchase more refreshes.')
+        }
+        setAiRevenueLoading(false)
+        return
+      }
       const data = await res.json()
       if (data.startingUsers) {
         setInlineEdit(v => ({ ...v, revenue_projections: {
@@ -917,7 +927,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 </p>
               )}
               {savedField === 'problem' && <span style={savedConfirmDarkStyle}>Saved ✓</span>}
-              <AIChallenge sectionKey="problem" sectionLabel="Problem" content={idea.problem} isPaid={isPaid} />
+              <AIChallenge sectionKey="problem" sectionLabel="Problem" content={idea.problem} isPaid={isPaid} ideaId={id} />
             </div>
           )}
 
@@ -945,7 +955,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                   </p>
                 )}
                 {savedField === 'solution' && <span style={savedConfirmStyle}>Saved ✓</span>}
-                <AIChallenge sectionKey="solution" sectionLabel="Solution" content={idea.solution} isPaid={isPaid} />
+                <AIChallenge sectionKey="solution" sectionLabel="Solution" content={idea.solution} isPaid={isPaid} ideaId={id} />
               </div>
             </div>
           )}
@@ -1019,7 +1029,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 {idea.tease || (isOwner ? <em style={{ opacity: 0.35, fontStyle: 'normal' }}>No investor tease yet — click ✏️ to add</em> : null)}
               </p>
             )}
-            <AIChallenge sectionKey="tease" sectionLabel="Investor Tease" content={idea.tease} isPaid={isPaid} />
+            <AIChallenge sectionKey="tease" sectionLabel="Investor Tease" content={idea.tease} isPaid={isPaid} ideaId={id} />
           </div>
         )}
 
@@ -1056,7 +1066,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to describe how your idea works</p>
             )}
             {savedField === 'how_it_works' && inlineEdit.how_it_works === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
-            <AIChallenge sectionKey="how_it_works" sectionLabel="How It Works" content={idea.how_it_works} isPaid={isPaid} />
+            <AIChallenge sectionKey="how_it_works" sectionLabel="How It Works" content={idea.how_it_works} isPaid={isPaid} ideaId={id} />
           </div>
         )}
 
@@ -1134,6 +1144,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               sectionLabel="Business Model"
               content={(() => { try { const bm = typeof idea.business_model === 'string' ? JSON.parse(idea.business_model) : idea.business_model; return bm?.models?.length ? `Models: ${bm.models.join(', ')}` : '' } catch { return idea.business_model || '' } })()}
               isPaid={isPaid}
+              ideaId={id}
             />
           </div>
         )}
@@ -1362,7 +1373,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️</p>
               ) : null}
             </div>
-            <AIChallenge sectionKey="competitive_advantage" sectionLabel="Competitive Advantage" content={idea.competitive_advantage} isPaid={isPaid} />
+            <AIChallenge sectionKey="competitive_advantage" sectionLabel="Competitive Advantage" content={idea.competitive_advantage} isPaid={isPaid} ideaId={id} />
           </div>
         )}
 
@@ -1383,6 +1394,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             ideaTitle={idea.title}
             ideaProblem={idea.problem}
             ideaSolution={idea.solution}
+            ideaId={id}
           />
         )}
 
@@ -1411,7 +1423,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to list your risks & challenges</p>
             )}
             {savedField === 'risks' && inlineEdit.risks === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
-            <AIChallenge sectionKey="risks" sectionLabel="Risks & Challenges" content={idea.risks} isPaid={isPaid} />
+            <AIChallenge sectionKey="risks" sectionLabel="Risks & Challenges" content={idea.risks} isPaid={isPaid} ideaId={id} />
           </div>
         )}
 
@@ -1440,7 +1452,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>Not added yet — click ✏️ to outline your next steps</p>
             )}
             {savedField === 'next_steps' && inlineEdit.next_steps === undefined && <span style={savedConfirmStyle}>Saved ✓</span>}
-            <AIChallenge sectionKey="next_steps" sectionLabel="Next Steps" content={idea.next_steps} isPaid={isPaid} />
+            <AIChallenge sectionKey="next_steps" sectionLabel="Next Steps" content={idea.next_steps} isPaid={isPaid} ideaId={id} />
           </div>
         )}
 

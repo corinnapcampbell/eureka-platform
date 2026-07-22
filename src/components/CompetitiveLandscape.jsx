@@ -136,7 +136,7 @@ function GapReadOnly({ data, ideaTitle }) {
   )
 }
 
-export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid, ideaTitle, ideaProblem, ideaSolution }) {
+export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid, ideaTitle, ideaProblem, ideaSolution, ideaId }) {
   const [format, setFormat] = useState('table')
   const [tableData, setTableData] = useState({ columns: [], competitors: [] })
   const [matrixData, setMatrixData] = useState({ axis_x: { label: 'Protection level', custom: false }, axis_y: { label: 'Investor-readiness', custom: false }, competitors: [], self: { x: 0.5, y: 0.5 } })
@@ -145,6 +145,8 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
   const [aiReason, setAiReason] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
+  const [aiLocked, setAiLocked] = useState(false)
+  const [aiRemaining, setAiRemaining] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const matrixRef = useRef(null)
@@ -260,8 +262,20 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/competitive-suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, target_key: ideaId || 'unknown' }),
       })
+      if (res.status === 429) {
+        const errData = await res.json().catch(() => ({}))
+        if (errData.reason === 'countdown_exhausted' || errData.reason === 'pool_exhausted') {
+          setAiLocked(true)
+        } else {
+          setAiError('Usage limit reached. Please try again later.')
+        }
+        setAiLoading(false)
+        return
+      }
+      const rem = parseInt(res.headers.get('X-AI-Remaining'))
+      if (!isNaN(rem)) setAiRemaining(rem)
       const data = await res.json()
       const result = typeof data === 'string' ? JSON.parse(data) : (data.result || data)
       if (result.recommended_format) setFormat(result.recommended_format)
@@ -301,9 +315,32 @@ export default function CompetitiveLandscape({ value, onChange, isOwner, isPaid,
 
       {isPaid && (
         <div style={{ marginBottom: '1rem' }}>
-          <button onClick={aiSuggest} disabled={aiLoading} style={{ ...BTN, opacity: aiLoading ? 0.6 : 1 }}>
-            {aiLoading ? 'Analyzing…' : '✨ AI-suggest competitors'}
-          </button>
+          {aiLocked ? (
+            <div style={{ background: '#fff5f5', border: '0.5px solid rgba(220,38,38,0.3)', borderRadius: 8, padding: '12px 14px' }}>
+              <p style={{ fontSize: 12, color: '#dc2626', margin: '0 0 10px' }}>
+                You've used all your free AI competitor suggestions for this idea.
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button disabled title="Coming soon" style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(220,38,38,0.3)', background: 'transparent', color: 'rgba(220,38,38,0.5)', cursor: 'not-allowed' }}>
+                  Get 10 more for $1.99
+                </button>
+                <a href="/pricing" style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.1)', color: '#4a6fd4', textDecoration: 'none' }}>
+                  Upgrade to Pro →
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <button onClick={aiSuggest} disabled={aiLoading} style={{ ...BTN, opacity: aiLoading ? 0.6 : 1 }}>
+                {aiLoading ? 'Analyzing…' : '✨ AI-suggest competitors'}
+              </button>
+              {aiRemaining !== null && (
+                <span style={{ fontSize: 11, color: '#888780' }}>
+                  {aiRemaining} refreshes left
+                </span>
+              )}
+            </div>
+          )}
           {aiReason && <p style={{ fontSize: 12, color: '#7b9ff7', fontStyle: 'italic', marginTop: 6 }}>{aiReason}</p>}
           {aiError && <p style={{ fontSize: 12, color: '#e24b4a', marginTop: 6 }}>{aiError}</p>}
         </div>

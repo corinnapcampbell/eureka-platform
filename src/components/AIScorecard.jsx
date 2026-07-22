@@ -43,6 +43,8 @@ export default function AIScorecard({ idea, ideaId, isPaid = false, readOnly = f
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [scorecard, setScorecard] = useState(saved)
+  const [locked, setLocked] = useState(false)
+  const [remaining, setRemaining] = useState(null)
 
   const currentHash = ideaHash(idea)
   const needsRefresh = scorecard && scorecard.idea_hash !== currentHash
@@ -85,17 +87,30 @@ Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
 Keys must be exactly: originality, problem_clarity, solution_fit, feasibility, market_size, market_timing, competition_level, revenue_potential, business_model, go_to_market, team_fit, next_steps, ip_defensibility, scalability, regulatory_risk, customer_validation, capital_efficiency, impact.
 Score 1 = very weak, 10 = exceptional. Be honest and direct.`
 
+      const { data: { session: aiSession } } = await supabase.auth.getSession()
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-scorecard`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${aiSession?.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, target_key: ideaId }),
         }
       )
+      if (res.status === 429) {
+        const errData = await res.json().catch(() => ({}))
+        if (errData.reason === 'countdown_exhausted' || errData.reason === 'pool_exhausted') {
+          setLocked(true)
+        } else {
+          setError('Usage limit reached. Please try again later.')
+        }
+        return
+      }
+      const rem = parseInt(res.headers.get('X-AI-Remaining'))
+      if (!isNaN(rem)) setRemaining(rem)
       const parsed = await res.json()
 
       const overall = DIMENSIONS.reduce((acc, d) => {
@@ -151,17 +166,40 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                   ⚠️ Your idea has changed since the last score. Refresh for updated results.
                 </p>
               )}
-              <button
-                onClick={generate}
-                disabled={loading}
-                style={{
-                  background: loading ? 'rgba(123,159,247,0.3)' : 'linear-gradient(90deg,#7b9ff7,#9b7ff7)',
-                  border: 'none', borderRadius: 10, padding: '10px 20px',
-                  fontSize: 13, fontWeight: 600, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {loading ? 'Analyzing…' : hasScore ? (needsRefresh ? '🔄 Refresh Score' : '🔄 Regenerate Score') : '✨ Generate AI Score'}
-              </button>
+              {locked ? (
+                <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '12px 16px' }}>
+                  <p style={{ fontSize: 12, color: '#ef4444', fontFamily: "'Outfit', sans-serif", margin: '0 0 10px' }}>
+                    You've used all your free AI scorecard refreshes for this idea.
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button disabled title="Coming soon" style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.3)', background: 'transparent', color: 'rgba(239,68,68,0.5)', cursor: 'not-allowed', fontFamily: "'Outfit', sans-serif" }}>
+                      {isPaid ? 'Get 10 more for $1.99' : 'Get 10 more for $2.99'}
+                    </button>
+                    <a href="/pricing" style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.1)', color: '#a5b4fc', textDecoration: 'none', fontFamily: "'Outfit', sans-serif" }}>
+                      Upgrade to Pro →
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={generate}
+                    disabled={loading}
+                    style={{
+                      background: loading ? 'rgba(123,159,247,0.3)' : 'linear-gradient(90deg,#7b9ff7,#9b7ff7)',
+                      border: 'none', borderRadius: 10, padding: '10px 20px',
+                      fontSize: 13, fontWeight: 600, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {loading ? 'Analyzing…' : hasScore ? (needsRefresh ? '🔄 Refresh Score' : '🔄 Regenerate Score') : '✨ Generate AI Score'}
+                  </button>
+                  {remaining !== null && (
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: "'Outfit', sans-serif" }}>
+                      {isPaid && remaining >= 10 ? null : `${remaining} refreshes left`}
+                    </span>
+                  )}
+                </div>
+              )}
               {error && <p style={{ fontSize: 12, color: '#ef4444', marginTop: 8 }}>{error}</p>}
             </div>
           )}

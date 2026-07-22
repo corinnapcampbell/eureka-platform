@@ -44,6 +44,8 @@ export default function PitchBuilder({ session }) {
   const pitchRef = useRef(emptyPitch)
   const [suggestions, setSuggestions] = useState({})
   const [loadingSuggestion, setLoadingSuggestion] = useState({})
+  const [suggestionLocked, setSuggestionLocked] = useState({})
+  const [suggestionRemaining, setSuggestionRemaining] = useState(null)
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
   const saveTimers = useRef({})
@@ -118,8 +120,19 @@ export default function PitchBuilder({ session }) {
           section_name: sectionKey,
           existing_sections: pitchRef.current,
           idea_context: { title: idea?.title },
+          target_key: ideaId,
         }),
       })
+      if (res.status === 429) {
+        const errData = await res.json().catch(() => ({}))
+        if (errData.reason === 'countdown_exhausted' || errData.reason === 'pool_exhausted') {
+          setSuggestionLocked(l => ({ ...l, [sectionKey]: true }))
+        }
+        setLoadingSuggestion(l => ({ ...l, [sectionKey]: false }))
+        return
+      }
+      const rem = parseInt(res.headers.get('X-AI-Remaining'))
+      if (!isNaN(rem)) setSuggestionRemaining(rem)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const { suggestion } = await res.json()
       setSuggestions(s => ({ ...s, [sectionKey]: suggestion || '' }))
@@ -257,6 +270,8 @@ export default function PitchBuilder({ session }) {
               onAISuggest={() => getSuggestion(section.key)}
               onUseSuggestion={() => useSuggestion(section.key)}
               onDismissSuggestion={() => dismissSuggestion(section.key)}
+              aiLocked={!!suggestionLocked[section.key]}
+              aiRemaining={suggestionRemaining}
             />
           ))}
           <div style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '2rem', marginTop: '0.5rem' }}>
@@ -391,7 +406,7 @@ export default function PitchBuilder({ session }) {
   )
 }
 
-function SectionCard({ section, index, value, onChange, aiEnabled, loadingAI, suggestion, onAISuggest, onUseSuggestion, onDismissSuggestion }) {
+function SectionCard({ section, index, value, onChange, aiEnabled, loadingAI, suggestion, onAISuggest, onUseSuggestion, onDismissSuggestion, aiLocked, aiRemaining }) {
   const filled = value?.trim()
   return (
     <div style={{
@@ -417,22 +432,38 @@ function SectionCard({ section, index, value, onChange, aiEnabled, loadingAI, su
           </div>
           <p style={{ fontSize: 12, color: 'var(--muted)', paddingLeft: 1 }}>{section.hint}</p>
         </div>
-        <button
-          onClick={onAISuggest}
-          disabled={!aiEnabled || loadingAI}
-          title={!aiEnabled ? `Fill ${3} sections first to unlock AI suggestions` : `Get an AI suggestion for ${section.label}`}
-          style={{
-            fontSize: 11, fontWeight: 500, flexShrink: 0,
-            border: `0.5px solid ${aiEnabled ? 'var(--gold)' : 'var(--border)'}`,
-            background: aiEnabled ? 'var(--gold-light)' : 'transparent',
-            color: aiEnabled ? 'var(--gold)' : 'var(--muted)',
-            borderRadius: 6, padding: '5px 10px',
-            opacity: (!aiEnabled || loadingAI) ? 0.5 : 1,
-            cursor: aiEnabled && !loadingAI ? 'pointer' : 'default',
-          }}
-        >
-          {loadingAI ? '...' : '✨ AI Suggest'}
-        </button>
+        {aiLocked ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+            <button disabled title="Coming soon" style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'not-allowed', opacity: 0.5 }}>
+              Get 10 more for $2.99
+            </button>
+            <a href="/pricing" style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', textDecoration: 'none' }}>
+              Upgrade →
+            </a>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {aiRemaining !== null && (
+              <span style={{ fontSize: 10, color: 'var(--muted)' }}>{aiRemaining} left</span>
+            )}
+            <button
+              onClick={onAISuggest}
+              disabled={!aiEnabled || loadingAI}
+              title={!aiEnabled ? `Fill ${3} sections first to unlock AI suggestions` : `Get an AI suggestion for ${section.label}`}
+              style={{
+                fontSize: 11, fontWeight: 500,
+                border: `0.5px solid ${aiEnabled ? 'var(--gold)' : 'var(--border)'}`,
+                background: aiEnabled ? 'var(--gold-light)' : 'transparent',
+                color: aiEnabled ? 'var(--gold)' : 'var(--muted)',
+                borderRadius: 6, padding: '5px 10px',
+                opacity: (!aiEnabled || loadingAI) ? 0.5 : 1,
+                cursor: aiEnabled && !loadingAI ? 'pointer' : 'default',
+              }}
+            >
+              {loadingAI ? '...' : '✨ AI Suggest'}
+            </button>
+          </div>
+        )}
       </div>
 
       <textarea
