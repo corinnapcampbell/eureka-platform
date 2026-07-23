@@ -82,15 +82,15 @@ export default function Landing() {
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '5rem 2rem 4rem' }}>
         <div className="animate-fadeUp" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--gold-light)', borderRadius: 20, padding: '5px 14px', marginBottom: '1.5rem' }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold-mid)' }} />
-          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--gold)', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Your idea vault</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--gold)', letterSpacing: '0.4px', textTransform: 'uppercase' }}>The trusted first step for your idea</span>
         </div>
  
         <h1 className="serif animate-fadeUp" style={{ fontSize: 'clamp(32px, 7vw, 56px)', lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: '1.25rem', animationDelay: '0.1s' }}>
-          To make your idea real,<br />you have to share it.<br /><em style={{ color: 'var(--gold)' }}>eurekAIdea makes sure sharing it doesn't mean losing it.</em>
+          To make your idea real, you have to begin somewhere.<br />eurekAIdea makes sure that beginning becomes a venture<br /><em style={{ color: 'var(--gold)' }}>— timestamped, protected, and documented from day one.</em>
         </h1>
 
         <p className="animate-fadeUp" style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 480, marginBottom: '2.5rem', animationDelay: '0.2s' }}>
-          Every idea you submit is timestamped the moment it's saved — creating documented proof it was yours first, and giving you a safe, professional way to share it with exactly who you choose.
+          Every idea you submit is timestamped the moment it's saved — creating documented proof of exactly when you submitted it, and giving you clear guidance on what to do next, no business experience required.
         </p>
  
         <div className="animate-fadeUp" style={{ display: 'flex', gap: 12, animationDelay: '0.3s' }}>
@@ -109,9 +109,10 @@ export default function Landing() {
           background: 'var(--white)', border: '0.5px solid var(--border)',
           borderRadius: 16, padding: '3rem',
         }}>
-          <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '1rem' }}>Your idea is safe here</p>
+          <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '1rem' }}>Step one: protect it</p>
           <h2 className="serif" style={{ fontSize: 32, marginBottom: '1.5rem', maxWidth: 500 }}>Built-in proof, on your terms</h2>
- 
+          <p style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 560, marginBottom: '2rem' }}>Protection is where every idea starts — not where it ends.</p>
+
           <div className="feature-cards">
             {[
               { icon: '⬡', title: 'Blockchain timestamp', desc: 'A cryptographic fingerprint of your idea is anchored to the blockchain the moment you submit — permanent, immutable, and independently verifiable.' },
@@ -131,7 +132,34 @@ export default function Landing() {
           </div>
         </div>
       </div>
- 
+
+      {/* AI Tools section */}
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 2rem 6rem' }}>
+        <div style={{ background: 'var(--white)', border: '0.5px solid var(--border)', borderRadius: 16, padding: '3rem' }}>
+          <p style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '1rem' }}>Step two: know what you've got</p>
+          <h2 className="serif" style={{ fontSize: 32, marginBottom: '1.5rem', maxWidth: 560 }}>Turn a raw idea into something you can actually pitch</h2>
+          <p style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 600, marginBottom: '2.5rem' }}>Once your idea is protected, eurekAIdea's AI tools help you understand it, stress-test it, and present it — so you walk into any conversation with more than just an idea.</p>
+
+          <div className="feature-cards">
+            {[
+              { icon: '◈', title: 'AI Investor Scorecard', desc: 'Get an honest, structured score across the dimensions investors actually care about — market size, defensibility, team fit, and more. Understand where your idea stands before anyone else sees it.' },
+              { icon: '✦', title: 'Sketch', desc: 'A lightweight visual canvas to map out your idea — flows, diagrams, rough product thinking. Not a finished design tool, but a place to think out loud and capture structure before it slips away.' },
+              { icon: '▤', title: 'Pitch Deck & PDF', desc: 'Generate a structured pitch document from your idea — problem, solution, market, traction, ask. Export as a PDF you can share directly or use as a starting point for a real deck.' },
+            ].map(({ icon, title, desc }) => (
+              <div key={title}>
+                <div style={{ fontSize: 22, marginBottom: '0.75rem', color: 'var(--gold)' }}>{icon}</div>
+                <div style={{ fontWeight: 500, fontSize: 15, marginBottom: '0.5rem' }}>{title}</div>
+                <div style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--muted)' }}>{desc}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ borderTop: '0.5px solid var(--border)', paddingTop: '1.5rem', fontSize: 13, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 640 }}>
+            AI tools are included on every plan. Free users get one run per action with three refreshes — so you can explore your idea without committing to a subscription. Pro users get 50 runs per month, pooled across all actions.
+          </div>
+        </div>
+      </div>
+
       {/* Pricing */}
       <div style={{ background: '#0e0e1f', padding: '5rem 2rem' }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
