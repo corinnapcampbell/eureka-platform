@@ -70,20 +70,8 @@ export default function SubmitIdea({ session }) {
     setGeneratingAI(false)
   }
 
-  // Simple hash function for blockchain simulation (in production use OpenTimestamps API)
-  function generateHash(str) {
-    let hash = 0
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
-      hash = hash & hash
-    }
-    return Math.abs(hash).toString(16).padStart(16, '0') + Date.now().toString(16)
-  }
-
   async function handleSubmit() {
     setSaving(true)
-    const hash = generateHash(JSON.stringify(form) + session.user.id)
     const { data, error } = await supabase.from('ideas').insert({
       user_id: session.user.id,
       title: form.title,
@@ -97,7 +85,6 @@ export default function SubmitIdea({ session }) {
       pricing_model: form.pricing_model,
       visibility: form.visibility,
       ai_profile: form.ai_profile,
-      blockchain_hash: hash,
       owner_email: session.user.email,
     }).select().single()
 
