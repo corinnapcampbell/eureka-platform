@@ -106,7 +106,7 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid,
               title="Coming soon"
               style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.3)', background: 'transparent', color: 'rgba(239,68,68,0.5)', cursor: 'not-allowed', fontFamily: "'Outfit', sans-serif" }}
             >
-              {isPaid ? 'Get 10 more for $1.99' : 'Get 10 more for $2.99'}
+              {isPaid ? 'Get 10 more for $1.99' : 'Get 10 more for this idea — $2.99'}
             </button>
             <a href="/pricing" style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.1)', color: '#a5b4fc', textDecoration: 'none', fontFamily: "'Outfit', sans-serif" }}>
               Upgrade to Pro →

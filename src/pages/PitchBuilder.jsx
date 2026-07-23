@@ -435,7 +435,7 @@ function SectionCard({ section, index, value, onChange, aiEnabled, loadingAI, su
         {aiLocked ? (
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
             <button disabled title="Coming soon" style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'not-allowed', opacity: 0.5 }}>
-              Get 10 more for $2.99
+              Get 10 more for this idea — $2.99
             </button>
             <a href="/pricing" style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', textDecoration: 'none' }}>
               Upgrade →

@@ -1879,6 +1879,18 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             )}
           </div>
 
+          {isOwner && (
+            <div style={{ marginBottom: '1rem' }}>
+              <button
+                disabled
+                title="Coming soon"
+                style={{ fontSize: 12, padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }}
+              >
+                Protect this idea — $4.99
+              </button>
+            </div>
+          )}
+
           {!shareLink ? (
             <button onClick={generateShareLink} disabled={generatingLink} style={{
               background: 'rgba(123,159,247,0.15)', color: '#7b9ff7',
