@@ -1,1 +1,4 @@
-ALTER TABLE public_profiles ADD COLUMN IF NOT EXISTS is_pro boolean NOT NULL DEFAULT false;
+-- Reverted: is_pro was added and then dropped in the same session.
+-- Tier is tracked in user_subscriptions.tier (the existing real system).
+-- This migration is a no-op kept for history continuity.
+ALTER TABLE public_profiles DROP COLUMN IF EXISTS is_pro;

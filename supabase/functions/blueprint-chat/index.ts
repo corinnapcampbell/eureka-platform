@@ -117,8 +117,8 @@ CONVERSATION RULES:
 
       // Gate: free users get one sketch per idea
       const serviceClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-      const { data: profile } = await serviceClient.from('public_profiles').select('is_pro').eq('user_id', user.id).maybeSingle()
-      const userIsPro = profile?.is_pro ?? false
+      const { data: subRow } = await serviceClient.from('user_subscriptions').select('tier').eq('user_id', user.id).maybeSingle()
+      const userIsPro = subRow?.tier === 'pro'
       if ((ideaData?.sketch_generation_count ?? 0) >= 1 && !userIsPro) {
         displayText = "You've used your free sketch generation for this idea. Upgrade to Pro to generate unlimited sketches."
         return new Response(JSON.stringify({ text: displayText, sketchPrompt: null }), {

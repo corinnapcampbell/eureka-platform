@@ -209,17 +209,17 @@ export default function IdeaDetail({ session }) {
   }, [id])
 
   useEffect(() => {
-    async function fetchIsPro() {
+    async function fetchTier() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       const { data } = await supabase
-        .from('public_profiles')
-        .select('is_pro')
+        .from('user_subscriptions')
+        .select('tier')
         .eq('user_id', user.id)
         .maybeSingle()
-      setIsPaid(data?.is_pro ?? false)
+      setIsPaid(data?.tier === 'pro')
     }
-    fetchIsPro()
+    fetchTier()
   }, [])
 
   async function generateShareLink() {
