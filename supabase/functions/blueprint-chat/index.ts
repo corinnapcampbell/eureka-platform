@@ -115,6 +115,17 @@ CONVERSATION RULES:
     if (readyMatch) {
       displayText = text.replace('READY_TO_GENERATE', '').replace(/```json[\s\S]*?```/, '').trim()
 
+      // Gate: free users get one sketch per idea
+      const serviceClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+      const { data: profile } = await serviceClient.from('public_profiles').select('is_pro').eq('user_id', user.id).maybeSingle()
+      const userIsPro = profile?.is_pro ?? false
+      if ((ideaData?.sketch_generation_count ?? 0) >= 1 && !userIsPro) {
+        displayText = "You've used your free sketch generation for this idea. Upgrade to Pro to generate unlimited sketches."
+        return new Response(JSON.stringify({ text: displayText, sketchPrompt: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-AI-Remaining': String(aiRemaining ?? '') },
+        })
+      }
+
       const sketchSystem = `You are generating a prompt for an external AI image generator (ChatGPT/GPT Image) that will produce a hand-drawn graphite pencil exploded-view industrial design sketch, in a fixed house style, for a physical product idea. You are given a structured product description extracted from a user interview (shape, mechanism if any, dimensions, materials, use sequence, decorative details). Output ONLY the final image-generation prompt text — no preamble, no explanation.
 
 The prompt you generate must always include, in this order:

@@ -120,7 +120,7 @@ export default function IdeaDetail({ session }) {
   const [inlineEdit, setInlineEdit] = useState({})
   const [inlineSaving, setInlineSaving] = useState(null)
   const [savedField, setSavedField] = useState(null)
-  const [isPaid, setIsPaid] = useState(true) // hardcoded true for testing; wire to real tier later
+  const [isPaid, setIsPaid] = useState(false)
   const [aiRevenueLoading, setAiRevenueLoading] = useState(false)
   const [revenueSuggestionReason, setRevenueSuggestionReason] = useState('')
   const [teaseSuggesting, setTeaseSuggesting] = useState(false)
@@ -207,6 +207,20 @@ export default function IdeaDetail({ session }) {
     }
     fetchDeck()
   }, [id])
+
+  useEffect(() => {
+    async function fetchIsPro() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('public_profiles')
+        .select('is_pro')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      setIsPaid(data?.is_pro ?? false)
+    }
+    fetchIsPro()
+  }, [])
 
   async function generateShareLink() {
     setGeneratingLink(true)
@@ -458,6 +472,16 @@ Pick the 3 weakest fields from: problem, solution, how_it_works, competitive_adv
     try {
       const newCount = (idea.publish_count || 0) + 1
       await supabase.from('ideas').update({ is_published: true, publish_count: newCount }).eq('id', id)
+      // Fire-and-forget OTS anchor — paid users only, must not block publish
+      if (isPaid) {
+        supabase.auth.getSession().then(({ data: { session: s } }) =>
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ots-anchor`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s?.access_token}` },
+            body: JSON.stringify({ idea_id: id }),
+          })
+        ).catch(e => console.error('ots-anchor failed (non-blocking):', e))
+      }
       const prompt = `You are an expert startup evaluator. Score this idea on 18 dimensions, each 1-10.
 
 Idea:

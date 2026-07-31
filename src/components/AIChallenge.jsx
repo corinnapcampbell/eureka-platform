@@ -9,8 +9,6 @@ export default function AIChallenge({ sectionKey, sectionLabel, content, isPaid,
   const [locked, setLocked] = useState(false)
   const [remaining, setRemaining] = useState(null)
 
-  if (!isPaid) return null
-
   async function handleChallenge() {
     if (loading || !content?.trim()) return
     setLoading(true)
