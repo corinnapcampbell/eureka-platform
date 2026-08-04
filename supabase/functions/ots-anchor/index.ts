@@ -28,6 +28,27 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, serviceKey, {
       global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
     })
+    const { data: { user }, error: authError } = await userClient.auth.getUser()
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const tierClient = createClient(supabaseUrl, serviceKey)
+    const { data: subRow } = await tierClient
+      .from('user_subscriptions')
+      .select('tier')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (subRow?.tier !== 'pro') {
+      return new Response(JSON.stringify({ error: 'Bitcoin anchoring requires a Pro subscription' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const { data: idea, error: ideaError } = await userClient
       .from('ideas')
       .select('blockchain_hash, ots_content_hash, title')
