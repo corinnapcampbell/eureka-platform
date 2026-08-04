@@ -113,7 +113,7 @@ export default function SharedIdea() {
       }
       const { data: freshIdea } = await supabase
         .from('ideas')
-        .select('id, user_id, title, tagline, category, target_audience, market_size, problem, solution, terms, pricing_model, how_it_works, business_model, competitive_advantage, risks, next_steps, asking_price, tease, team, customer_validation, traction, competitive_landscape, revenue_projections, who_pays, revenue_streams, pricing_power, revenue_potential, business_stage, product_image_url, support_files, sketch_image_url, nda_required, pdf_published, deck_published, pdf_snapshot, blockchain_hash, ai_profile, created_at')
+        .select('id, user_id, title, tagline, category, target_audience, market_size, problem, solution, terms, pricing_model, how_it_works, business_model, competitive_advantage, risks, next_steps, asking_price, tease, team, customer_validation, traction, competitive_landscape, revenue_projections, who_pays, revenue_streams, pricing_power, revenue_potential, business_stage, product_image_url, support_files, sketch_image_url, nda_required, pdf_published, deck_published, pdf_snapshot, blockchain_hash, ai_profile, ai_scorecard, created_at')
         .eq('id', ideaId)
         .single()
       const ideaToSet = freshIdea
@@ -259,7 +259,7 @@ export default function SharedIdea() {
   async function fetchFreshIdea() {
     const { data } = await supabase
       .from('ideas')
-      .select('id, user_id, title, tagline, category, target_audience, market_size, problem, solution, terms, pricing_model, how_it_works, business_model, competitive_advantage, risks, next_steps, asking_price, tease, team, customer_validation, traction, competitive_landscape, revenue_projections, who_pays, revenue_streams, pricing_power, revenue_potential, business_stage, product_image_url, support_files, sketch_image_url, nda_required, pdf_published, deck_published, pdf_snapshot, blockchain_hash, ai_profile, created_at')
+      .select('id, user_id, title, tagline, category, target_audience, market_size, problem, solution, terms, pricing_model, how_it_works, business_model, competitive_advantage, risks, next_steps, asking_price, tease, team, customer_validation, traction, competitive_landscape, revenue_projections, who_pays, revenue_streams, pricing_power, revenue_potential, business_stage, product_image_url, support_files, sketch_image_url, nda_required, pdf_published, deck_published, pdf_snapshot, blockchain_hash, ai_profile, ai_scorecard, created_at')
       .eq('id', idea.id)
       .single()
     console.log('FRESH IDEA DATA:', JSON.stringify(data, null, 2))
