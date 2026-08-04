@@ -221,7 +221,6 @@ export default function SharedIdea() {
         idea_title: idea.title,
         viewer_name: name.trim(),
         viewer_email: email.trim(),
-        owner_email: idea.owner_email,
       }),
     }).catch(err => console.error('Email notification failed:', err))
     // Create notification for idea owner

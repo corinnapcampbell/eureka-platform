@@ -9,9 +9,43 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { idea_id, user_id, idea_title, viewer_name, viewer_email, owner_email } = await req.json()
+    const { idea_id, user_id, idea_title, viewer_name, viewer_email } = await req.json()
 
-    if (!owner_email) throw new Error('No owner email provided')
+    if (!idea_id || !viewer_email) {
+      return new Response(JSON.stringify({ error: 'idea_id and viewer_email are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+
+    const { data: ideaRow } = await admin
+      .from('ideas')
+      .select('owner_email, title')
+      .eq('id', idea_id)
+      .maybeSingle()
+
+    const owner_email = ideaRow?.owner_email
+    if (!owner_email) {
+      return new Response(JSON.stringify({ error: 'Idea not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const { data: accessRow } = await admin
+      .from('idea_access_log')
+      .select('id')
+      .eq('idea_id', idea_id)
+      .eq('viewer_email', viewer_email)
+      .maybeSingle()
+
+    if (!accessRow) {
+      return new Response(JSON.stringify({ error: 'No access record for this viewer' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    const safeName = esc(viewer_name)
+    const safeViewerEmail = esc(viewer_email)
+    const safeTitle = esc(ideaRow.title || idea_title)
 
     const resendKey = Deno.env.get('RESEND_API_KEY')!
     const fromAddress = 'eurekAIdea <noreply@myeurekaidea.com>'
@@ -23,7 +57,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: fromAddress,
         to: owner_email,
-        subject: `${viewer_name} just accessed your idea on eurekAIdea`,
+        subject: `${safeName} just accessed your idea on eurekAIdea`,
         html: `
           <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8f0;">
             <div style="background: #0e0e1f; padding: 32px 40px; text-align: center;">
@@ -32,10 +66,10 @@ Deno.serve(async (req) => {
             <div style="padding: 40px;">
               <h2 style="color: #0e0e1f; font-size: 20px; font-weight: 600; margin: 0 0 16px;">Your idea was just viewed 👀</h2>
               <p style="color: #444; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
-                <strong>${viewer_name}</strong> (${viewer_email}) has accepted the NDA and accessed your idea:
+                <strong>${safeName}</strong> (${safeViewerEmail}) has accepted the NDA and accessed your idea:
               </p>
               <div style="background: #f5f5fc; border-left: 4px solid #7b9ff7; border-radius: 8px; padding: 16px 20px; margin: 0 0 24px;">
-                <p style="color: #0e0e1f; font-size: 16px; font-weight: 600; margin: 0;">${idea_title}</p>
+                <p style="color: #0e0e1f; font-size: 16px; font-weight: 600; margin: 0;">${safeTitle}</p>
               </div>
               <p style="color: #444; font-size: 15px; line-height: 1.6; margin: 0 0 32px;">
                 Thank you for trusting eurekAIdea to protect and present your idea. Your innovation is in good hands.
@@ -57,19 +91,19 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: fromAddress,
         to: viewer_email,
-        subject: `You accessed "${idea_title}" on eurekAIdea`,
+        subject: `You accessed "${safeTitle}" on eurekAIdea`,
         html: `
           <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8f0;">
             <div style="background: #0e0e1f; padding: 32px 40px; text-align: center;">
               <span style="font-size: 24px; font-weight: 300; color: #ffffff; letter-spacing: -0.5px;">Eurek<span style="color: #9b7ff7;">AI</span>dea</span>
             </div>
             <div style="padding: 40px;">
-              <h2 style="color: #0e0e1f; font-size: 20px; font-weight: 600; margin: 0 0 16px;">You're in, ${viewer_name} 🔐</h2>
+              <h2 style="color: #0e0e1f; font-size: 20px; font-weight: 600; margin: 0 0 16px;">You're in, ${safeName} 🔐</h2>
               <p style="color: #444; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
                 You have successfully accepted the NDA and accessed the following protected idea:
               </p>
               <div style="background: #f5f5fc; border-left: 4px solid #9b7ff7; border-radius: 8px; padding: 16px 20px; margin: 0 0 24px;">
-                <p style="color: #0e0e1f; font-size: 16px; font-weight: 600; margin: 0;">${idea_title}</p>
+                <p style="color: #0e0e1f; font-size: 16px; font-weight: 600; margin: 0;">${safeTitle}</p>
               </div>
               <p style="color: #444; font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
                 By accepting the NDA, you have agreed to keep the contents of this idea confidential. This access has been recorded and timestamped.
