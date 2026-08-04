@@ -1069,7 +1069,7 @@ export default function SharedIdea() {
                 </div>
               )}
 
-              {idea.deck_published && (
+              {idea.deck_published && deckInfo?.share_token && (
                 <div style={{ background: 'linear-gradient(135deg, rgba(123,159,247,0.04), rgba(155,127,247,0.04))', border: '0.5px solid rgba(123,159,247,0.22)', borderRadius: 14, padding: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: '0.85rem' }}>
                     <span style={{ fontSize: 22 }}>📊</span>
