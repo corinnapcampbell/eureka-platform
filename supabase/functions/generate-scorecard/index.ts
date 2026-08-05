@@ -22,6 +22,14 @@ serve(async (req) => {
   if (authError || !user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
+  const tierClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const { data: subRow } = await tierClient
+    .from('user_subscriptions')
+    .select('tier')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const isPaidUser = subRow?.tier === 'pro'
+
   const body = await req.clone().json().catch(() => ({}))
   const targetKey = body.target_key || body.ideaId || body.idea?.id || 'unknown'
   const { data: usageCheck } = await supabaseAuth.rpc('check_ai_usage', {
@@ -73,6 +81,18 @@ serve(async (req) => {
     }
     // Strip markdown code fences if present
     text = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+
+    if (!isPaidUser) {
+      try {
+        const parsed = JSON.parse(text)
+        if (Array.isArray(parsed.scores)) {
+          parsed.scores = parsed.scores.map(({ suggestion: _s, ...rest }) => rest)
+          text = JSON.stringify(parsed)
+        }
+      } catch (_e) {
+        // fail open
+      }
+    }
 
     return new Response(text, {
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-AI-Remaining': String(aiRemaining ?? '') }

@@ -904,7 +904,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 </button>
               </div>
             )}
-            <AIScorecard key={scorecardKey} idea={idea} ideaId={id} isPaid={false} readOnly={true} />
+            <AIScorecard key={scorecardKey} idea={idea} ideaId={id} isPaid={isPaid} readOnly={true} />
       {/* BLUEPRINT */}
       {idea.sketch_image_url && (
         <div style={{ background: '#0d1b3e', borderRadius: 14, padding: '1.5rem', marginBottom: '1.25rem' }}>
