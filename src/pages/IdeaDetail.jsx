@@ -1955,6 +1955,8 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780' }}>Idea Protection & Access</p>
           </div>
 
+          <p style={{ fontSize: 11, color: '#888780', marginBottom: '1.25rem', lineHeight: 1.5 }}>eurekAIdea provides documentation and evidence of authorship — not a substitute for formal IP registration or legal advice.</p>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
 
             {/* Left: Protection Status */}

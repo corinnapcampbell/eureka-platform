@@ -493,6 +493,7 @@ export default function SharedIdea() {
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>This idea is protected by eurekAIdea</span>
           </div>
         </div>
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', textAlign: 'center', marginTop: '-1.25rem', marginBottom: '1.75rem', lineHeight: 1.5, maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>eurekAIdea provides documentation and evidence of authorship — not a substitute for formal IP registration or legal advice.</p>
 
         {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
