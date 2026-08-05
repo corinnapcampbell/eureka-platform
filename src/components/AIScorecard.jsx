@@ -247,7 +247,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                       <p style={{ fontSize: 11, color: '#f59e0b', margin: '4px 0 0', fontFamily: "'Outfit', sans-serif", lineHeight: 1.5 }}>⚠️ {s.issues}</p>
                     )}
                     {/* Suggestion — paid owner only */}
-                    {!readOnly && isPaid && s.suggestion && (
+                    {isPaid && s.suggestion && (
                       <p style={{ fontSize: 11, color: '#7b9ff7', margin: '4px 0 0', fontFamily: "'Outfit', sans-serif", lineHeight: 1.5 }}>💡 {s.suggestion}</p>
                     )}
                   </div>
