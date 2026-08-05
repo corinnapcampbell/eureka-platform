@@ -645,11 +645,11 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             ))}
             <span style={{
               fontSize: 11, borderRadius: 20, padding: '4px 12px', fontWeight: 500,
-              background: idea.blockchain_hash ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.05)',
-              color: idea.blockchain_hash ? '#4ade80' : 'rgba(255,255,255,0.3)',
-              border: `0.5px solid ${idea.blockchain_hash ? 'rgba(74,222,128,0.18)' : 'rgba(255,255,255,0.08)'}`,
+              background: (idea.ots_confirmed_at || idea.blockchain_hash) ? 'rgba(74,222,128,0.08)' : 'rgba(255,255,255,0.05)',
+              color: (idea.ots_confirmed_at || idea.blockchain_hash) ? '#4ade80' : 'rgba(255,255,255,0.3)',
+              border: `0.5px solid ${(idea.ots_confirmed_at || idea.blockchain_hash) ? 'rgba(74,222,128,0.18)' : 'rgba(255,255,255,0.08)'}`,
             }}>
-              {idea.blockchain_hash ? '⬡ Timestamped & protected' : '◌ Pending protection'}
+              {idea.ots_confirmed_at ? '🔗 Bitcoin-anchored & protected' : idea.blockchain_hash ? '⬡ Timestamped & protected' : '◌ Pending protection'}
             </span>
           </div>
 
