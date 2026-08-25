@@ -44,26 +44,17 @@ export default function SubmitIdea({ session }) {
     if (!form.problem || !form.solution) return
     setGeneratingAI(true)
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-profile`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            title: form.title,
-            problem: form.problem,
-            solution: form.solution,
-            target_audience: form.target_audience,
-            market_size: form.market_size,
-          }),
-        }
-      )
-      if (!res.ok) throw new Error(`Edge function returned ${res.status}`)
-      const { profile } = await res.json()
-      update('ai_profile', profile || '')
+      const { data, error } = await supabase.functions.invoke('generate-profile', {
+        body: {
+          title: form.title,
+          problem: form.problem,
+          solution: form.solution,
+          target_audience: form.target_audience,
+          market_size: form.market_size,
+        },
+      })
+      if (error) throw error
+      update('ai_profile', data?.profile || '')
     } catch (e) {
       console.error('generateAIProfile:', e)
     }
