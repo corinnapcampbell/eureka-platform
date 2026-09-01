@@ -167,68 +167,73 @@ Deno.serve(async (req) => {
 
   try {
     const { data: pending, error } = await supabase
-      .from('ideas')
-      .select('id, title, ots_content_hash, ots_submitted_at, ots_retry_count, ots_status, ots_proof')
+      .from('idea_content_versions')
+      .select('id, idea_id, content_hash, ots_submitted_at, ots_retry_count, ots_status, ots_proof')
       .in('ots_status', ['pending', 'failed'])
 
     if (error) throw error
 
     const results: Record<string, unknown>[] = []
 
-    for (const idea of pending ?? []) {
-      const hashHex = idea.ots_content_hash
+    const ideaIds = [...new Set((pending ?? []).map((v) => v.idea_id))]
+    const titles: Record<string, string> = {}
+    if (ideaIds.length > 0) {
+      const { data: ideaRows } = await supabase.from('ideas').select('id, title').in('id', ideaIds)
+      for (const row of ideaRows ?? []) titles[row.id] = row.title
+    }
+
+    for (const version of pending ?? []) {
+      const hashHex = version.content_hash
       if (!hashHex) continue
 
-      const anchor = await checkIdeaAnchor(hashHex, idea.ots_proof)
+      const title = titles[version.idea_id] ?? 'your idea'
+      const anchor = await checkIdeaAnchor(hashHex, version.ots_proof)
       const confirmed = anchor.confirmed
       if (confirmed) {
-        console.log(`[ots-check] ${idea.id} confirmed by ${anchor.calendar} — block ${anchor.height}`)
+        console.log(`[ots-check] version ${version.id} confirmed by ${anchor.calendar} — block ${anchor.height}`)
       }
 
-      const submittedAt = new Date(idea.ots_submitted_at)
-      const hoursSince = (Date.now() - submittedAt.getTime()) / (1000 * 60 * 60)
-      const newRetryCount = (idea.ots_retry_count ?? 0) + 1
+      const submittedAt = new Date(version.ots_submitted_at)
+      const hoursSince = (Date.now() - submittedAt.getTime()) / 36e5
+      const newRetryCount = (version.ots_retry_count ?? 0) + 1
 
       if (confirmed) {
         await supabase
-          .from('ideas')
+          .from('idea_content_versions')
           .update({ ots_status: 'complete', ots_confirmed_at: new Date().toISOString(), ots_block_height: anchor.height, ots_merkle_root: anchor.merkleRoot })
-          .eq('id', idea.id)
+          .eq('id', version.id)
 
-        await notifyOwner(supabaseUrl, serviceKey, idea.id, {
+        await supabase.rpc('sync_idea_latest_anchor', { p_idea_id: version.idea_id })
+
+        await notifyOwner(supabaseUrl, serviceKey, version.idea_id, {
           type: 'ots_confirmed',
           title: 'Bitcoin timestamp confirmed',
-          message: `Your idea "${idea.title}" has been permanently timestamped on the Bitcoin blockchain.`,
+          message: `Your idea "${title}" has been confirmed on the Bitcoin blockchain.`,
         })
 
-        results.push({ idea_id: idea.id, result: 'confirmed' })
-      } else if (hoursSince >= FAILURE_HOURS && idea.ots_status !== 'failed') {
+        results.push({ version_id: version.id, result: 'confirmed', block: anchor.height })
+      } else if (hoursSince >= FAILURE_HOURS && version.ots_status !== 'failed') {
         await supabase
-          .from('ideas')
+          .from('idea_content_versions')
           .update({ ots_status: 'failed', ots_retry_count: newRetryCount })
-          .eq('id', idea.id)
+          .eq('id', version.id)
 
-        await notifyOwner(supabaseUrl, serviceKey, idea.id, {
+        await notifyOwner(supabaseUrl, serviceKey, version.idea_id, {
           type: 'ots_failed',
           title: 'Timestamp confirmation timed out',
-          message: `The Bitcoin timestamp for "${idea.title}" could not be confirmed after 48 hours. Open your idea to retry.`,
+          message: `The Bitcoin timestamp for "${title}" could not be confirmed after 48 hours. Open your idea to retry.`,
         })
 
-        results.push({ idea_id: idea.id, result: 'failed', hours_elapsed: Math.round(hoursSince) })
-      } else if (idea.ots_status === 'failed') {
-        results.push({ idea_id: idea.id, result: 'still_failed_rechecking' })
+        results.push({ version_id: version.id, result: 'failed', hours_elapsed: Math.round(hoursSince) })
+      } else if (version.ots_status === 'failed') {
+        results.push({ version_id: version.id, result: 'already_failed' })
       } else {
         await supabase
-          .from('ideas')
+          .from('idea_content_versions')
           .update({ ots_retry_count: newRetryCount })
-          .eq('id', idea.id)
+          .eq('id', version.id)
 
-        results.push({
-          idea_id: idea.id,
-          result: 'still_pending',
-          retry_count: newRetryCount,
-          hours_elapsed: Math.round(hoursSince * 10) / 10,
-        })
+        results.push({ version_id: version.id, result: 'still_pending', retry_count: newRetryCount, hours_elapsed: Math.round(hoursSince) })
       }
     }
 
