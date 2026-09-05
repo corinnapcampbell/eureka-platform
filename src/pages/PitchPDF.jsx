@@ -563,6 +563,7 @@ export default function PitchPDF({ session }) {
     howItWorks: [], targetMarket: [], freeTier: [], paidTier: [], risks: [], nextSteps: [],
   })
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const [suggestionsLocked, setSuggestionsLocked] = useState(false)
   const [teamMembers, setTeamMembers] = useState([{ name: '', role: '', bio: '' }])
   const [originStory, setOriginStory] = useState('')
   const [cvForm, setCvForm] = useState({ waitlist: '', interviews: '', pilots: '', stage: '' })
@@ -677,7 +678,11 @@ export default function PitchPDF({ session }) {
             body: JSON.stringify({ prompt: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}. Team: ${idea.team || ''}. Customer validation: ${idea.customer_validation || ''}. Traction: ${idea.traction || ''}. Generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]}`, target_key: ideaId }),
           }
         )
-        if (res.status === 429) { setLoadingSuggestions(false); return }
+        if (res.status === 429) {
+          setSuggestionsLocked(true)
+          setLoadingSuggestions(false)
+          return
+        }
         const parsed = await res.json()
         setSuggestions({
           howItWorks:   parsed.howItWorks   || [],
@@ -1105,6 +1110,9 @@ export default function PitchPDF({ session }) {
             </div>
           ))}
 
+          {suggestionsLocked && (
+            <p style={{ fontSize: 12, color: '#888780', lineHeight: 1.6, marginBottom: '1rem' }}>You've used all your AI suggestions for this idea. You can still build and export your pitch document — only the AI suggestions are unavailable.</p>
+          )}
           {/* How It Works — chip input */}
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: '0.5rem' }}>

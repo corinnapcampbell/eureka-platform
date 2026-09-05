@@ -137,6 +137,9 @@ export default function IdeaDetail({ session }) {
   const [reAnchoring, setReAnchoring] = useState(false)
   const [reAnchorMsg, setReAnchorMsg] = useState('')
   const [currentVersionDate, setCurrentVersionDate] = useState(null)
+  const [prePublishRemaining, setPrePublishRemaining] = useState(null)
+  const [prePublishLocked, setPrePublishLocked] = useState(false)
+  const [prePublishReviewOnly, setPrePublishReviewOnly] = useState(false)
 
   const startEditRef = useRef(null)
 
@@ -463,10 +466,12 @@ export default function IdeaDetail({ session }) {
     setPublishing(null)
   }
 
-  async function handlePrePublish() {
-    if (!isPaid) { publishAndScore(); return }
+  async function handlePrePublish(reviewOnly = false) {
+    setPrePublishReviewOnly(reviewOnly)
     setPrePublishModal(true)
     setPrePublishLoading(true)
+    setPrePublishLocked(false)
+    setPrePublishRemaining(null)
     setPrePublishSuggestions([])
     try {
       const prompt = `You are an expert startup pitch coach. Review this idea pitch and return ONLY a JSON array of exactly 3 improvement suggestions for the weakest sections. No explanation, no markdown, just the JSON array.
@@ -498,9 +503,15 @@ Pick the 3 weakest fields from: problem, solution, how_it_works, competitive_adv
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ prompt, target_key: id }),
+        body: JSON.stringify({ prompt, target_key: `${id}_prepublish` }),
       })
-      if (res.status === 429) { setPrePublishLoading(false); return }
+      if (res.status === 429) {
+        setPrePublishLocked(true)
+        setPrePublishLoading(false)
+        return
+      }
+      const rem = parseInt(res.headers.get('X-AI-Remaining'))
+      if (!isNaN(rem)) setPrePublishRemaining(rem)
       const data = await res.json()
       const text = typeof data === 'string' ? data : JSON.stringify(data)
       const clean = text.replace(/```json|```/g, '').trim()
@@ -926,17 +937,36 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 <div className="spinner" style={{ margin: '0 auto 1rem' }} />
                 <p style={{ fontSize: 14, color: '#888780' }}>Reviewing your pitch…</p>
               </div>
+            ) : prePublishLocked ? (
+              <div style={{ textAlign: 'center', padding: '1rem 0 2rem' }}>
+                <div style={{ fontSize: 28, marginBottom: '0.75rem', opacity: 0.4 }}>◌</div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.5rem' }}>You've used all your AI pitch reviews for this idea</p>
+                <p style={{ fontSize: 13, color: '#888780', lineHeight: 1.6, marginBottom: '1.5rem' }}>Every AI action includes 1 free use plus 3 refreshes per idea. You can still publish and score your idea — only the AI suggestions are unavailable.</p>
+                {!prePublishReviewOnly && (
+                  <button
+                    onClick={() => { setPrePublishModal(false); publishAndScore() }}
+                    style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+                  >✨ Publish & Score</button>
+                )}
+              </div>
             ) : prePublishSuggestions.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '1rem 0 2rem' }}>
                 <p style={{ fontSize: 15, color: '#2c2c2a', marginBottom: '1.5rem' }}>Your pitch looks strong! Ready to publish and score.</p>
-                <button
-                  onClick={() => { setPrePublishModal(false); publishAndScore() }}
-                  style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
-                >✨ Publish & Score</button>
+                {!prePublishReviewOnly && (
+                  <button
+                    onClick={() => { setPrePublishModal(false); publishAndScore() }}
+                    style={{ background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+                  >✨ Publish & Score</button>
+                )}
               </div>
             ) : (
               <>
-                <p style={{ fontSize: 13, color: '#888780', marginBottom: '1.25rem' }}>We found {prePublishSuggestions.length} section{prePublishSuggestions.length > 1 ? 's' : ''} to strengthen. Apply suggestions or skip and publish.</p>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                  <p style={{ fontSize: 13, color: '#888780', margin: 0 }}>We found {prePublishSuggestions.length} section{prePublishSuggestions.length > 1 ? 's' : ''} to strengthen. Apply suggestions or skip{prePublishReviewOnly ? '' : ' and publish'}.</p>
+                  {prePublishRemaining !== null && !(isPaid && prePublishRemaining >= 10) && (
+                    <span style={{ fontSize: 11, color: '#7b9ff7', fontWeight: 500, flexShrink: 0 }}>{prePublishRemaining} refreshes left</span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: '1.5rem' }}>
                   {prePublishSuggestions.map((s, i) => (
                     <div key={i} style={{ background: 'rgba(123,159,247,0.04)', border: '0.5px solid rgba(123,159,247,0.2)', borderRadius: 12, padding: '1rem 1.25rem' }}>
@@ -957,9 +987,9 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                   ))}
                 </div>
                 <button
-                  onClick={() => { setPrePublishModal(false); publishAndScore() }}
-                  style={{ width: '100%', background: 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 10, padding: '12px', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
-                >✨ Publish & Score</button>
+                  onClick={() => { setPrePublishModal(false); if (!prePublishReviewOnly) publishAndScore() }}
+                  style={{ width: '100%', background: prePublishReviewOnly ? 'none' : 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: prePublishReviewOnly ? '0.5px solid rgba(123,159,247,0.5)' : 'none', borderRadius: 10, padding: '12px', fontSize: 14, fontWeight: 600, color: prePublishReviewOnly ? '#7b9ff7' : '#fff', cursor: 'pointer' }}
+                >{prePublishReviewOnly ? 'Done' : '✨ Publish & Score'}</button>
               </>
             )}
           </div>
@@ -972,9 +1002,14 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
         {isOwner && (
           <>
             {(isPaid || (idea.publish_count || 0) < 3 || !idea.is_published) ? (
-              <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ marginBottom: '1.25rem', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button
-                  onClick={handlePrePublish}
+                  onClick={() => handlePrePublish(true)}
+                  disabled={publishingScore}
+                  style={{ background: 'none', border: '0.5px solid rgba(123,159,247,0.5)', borderRadius: 10, padding: '11px 22px', fontSize: 13, fontWeight: 500, color: '#7b9ff7', cursor: publishingScore ? 'not-allowed' : 'pointer' }}
+                >✨ Review my pitch</button>
+                <button
+                  onClick={() => handlePrePublish(false)}
                   disabled={publishingScore}
                   style={{
                     background: publishingScore ? 'rgba(123,159,247,0.4)' : 'linear-gradient(90deg,#7b9ff7,#9b7ff7)',
