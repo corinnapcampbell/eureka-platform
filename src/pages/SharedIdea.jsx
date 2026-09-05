@@ -187,26 +187,11 @@ export default function SharedIdea() {
   async function acceptNDA() {
     if (!name.trim() || !email || !isValidEmail(email) || !ndaAgreed || accepting) return
     setAccepting(true)
-    const now = new Date().toISOString()
-    const { error: insertError } = await supabase
-      .from('idea_access_log')
-      .insert({
-        idea_id: idea.id,
-        viewer_email: email.trim(),
-        viewer_name: name.trim(),
-        ip_address: 'client-side',
-        nda_accepted: true,
-        viewed_at: now,
-        last_viewed: now,
-        view_count: 1,
-      })
-    if (insertError?.code === '23505') {
-      await supabase.rpc('increment_idea_view', {
-        p_idea_id: idea.id,
-        p_email: email.trim(),
-        p_time: now,
-      })
-    }
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accept-nda`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ token: token, viewer_email: email.trim(), viewer_name: name.trim() }),
+    })
     setStage('idea')
     // Fire-and-forget confirmation emails — first visit only
     fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
