@@ -1992,7 +1992,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
           <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1.25rem' }}>
             <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#888780', marginBottom: 6 }}>Cryptographic fingerprint</p>
             <code style={{ fontSize: 12, color: '#2c2c2a', wordBreak: 'break-all', fontFamily: 'monospace', display: 'block' }}>{idea.blockchain_hash}</code>
-            <p style={{ fontSize: 11, color: '#888780', marginTop: 6 }}>This hash proves your idea existed in its current form at the time of submission.</p>
+            <p style={{ fontSize: 11, color: '#888780', marginTop: 6 }}>A unique code generated from your idea's exact wording. It changes whenever you edit, so every version has its own fingerprint and its own date.</p>
           </div>
         )}
 

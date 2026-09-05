@@ -251,7 +251,7 @@ export default function SubmitIdea({ session }) {
               <div>
                 <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--gold)', marginBottom: '0.35rem' }}>Your idea is protected automatically</p>
                 <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--gold)' }}>
-                  On submission, your idea will be cryptographically hashed and timestamped. Anyone you share it with must confirm NDA terms first. Every viewer is logged. This creates a legally meaningful paper trail — so if someone ever misuses your idea, you won't be starting from zero.
+                  Your idea is fingerprinted and dated the moment you submit, and every version you write is kept. Turn on NDA-gated sharing and anyone you share it with must accept NDA terms first, with every viewer recorded. If you ever need to show what you had and when, it's already documented.
                 </p>
               </div>
             </div>

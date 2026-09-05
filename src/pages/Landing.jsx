@@ -90,7 +90,7 @@ export default function Landing() {
         </h1>
 
         <p className="animate-fadeUp" style={{ fontSize: 17, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 480, marginBottom: '2.5rem', animationDelay: '0.2s' }}>
-          Every idea you submit is timestamped the moment it's saved — creating documented proof of exactly when you submitted it, and giving you clear guidance on what to do next, no business experience required.
+          Every idea you save is fingerprinted and dated the moment you write it, with every version kept — so you always have a record of what your idea was and when. Then eurekAIdea shows you what to do next. No business experience required.
         </p>
  
         <div className="animate-fadeUp" style={{ display: 'flex', gap: 12, animationDelay: '0.3s' }}>
@@ -115,9 +115,10 @@ export default function Landing() {
 
           <div className="feature-cards">
             {[
-              { icon: '⬡', title: 'Blockchain timestamp', desc: 'A cryptographic fingerprint of your idea is anchored to the blockchain the moment you submit — permanent, immutable, and independently verifiable.' },
-              { icon: '◎', title: 'Optional NDA-gated sharing', desc: 'Turn on NDA-gated sharing for any idea — anyone you share it with must confirm NDA terms before seeing details. Every viewer is logged with their identity, timestamp, and IP address.' },
-              { icon: '△', title: 'Trade secret info', desc: 'Plain-language guidance on how trade secret law can apply to what you share — protection depends on you keeping details confidential.' },
+              { icon: '⬡', title: 'Your idea\'s fingerprint', desc: 'The moment you save, eurekAIdea creates a unique code from your idea\'s exact wording and records the date and time. Change a single word and the code changes completely. Every version is kept, so you have a full history of what your idea was and when. Included on every plan.' },
+              { icon: '🔗', title: 'Bitcoin timestamp', desc: 'Take it further: when you publish, your fingerprint is submitted to Bitcoin\'s public record — an unbroken ledger running since 2009, held on tens of thousands of independent computers, that no single party can rewrite. Confirmation takes a few hours. After that, your date is something anyone can check for themselves, from anywhere, without needing anything from you. Included with paid plans.' },
+              { icon: '◎', title: 'NDA-gated sharing (optional)', desc: 'Turn it on and anyone opening your link accepts NDA terms before seeing anything — their name, email, IP address and the exact time are recorded. Turn it off and your link opens freely; every visit is still logged by IP address and time.' },
+              { icon: '△', title: 'Trade secret guidance', desc: 'Plain-language guidance on how trade secret law can apply to what you share — protection depends on you keeping details confidential.' },
             ].map(({ icon, title, desc }) => (
               <div key={title}>
                 <div style={{ fontSize: 22, marginBottom: '0.75rem', color: 'var(--gold)' }}>{icon}</div>
@@ -128,7 +129,7 @@ export default function Landing() {
           </div>
  
           <div style={{ borderTop: '0.5px solid var(--border)', paddingTop: '1.5rem', fontSize: 13, lineHeight: 1.7, color: 'var(--muted)', maxWidth: 640 }}>
-            <strong style={{ color: 'var(--ink)', fontWeight: 500 }}>What eurekAIdea's proof consists of:</strong> a timestamped record of originality, and — for any idea where you turn on NDA-gated sharing — a traceable access trail and signed NDA from every viewer. Together they form a paper trail with real documentary weight. If someone ever tries to use your idea without permission, you won't be starting from zero. We've built the paper trail. You'd just need a lawyer to use it.
+            <strong style={{ color: 'var(--ink)', fontWeight: 500 }}>What eurekAIdea's proof consists of:</strong> a dated record of what you wrote and every change since, and — if you turn on NDA-gated sharing — a signed NDA and access trail from every viewer. Add a Bitcoin timestamp and your date becomes independently verifiable by anyone. This shows what you had and when. It can't show whether someone else somewhere had a similar idea first. If someone ever uses your idea without permission, you won't be starting from zero — you'll have a documented record, ready when you need it.
           </div>
         </div>
       </div>
