@@ -2205,8 +2205,16 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
 
       {/* Access Log modal */}
       {showLogModal && (
+        <style>{`
+          @media (max-width: 780px) {
+            .access-log-row, .access-log-head { grid-template-columns: 1fr !important; gap: 4px !important; }
+            .access-log-head { display: none !important; }
+          }
+        `}</style>
+      )}
+      {showLogModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '2rem 1rem' }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 760, padding: '2rem', margin: 'auto' }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 1100, padding: '2rem', margin: 'auto' }}>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: 12 }}>
               <div>
@@ -2231,7 +2239,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               ].map(stat => (
                 <div key={stat.label} style={{ background: '#f9f9f7', borderRadius: 10, padding: '0.85rem 1rem' }}>
                   <p style={{ fontSize: 10, color: '#888780', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>{stat.label}</p>
-                  <p style={{ fontSize: 18, fontWeight: 700, color: '#2c2c2a' }}>{stat.value}</p>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: '#7b9ff7' }}>{stat.value}</p>
                 </div>
               ))}
             </div>
@@ -2239,28 +2247,35 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             {/* Table */}
             <div style={{ border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, overflow: 'auto', marginBottom: '1.5rem' }}>
               <div style={{ minWidth: 520 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1fr 1fr', background: '#f5f5f3', padding: '0.65rem 1rem', borderBottom: '0.5px solid rgba(44,44,42,0.1)' }}>
-                  {['Viewer', 'First Viewed', 'Last Viewed', 'Views'].map(h => (
-                    <span key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888780' }}>{h}</span>
+                <div className="access-log-head" style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.5fr 1.3fr 1.3fr 0.5fr', background: '#f5f6fa', padding: '0.65rem 1rem', borderBottom: '0.5px solid rgba(44,44,42,0.1)' }}>
+                  {['Viewer', 'IP Address', 'First Viewed', 'Last Viewed', 'Views'].map(h => (
+                    <span key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#7b9ff7' }}>{h}</span>
                   ))}
                 </div>
                 {accessLog.length === 0 ? (
                   <div style={{ padding: '2rem', textAlign: 'center', color: '#888780', fontSize: 13 }}>No access records yet.</div>
                 ) : (
                   accessLog.map((entry, i) => (
-                    <div key={`${entry.viewer_email || entry.ip_address || 'x'}-${i}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1.6fr 0.5fr', padding: '0.7rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: entry.is_anonymous ? '#888780' : '#2c2c2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>
-                        {entry.viewer_email || 'Anonymous'}
-                        {entry.ip_address && <span style={{ fontWeight: 400, color: '#888780' }}> · {entry.ip_address}</span>}
-                        {entry.same_network_as && <span style={{ fontWeight: 400, color: '#888780' }}> (same network as {entry.same_network_as})</span>}
+                    <div className="access-log-row" key={`${entry.viewer_email || entry.ip_address || 'x'}-${i}`} style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.5fr 1.3fr 1.3fr 0.5fr', gap: 8, padding: '0.85rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center', borderLeft: `3px solid ${entry.is_anonymous ? 'rgba(136,135,128,0.25)' : '#7b9ff7'}` }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: entry.is_anonymous ? '#888780' : '#2c2c2a', wordBreak: 'break-all', lineHeight: 1.35 }}>
+                          {entry.viewer_email || 'Anonymous'}
+                        </div>
+                        {entry.same_network_as && (
+                          <div style={{ fontSize: 10, color: '#9b7ff7', marginTop: 2, lineHeight: 1.3 }}>same network as {entry.same_network_as}</div>
+                        )}
+                        {!entry.is_anonymous && (
+                          <div style={{ fontSize: 10, color: '#16a34a', marginTop: 2, fontWeight: 500 }}>NDA accepted</div>
+                        )}
+                      </div>
+                      <span style={{ fontSize: 12, color: '#555552', fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.35 }}>{entry.ip_address || '—'}</span>
+                      <span style={{ fontSize: 12, color: '#555552', lineHeight: 1.35 }}>
+                        {entry.viewed_at ? new Date(entry.viewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
-                      <span style={{ fontSize: 12, color: '#555552' }}>
-                        First visit: {entry.viewed_at ? new Date(entry.viewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      <span style={{ fontSize: 12, color: '#555552', lineHeight: 1.35 }}>
+                        {entry.last_viewed ? new Date(entry.last_viewed).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
-                      <span style={{ fontSize: 12, color: '#555552' }}>
-                        Last visit: {entry.last_viewed ? new Date(entry.last_viewed).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-                      </span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>Total visits: {entry.view_count || 1}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: entry.is_anonymous ? '#888780' : '#7b9ff7' }}>{entry.view_count || 1}</span>
                     </div>
                   ))
                 )}
