@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
       .maybeSingle()
     if (!['pro', 'protection'].includes(subRow?.tier ?? '')) {
-      return new Response(JSON.stringify({ error: 'Bitcoin anchoring requires a Pro subscription' }), {
+      return new Response(JSON.stringify({ error: 'Bitcoin anchoring requires a paid plan' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
       })
     }
 
-    if (version.ots_status) {
+    // 'failed' is retryable — pending and complete are not.
+    if (version.ots_status && version.ots_status !== 'failed') {
       return new Response(
         JSON.stringify({ ok: true, skipped: true, reason: 'this version already anchored' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
