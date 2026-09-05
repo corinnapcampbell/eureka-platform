@@ -26,7 +26,7 @@ const PRIVACY_HTML = `
   <h2>1. Information We Collect</h2>
   <p><strong>Account information.</strong> When you create an account we collect your email address and any profile information you provide.</p>
   <p><strong>Idea content.</strong> We store the ideas, descriptions, attachments, and associated metadata (title, problem statement, solution, market size, target audience, pricing terms) that you submit to the platform.</p>
-  <p><strong>Access logs.</strong> When a shared idea is viewed, we log the viewer's email address, IP address, and timestamp as part of the NDA-acceptance flow.</p>
+  <p><strong>Access logs.</strong> When a shared idea is viewed, we record the visit — including the IP address the request came from, the time, the browser user agent, and the referring page — whether or not the idea requires an NDA. If the viewer accepts an NDA, we additionally record the name and email address they provide, and we link that acceptance to the page view that preceded it from the same IP address. Idea owners can see these records for their own ideas, including which visits came from the same IP address as a named viewer. IP addresses are observed from the network connection rather than supplied by the visitor; a visitor using a VPN, proxy, or shared network will show that service's or network's address rather than their own.</p>
   <p><strong>Usage data.</strong> We automatically collect information about how you interact with the platform, including pages visited, features used, browser type, device type, and referring URLs.</p>
   <p><strong>Communications.</strong> If you contact us by email or through a support channel, we retain those communications.</p>
 

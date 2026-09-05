@@ -1994,7 +1994,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 borderRadius: 14, padding: '1.25rem 1.5rem', marginTop: '0.75rem',
               }}>
                 <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.75, margin: '0 0 0.75rem' }}>
-                  Many investors won't sign an NDA before reviewing a pitch — requiring one can mean some serious investors skip your idea entirely. Turning NDA off doesn't remove protection: every view of this idea is still logged automatically with the time and IP address, giving you a documented record of who saw it and when. Turning NDA on adds a signed agreement and identity capture on top of that record — stronger, but with more friction for viewers.
+                  Many investors won't sign an NDA before reviewing a pitch — requiring one can mean some serious investors skip your idea entirely. Turning NDA off doesn't remove protection: every view of this idea is still logged automatically with the time and the IP address the visit came from, giving you a documented record of when your idea was accessed. Turning NDA on adds a signed agreement plus a name and email on top of that record — stronger, but with more friction for viewers. Note that an IP address identifies a network rather than a person, and a visitor using a VPN or shared connection will show that network's address instead of their own.
                 </p>
                 <a href="/legal/nda" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#7b9ff7', textDecoration: 'underline' }}>Read the NDA text →</a>
               </div>

@@ -35,7 +35,7 @@ export default function NDA() {
 
           <div style={{ background: 'rgba(123,159,247,0.08)', border: '1px solid rgba(123,159,247,0.2)', borderRadius: 12, padding: '1.25rem 1.5rem' }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: '#7b9ff7', margin: '0 0 0.5rem' }}>📋 What this means for idea owners</p>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, margin: 0 }}>Every person who accesses your shared idea link must provide their name and email address, and by doing so electronically accepts this NDA. Their identity, access time, and IP address are logged and timestamped. This creates a legally binding record of their confidentiality obligation.</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, margin: 0 }}>When NDA-gating is on, every person who accesses your shared idea link must provide their name and email address, and by doing so electronically accepts this NDA. The name and email they enter, the time of access, and the IP address the request came from are all recorded. This creates a documented record of their acceptance and their confidentiality obligation.</p>
           </div>
           <div style={{ background: 'rgba(123,159,247,0.08)', border: '1px solid rgba(123,159,247,0.2)', borderRadius: 12, padding: '1.25rem 1.5rem', marginTop: '1rem' }}>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, margin: 0 }}>This NDA is optional and can be turned on for any individual idea you choose to protect. When enabled, anyone viewing that idea must accept these terms before seeing it.</p>
