@@ -481,7 +481,7 @@ Pick the 3 weakest fields from: problem, solution, how_it_works, competitive_adv
       })
       const body = await res.json()
       if (res.status === 429) {
-        setReAnchorMsg(`You can re-anchor again in ${body.retry_after_hours}h.`)
+        setReAnchorMsg(`You've used all ${body.daily_limit ?? 5} Bitcoin timestamps for this idea today. Next one available in ${body.retry_after_hours}h.`)
       } else if (!res.ok) {
         setReAnchorMsg(body.error || 'Re-anchor failed.')
       } else {
@@ -499,15 +499,34 @@ Pick the 3 weakest fields from: problem, solution, how_it_works, competitive_adv
     try {
       const newCount = (idea.publish_count || 0) + 1
       await supabase.from('ideas').update({ is_published: true, publish_count: newCount }).eq('id', id)
-      // Fire-and-forget OTS anchor — paid users only, must not block publish
+      // OTS anchor — paid users only. Runs in parallel so it never blocks publish,
+      // but the response IS read so a rejection is surfaced instead of swallowed.
       if (isPaid) {
-        supabase.auth.getSession().then(({ data: { session: s } }) =>
-          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ots-anchor`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s?.access_token}` },
-            body: JSON.stringify({ idea_id: id }),
+        setReAnchorMsg('')
+        supabase.auth.getSession()
+          .then(({ data: { session: s } }) =>
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ots-anchor`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s?.access_token}` },
+              body: JSON.stringify({ idea_id: id }),
+            })
+          )
+          .then(async (res) => {
+            const body = await res.json().catch(() => ({}))
+            if (res.status === 429) {
+              setReAnchorMsg(`You've used all ${body.daily_limit ?? 5} Bitcoin timestamps for this idea today. Next one available in ${body.retry_after_hours}h.`)
+            } else if (!res.ok) {
+              setReAnchorMsg(body.error || 'Bitcoin timestamp failed. Try again from the Protection & Access section.')
+            } else if (body.skipped) {
+              setReAnchorMsg('This exact version is already timestamped on Bitcoin.')
+            } else {
+              setReAnchorMsg('Submitted to Bitcoin. Confirmation usually takes a few hours.')
+            }
           })
-        ).catch(e => console.error('ots-anchor failed (non-blocking):', e))
+          .catch(e => {
+            console.error('ots-anchor failed:', e)
+            setReAnchorMsg('Bitcoin timestamp failed. Try again from the Protection & Access section.')
+          })
       }
       const prompt = `You are an expert startup evaluator. Score this idea on 18 dimensions, each 1-10.
 
@@ -2015,11 +2034,14 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                 </div>
               </div>
 
-              {isOwner && idea.ots_status === 'complete' && idea.ots_content_hash && (
+              {isOwner && ((idea.ots_status === 'complete' && idea.ots_content_hash) || reAnchorMsg) && (
                 <div style={{ background: idea.ots_content_hash === idea.blockchain_hash ? '#f0fdf4' : '#fffbeb', border: `0.5px solid ${idea.ots_content_hash === idea.blockchain_hash ? 'rgba(22,163,74,0.2)' : 'rgba(217,119,6,0.25)'}`, borderRadius: 8, padding: '0.85rem 1rem', marginBottom: '1rem' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 4 }}>
                     🔗 Bitcoin anchor{idea.ots_block_height ? ` · block ${idea.ots_block_height}` : ''}
                   </p>
+                  {!(idea.ots_status === 'complete' && idea.ots_content_hash) && reAnchorMsg && (
+                    <p style={{ fontSize: 11, color: '#888780', lineHeight: 1.5 }}>{reAnchorMsg}</p>
+                  )}
                   {idea.ots_content_hash === idea.blockchain_hash ? (
                     <p style={{ fontSize: 11, color: '#888780', lineHeight: 1.5 }}>Your idea as it appears now is the version recorded on Bitcoin.</p>
                   ) : (

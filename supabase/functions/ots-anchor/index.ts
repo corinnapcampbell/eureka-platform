@@ -96,24 +96,29 @@ Deno.serve(async (req) => {
       )
     }
 
-    // 24h cooldown across all versions of this idea.
-    const { data: recent } = await tierClient
+    // Up to 5 anchors per idea per rolling 24h.
+    const DAILY_ANCHOR_LIMIT = 5
+    const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { data: recentAnchors } = await tierClient
       .from('idea_content_versions')
       .select('ots_submitted_at')
       .eq('idea_id', idea_id)
-      .not('ots_submitted_at', 'is', null)
-      .order('ots_submitted_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .gte('ots_submitted_at', windowStart)
+      .order('ots_submitted_at', { ascending: true })
 
-    if (recent?.ots_submitted_at) {
-      const hoursSince = (Date.now() - new Date(recent.ots_submitted_at).getTime()) / 36e5
-      if (hoursSince < 24) {
-        return new Response(
-          JSON.stringify({ error: 'cooldown', retry_after_hours: Math.ceil(24 - hoursSince) }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
-      }
+    const used = recentAnchors?.length ?? 0
+    if (used >= DAILY_ANCHOR_LIMIT) {
+      const oldest = new Date(recentAnchors[0].ots_submitted_at).getTime()
+      const hoursUntilFree = Math.max(1, Math.ceil((oldest + 24 * 60 * 60 * 1000 - Date.now()) / 36e5))
+      return new Response(
+        JSON.stringify({
+          error: 'daily_limit',
+          attempts_used: used,
+          daily_limit: DAILY_ANCHOR_LIMIT,
+          retry_after_hours: hoursUntilFree,
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     // Decode hex → bytes for the calendar POST body.
