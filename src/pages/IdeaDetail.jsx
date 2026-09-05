@@ -190,7 +190,7 @@ export default function IdeaDetail({ session }) {
       const [{ data: named }, { data: anon }] = await Promise.all([
         supabase
           .from('idea_access_log')
-          .select('viewer_email, viewer_ip, ip_address, nda_accepted, viewed_at, last_viewed, view_count')
+          .select('viewer_name, viewer_email, viewer_ip, ip_address, nda_accepted, viewed_at, last_viewed, view_count')
           .eq('idea_id', id),
         supabase
           .from('idea_views')
@@ -207,7 +207,7 @@ export default function IdeaDetail({ session }) {
       // Map IP -> email, so an anonymous visit can be shown as same-network.
       const ipToEmail = {}
       for (const r of namedRows) {
-        if (r.ip_address && r.viewer_email) ipToEmail[r.ip_address] = r.viewer_email
+        if (r.ip_address && (r.viewer_name || r.viewer_email)) ipToEmail[r.ip_address] = r.viewer_name || r.viewer_email
       }
 
       // Group anonymous visits by IP, same shape as a named row.
@@ -215,7 +215,7 @@ export default function IdeaDetail({ session }) {
       for (const v of anon || []) {
         const key = v.ip_address || 'unknown'
         if (!byIp[key]) {
-          byIp[key] = { viewer_email: null, ip_address: key, nda_accepted: false, viewed_at: v.viewed_at, last_viewed: v.viewed_at, view_count: 0, is_anonymous: true, same_network_as: ipToEmail[key] || null }
+          byIp[key] = { viewer_name: null, viewer_email: null, ip_address: key, nda_accepted: false, viewed_at: v.viewed_at, last_viewed: v.viewed_at, view_count: 0, is_anonymous: true, same_network_as: ipToEmail[key] || null }
         }
         byIp[key].view_count += 1
         if (new Date(v.viewed_at) < new Date(byIp[key].viewed_at)) byIp[key].viewed_at = v.viewed_at
@@ -343,10 +343,13 @@ export default function IdeaDetail({ session }) {
   }
 
   function exportCSV() {
-    const headers = ['Email', 'Date & Time', 'IP Address', 'NDA Accepted']
+    const headers = ['Name', 'Email', 'First Visit', 'Last Visit', 'Visits', 'IP Address', 'NDA Accepted']
     const rows = accessLog.map(r => [
-      r.viewer_email || 'Anonymous',
+      r.viewer_name || (r.is_anonymous ? 'Anonymous' : ''),
+      r.viewer_email || '',
       r.viewed_at ? new Date(r.viewed_at).toLocaleString('en-US') : '',
+      r.last_viewed ? new Date(r.last_viewed).toLocaleString('en-US') : '',
+      r.view_count || 1,
       r.ip_address || '',
       r.nda_accepted ? 'Yes' : 'No',
     ])
@@ -2165,7 +2168,8 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                     <div key={`${entry.viewer_email || entry.ip_address || 'x'}-${i}`} style={{ padding: '0.65rem 0', borderBottom: i < Math.min(accessLog.length, 5) - 1 ? '0.5px solid rgba(44,44,42,0.07)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: entry.is_anonymous ? '#888780' : '#2c2c2a' }}>
-                          {entry.viewer_email || 'Anonymous'}
+                          {entry.viewer_name || entry.viewer_email || 'Anonymous'}
+                          {entry.viewer_name && entry.viewer_email && <span style={{ fontWeight: 400, color: '#888780' }}> · {entry.viewer_email}</span>}
                           {entry.ip_address && <span style={{ fontWeight: 400, color: '#888780' }}> · {entry.ip_address}</span>}
                           {entry.same_network_as && <span style={{ fontWeight: 400, color: '#888780' }}> (same network as {entry.same_network_as})</span>}
                         </span>
@@ -2248,7 +2252,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             <div style={{ border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, overflow: 'auto', marginBottom: '1.5rem' }}>
               <div style={{ minWidth: 520 }}>
                 <div className="access-log-head" style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.5fr 1.3fr 1.3fr 0.5fr', background: '#f5f6fa', padding: '0.65rem 1rem', borderBottom: '0.5px solid rgba(44,44,42,0.1)' }}>
-                  {['Viewer', 'IP Address', 'First Viewed', 'Last Viewed', 'Views'].map(h => (
+                  {['Name & Email', 'IP Address', 'First Viewed', 'Last Viewed', 'Views'].map(h => (
                     <span key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#7b9ff7' }}>{h}</span>
                   ))}
                 </div>
@@ -2259,8 +2263,11 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                     <div className="access-log-row" key={`${entry.viewer_email || entry.ip_address || 'x'}-${i}`} style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.5fr 1.3fr 1.3fr 0.5fr', gap: 8, padding: '0.85rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center', borderLeft: `3px solid ${entry.is_anonymous ? 'rgba(136,135,128,0.25)' : '#7b9ff7'}` }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: entry.is_anonymous ? '#888780' : '#2c2c2a', wordBreak: 'break-all', lineHeight: 1.35 }}>
-                          {entry.viewer_email || 'Anonymous'}
+                          {entry.viewer_name || entry.viewer_email || 'Anonymous'}
                         </div>
+                        {entry.viewer_name && entry.viewer_email && (
+                          <div style={{ fontSize: 11, color: '#888780', wordBreak: 'break-all', lineHeight: 1.3 }}>{entry.viewer_email}</div>
+                        )}
                         {entry.same_network_as && (
                           <div style={{ fontSize: 10, color: '#9b7ff7', marginTop: 2, lineHeight: 1.3 }}>same network as {entry.same_network_as}</div>
                         )}
