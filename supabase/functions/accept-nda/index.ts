@@ -37,33 +37,58 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid share link' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const insertRes = await fetch(`${supabaseUrl}/rest/v1/idea_access_log`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: serviceKey,
-        Authorization: `Bearer ${serviceKey}`,
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({
-        idea_id,
-        viewer_email,
-        viewer_name: viewer_name ?? null,
-        ip_address,
-        nda_accepted: true,
-        viewed_at: new Date().toISOString(),
-        last_viewed: new Date().toISOString(),
-        view_count: 1,
-      }),
-    })
+    const now = new Date().toISOString()
+    const restHeaders = {
+      'Content-Type': 'application/json',
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+    }
 
-    if (!insertRes.ok) {
-      const text = await insertRes.text()
-      console.error('[accept-nda] insert failed:', insertRes.status, text)
+    // UNIQUE (idea_id, viewer_email): a returning viewer updates their existing
+    // row instead of inserting a duplicate. viewed_at is the FIRST visit and is
+    // never overwritten; last_viewed, view_count and ip_address are refreshed.
+    const existingRes = await fetch(
+      `${supabaseUrl}/rest/v1/idea_access_log?idea_id=eq.${idea_id}&viewer_email=eq.${encodeURIComponent(viewer_email)}&select=id,view_count`,
+      { headers: restHeaders },
+    )
+    const existing = existingRes.ok ? await existingRes.json() : []
+
+    let writeRes
+    if (Array.isArray(existing) && existing.length > 0) {
+      writeRes = await fetch(`${supabaseUrl}/rest/v1/idea_access_log?id=eq.${existing[0].id}`, {
+        method: 'PATCH',
+        headers: { ...restHeaders, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          last_viewed: now,
+          view_count: (existing[0].view_count ?? 1) + 1,
+          ip_address,
+          nda_accepted: true,
+        }),
+      })
+    } else {
+      writeRes = await fetch(`${supabaseUrl}/rest/v1/idea_access_log`, {
+        method: 'POST',
+        headers: { ...restHeaders, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          idea_id,
+          viewer_email,
+          viewer_name: viewer_name ?? null,
+          ip_address,
+          nda_accepted: true,
+          viewed_at: now,
+          last_viewed: now,
+          view_count: 1,
+        }),
+      })
+    }
+
+    if (!writeRes.ok) {
+      const text = await writeRes.text()
+      console.error('[accept-nda] write failed:', writeRes.status, text)
       return new Response(JSON.stringify({ error: 'Could not record NDA acceptance' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    console.log(`[accept-nda] recorded ${viewer_email} from ${ip_address ?? 'unknown IP'}`)
+    console.log(`[accept-nda] recorded ${viewer_email} from ${ip_address ?? 'unknown IP'} (${Array.isArray(existing) && existing.length > 0 ? 'returning' : 'new'})`)
     return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (err) {
     console.error('[accept-nda] error:', err)
