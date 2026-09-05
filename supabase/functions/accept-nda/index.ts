@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     if (Array.isArray(existing) && existing.length > 0) {
       writeRes = await fetch(`${supabaseUrl}/rest/v1/idea_access_log?id=eq.${existing[0].id}`, {
         method: 'PATCH',
-        headers: { ...restHeaders, Prefer: 'return=minimal' },
+        headers: { ...restHeaders, Prefer: 'return=representation' },
         body: JSON.stringify({
           last_viewed: now,
           view_count: (existing[0].view_count ?? 1) + 1,
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     } else {
       writeRes = await fetch(`${supabaseUrl}/rest/v1/idea_access_log`, {
         method: 'POST',
-        headers: { ...restHeaders, Prefer: 'return=minimal' },
+        headers: { ...restHeaders, Prefer: 'return=representation' },
         body: JSON.stringify({
           idea_id,
           viewer_email,
@@ -86,6 +86,26 @@ Deno.serve(async (req) => {
       const text = await writeRes.text()
       console.error('[accept-nda] write failed:', writeRes.status, text)
       return new Response(JSON.stringify({ error: 'Could not record NDA acceptance' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Link the page view that preceded this signature. Nothing is deleted —
+    // the view stays on record, it just stops counting as a separate visitor.
+    try {
+      const written = await writeRes.json()
+      const accessLogId = Array.isArray(written) ? written[0]?.id : written?.id
+      if (accessLogId && ip_address) {
+        const since = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+        await fetch(
+          `${supabaseUrl}/rest/v1/idea_views?idea_id=eq.${idea_id}&ip_address=eq.${encodeURIComponent(ip_address)}&viewed_at=gte.${since}&superseded_by=is.null`,
+          {
+            method: 'PATCH',
+            headers: { ...restHeaders, Prefer: 'return=minimal' },
+            body: JSON.stringify({ superseded_by: accessLogId }),
+          },
+        )
+      }
+    } catch (err) {
+      console.warn('[accept-nda] supersede step failed:', (err as Error).message)
     }
 
     console.log(`[accept-nda] recorded ${viewer_email} from ${ip_address ?? 'unknown IP'} (${Array.isArray(existing) && existing.length > 0 ? 'returning' : 'new'})`)

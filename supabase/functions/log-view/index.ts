@@ -14,12 +14,26 @@ Deno.serve(async (req) => {
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip') ||
     req.headers.get('cf-connecting-ip') ||
-    'unknown'
+    null
   const user_agent = req.headers.get('user-agent') || ''
   const referrer = req.headers.get('referer') || req.headers.get('referrer') || ''
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+  // Resolve the gate server-side so the browser cannot misreport it.
+  let nda_gated = null
+  try {
+    const gateRes = await fetch(`${supabaseUrl}/rest/v1/ideas?id=eq.${idea_id}&select=nda_required`, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` },
+    })
+    const gateRows = gateRes.ok ? await gateRes.json() : []
+    if (Array.isArray(gateRows) && gateRows.length > 0) {
+      nda_gated = gateRows[0].nda_required !== false
+    }
+  } catch (err) {
+    console.warn('[log-view] gate lookup failed:', (err as Error).message)
+  }
 
   await fetch(`${supabaseUrl}/rest/v1/idea_views`, {
     method: 'POST',
@@ -29,7 +43,7 @@ Deno.serve(async (req) => {
       'Authorization': `Bearer ${supabaseKey}`,
       'Prefer': 'return=minimal',
     },
-    body: JSON.stringify({ idea_id, ip_address, user_agent, referrer }),
+    body: JSON.stringify({ idea_id, ip_address, user_agent, referrer, nda_gated }),
   })
 
   return new Response(JSON.stringify({ success: true }), {
