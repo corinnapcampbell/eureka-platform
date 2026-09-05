@@ -136,6 +136,7 @@ export default function IdeaDetail({ session }) {
   const [ndaInfoExpanded, setNdaInfoExpanded] = useState(false)
   const [reAnchoring, setReAnchoring] = useState(false)
   const [reAnchorMsg, setReAnchorMsg] = useState('')
+  const [currentVersionDate, setCurrentVersionDate] = useState(null)
 
   const startEditRef = useRef(null)
 
@@ -186,16 +187,62 @@ export default function IdeaDetail({ session }) {
 
   useEffect(() => {
     async function fetchLog() {
-      const { data } = await supabase
-        .from('idea_access_log')
-        .select('viewer_email, viewed_at, last_viewed, view_count')
-        .eq('idea_id', id)
-        .order('last_viewed', { ascending: false })
-      setAccessLog(data || [])
+      const [{ data: named }, { data: anon }] = await Promise.all([
+        supabase
+          .from('idea_access_log')
+          .select('viewer_email, viewer_ip, ip_address, nda_accepted, viewed_at, last_viewed, view_count')
+          .eq('idea_id', id),
+        supabase
+          .from('idea_views')
+          .select('ip_address, viewed_at')
+          .eq('idea_id', id),
+      ])
+
+      const namedRows = (named || []).map(r => ({
+        ...r,
+        ip_address: r.ip_address || r.viewer_ip || null,
+        is_anonymous: false,
+      }))
+
+      // Map IP -> email, so an anonymous visit can be shown as same-network.
+      const ipToEmail = {}
+      for (const r of namedRows) {
+        if (r.ip_address && r.viewer_email) ipToEmail[r.ip_address] = r.viewer_email
+      }
+
+      // Group anonymous visits by IP, same shape as a named row.
+      const byIp = {}
+      for (const v of anon || []) {
+        const key = v.ip_address || 'unknown'
+        if (!byIp[key]) {
+          byIp[key] = { viewer_email: null, ip_address: key, nda_accepted: false, viewed_at: v.viewed_at, last_viewed: v.viewed_at, view_count: 0, is_anonymous: true, same_network_as: ipToEmail[key] || null }
+        }
+        byIp[key].view_count += 1
+        if (new Date(v.viewed_at) < new Date(byIp[key].viewed_at)) byIp[key].viewed_at = v.viewed_at
+        if (new Date(v.viewed_at) > new Date(byIp[key].last_viewed)) byIp[key].last_viewed = v.viewed_at
+      }
+
+      const merged = [...namedRows, ...Object.values(byIp)]
+        .sort((a, b) => new Date(b.last_viewed || b.viewed_at) - new Date(a.last_viewed || a.viewed_at))
+
+      setAccessLog(merged)
       setLoadingLog(false)
     }
     fetchLog()
   }, [id])
+
+  useEffect(() => {
+    if (!idea?.blockchain_hash) return
+    supabase
+      .from('idea_content_versions')
+      .select('created_at')
+      .eq('idea_id', id)
+      .eq('content_hash', idea.blockchain_hash)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setCurrentVersionDate(data?.created_at || null))
+  }, [id, idea?.blockchain_hash])
 
   useEffect(() => {
     async function fetchDeck() {
@@ -298,7 +345,7 @@ export default function IdeaDetail({ session }) {
   function exportCSV() {
     const headers = ['Email', 'Date & Time', 'IP Address', 'NDA Accepted']
     const rows = accessLog.map(r => [
-      r.viewer_email || '',
+      r.viewer_email || 'Anonymous',
       r.viewed_at ? new Date(r.viewed_at).toLocaleString('en-US') : '',
       r.ip_address || '',
       r.nda_accepted ? 'Yes' : 'No',
@@ -2016,9 +2063,9 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                   <span style={{ fontSize: 9, color: '#16a34a', fontWeight: 700 }}>✓</span>
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>Blockchain Timestamp</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>Content Fingerprint</p>
                   {idea.blockchain_hash
-                    ? <p style={{ fontSize: 11, color: '#888780' }}>{new Date(idea.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · <code style={{ fontFamily: 'monospace' }}>{idea.blockchain_hash.slice(0, 14)}…</code></p>
+                    ? <p style={{ fontSize: 11, color: '#888780' }}>{currentVersionDate ? `${new Date(currentVersionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · ` : ''}<code style={{ fontFamily: 'monospace' }}>{idea.blockchain_hash.slice(0, 14)}…</code></p>
                     : <p style={{ fontSize: 11, color: '#888780' }}>Pending</p>
                   }
                 </div>
@@ -2115,10 +2162,14 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               ) : (
                 <>
                   {accessLog.slice(0, 5).map((entry, i) => (
-                    <div key={entry.viewer_email || i} style={{ padding: '0.65rem 0', borderBottom: i < Math.min(accessLog.length, 5) - 1 ? '0.5px solid rgba(44,44,42,0.07)' : 'none' }}>
+                    <div key={`${entry.viewer_email || entry.ip_address || 'x'}-${i}`} style={{ padding: '0.65rem 0', borderBottom: i < Math.min(accessLog.length, 5) - 1 ? '0.5px solid rgba(44,44,42,0.07)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a' }}>{entry.viewer_email || 'Anonymous'}</span>
-                        <span style={{ fontSize: 10, background: '#dcfce7', color: '#16a34a', borderRadius: 4, padding: '2px 7px', fontWeight: 500, flexShrink: 0 }}>Views: {entry.view_count || 1}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: entry.is_anonymous ? '#888780' : '#2c2c2a' }}>
+                          {entry.viewer_email || 'Anonymous'}
+                          {entry.ip_address && <span style={{ fontWeight: 400, color: '#888780' }}> · {entry.ip_address}</span>}
+                          {entry.same_network_as && <span style={{ fontWeight: 400, color: '#888780' }}> (same network as {entry.same_network_as})</span>}
+                        </span>
+                        <span style={{ fontSize: 10, background: entry.is_anonymous ? '#f0f0ee' : '#dcfce7', color: entry.is_anonymous ? '#888780' : '#16a34a', borderRadius: 4, padding: '2px 7px', fontWeight: 500, flexShrink: 0 }}>Views: {entry.view_count || 1}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 11, color: '#888780' }}>
@@ -2131,7 +2182,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                     </div>
                   ))}
                   <p style={{ fontSize: 11, color: '#888780', marginTop: '0.75rem' }}>
-                    {accessLog.length} {accessLog.length === 1 ? 'person has' : 'people have'} viewed this idea
+                    {accessLog.length} {accessLog.length === 1 ? 'visitor' : 'visitors'} · {accessLog.reduce((n, r) => n + (r.view_count || 1), 0)} total visits
                   </p>
                 </>
               )}
@@ -2173,8 +2224,8 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
               {[
-                { label: 'Total Views', value: accessLog.length },
-                { label: 'Unique Viewers', value: new Set(accessLog.map(r => r.viewer_email)).size },
+                { label: 'Visitors', value: accessLog.length },
+                { label: 'Total Visits', value: accessLog.reduce((n, r) => n + (r.view_count || 1), 0) },
                 { label: 'First Viewed', value: accessLog.length ? new Date(accessLog[accessLog.length - 1].viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
                 { label: 'Last Viewed', value: accessLog.length ? new Date(accessLog[0].viewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
               ].map(stat => (
@@ -2189,7 +2240,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             <div style={{ border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, overflow: 'auto', marginBottom: '1.5rem' }}>
               <div style={{ minWidth: 520 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1fr 1fr', background: '#f5f5f3', padding: '0.65rem 1rem', borderBottom: '0.5px solid rgba(44,44,42,0.1)' }}>
-                  {['Email', 'First Viewed', 'Last Viewed', 'Views'].map(h => (
+                  {['Viewer', 'First Viewed', 'Last Viewed', 'Views'].map(h => (
                     <span key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888780' }}>{h}</span>
                   ))}
                 </div>
@@ -2197,8 +2248,12 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                   <div style={{ padding: '2rem', textAlign: 'center', color: '#888780', fontSize: 13 }}>No access records yet.</div>
                 ) : (
                   accessLog.map((entry, i) => (
-                    <div key={entry.viewer_email || i} style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1.6fr 0.5fr', padding: '0.7rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{entry.viewer_email || 'Anonymous'}</span>
+                    <div key={`${entry.viewer_email || entry.ip_address || 'x'}-${i}`} style={{ display: 'grid', gridTemplateColumns: '2fr 1.6fr 1.6fr 0.5fr', padding: '0.7rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: entry.is_anonymous ? '#888780' : '#2c2c2a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>
+                        {entry.viewer_email || 'Anonymous'}
+                        {entry.ip_address && <span style={{ fontWeight: 400, color: '#888780' }}> · {entry.ip_address}</span>}
+                        {entry.same_network_as && <span style={{ fontWeight: 400, color: '#888780' }}> (same network as {entry.same_network_as})</span>}
+                      </span>
                       <span style={{ fontSize: 12, color: '#555552' }}>
                         First visit: {entry.viewed_at ? new Date(entry.viewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
