@@ -134,6 +134,8 @@ export default function IdeaDetail({ session }) {
   const [uploadingFile, setUploadingFile] = useState(false)
   const [supportFiles, setSupportFiles] = useState([])
   const [ndaInfoExpanded, setNdaInfoExpanded] = useState(false)
+  const [reAnchoring, setReAnchoring] = useState(false)
+  const [reAnchorMsg, setReAnchorMsg] = useState('')
 
   const startEditRef = useRef(null)
 
@@ -467,6 +469,31 @@ Pick the 3 weakest fields from: problem, solution, how_it_works, competitive_adv
     setPrePublishSuggestions(prev => prev.filter(s => s.field !== field))
   }
 
+  async function reAnchor() {
+    setReAnchoring(true)
+    setReAnchorMsg('')
+    try {
+      const { data: { session: s } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ots-anchor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s?.access_token}` },
+        body: JSON.stringify({ idea_id: id }),
+      })
+      const body = await res.json()
+      if (res.status === 429) {
+        setReAnchorMsg(`You can re-anchor again in ${body.retry_after_hours}h.`)
+      } else if (!res.ok) {
+        setReAnchorMsg(body.error || 'Re-anchor failed.')
+      } else {
+        setReAnchorMsg('Submitted to Bitcoin. Confirmation usually takes a few hours.')
+      }
+    } catch (e) {
+      console.error('re-anchor failed:', e)
+      setReAnchorMsg('Re-anchor failed.')
+    }
+    setReAnchoring(false)
+  }
+
   async function publishAndScore() {
     setPublishingScore(true)
     try {
@@ -649,7 +676,9 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               color: (idea.ots_confirmed_at || idea.blockchain_hash) ? '#4ade80' : 'rgba(255,255,255,0.3)',
               border: `0.5px solid ${(idea.ots_confirmed_at || idea.blockchain_hash) ? 'rgba(74,222,128,0.18)' : 'rgba(255,255,255,0.08)'}`,
             }}>
-              {idea.ots_confirmed_at ? '🔗 Bitcoin-anchored & protected' : idea.blockchain_hash ? '⬡ Timestamped & protected' : '◌ Pending protection'}
+              {(idea.ots_status === 'complete' && idea.ots_content_hash)
+                ? (idea.ots_content_hash === idea.blockchain_hash ? '🔗 Bitcoin-anchored & protected' : '🔗 Bitcoin-anchored · edited')
+                : idea.blockchain_hash ? '⬡ Timestamped & protected' : '◌ Pending protection'}
             </span>
           </div>
 
@@ -1985,6 +2014,29 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                   <p style={{ fontSize: 11, color: '#16a34a', fontWeight: 500 }}>Active</p>
                 </div>
               </div>
+
+              {isOwner && idea.ots_status === 'complete' && idea.ots_content_hash && (
+                <div style={{ background: idea.ots_content_hash === idea.blockchain_hash ? '#f0fdf4' : '#fffbeb', border: `0.5px solid ${idea.ots_content_hash === idea.blockchain_hash ? 'rgba(22,163,74,0.2)' : 'rgba(217,119,6,0.25)'}`, borderRadius: 8, padding: '0.85rem 1rem', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 4 }}>
+                    🔗 Bitcoin anchor{idea.ots_block_height ? ` · block ${idea.ots_block_height}` : ''}
+                  </p>
+                  {idea.ots_content_hash === idea.blockchain_hash ? (
+                    <p style={{ fontSize: 11, color: '#888780', lineHeight: 1.5 }}>Your idea as it appears now is the version recorded on Bitcoin.</p>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: 11, color: '#888780', lineHeight: 1.5, marginBottom: 8 }}>You've edited this idea since it was anchored. The Bitcoin record still proves the earlier version. Re-anchor to cover your current text.</p>
+                      {isPaid && (
+                        <button
+                          onClick={reAnchor}
+                          disabled={reAnchoring}
+                          style={{ background: reAnchoring ? 'rgba(123,159,247,0.4)' : 'linear-gradient(90deg,#7b9ff7,#9b7ff7)', border: 'none', borderRadius: 7, padding: '7px 16px', fontSize: 12, fontWeight: 600, color: '#fff', cursor: reAnchoring ? 'not-allowed' : 'pointer' }}
+                        >{reAnchoring ? 'Submitting…' : 'Re-anchor to Bitcoin'}</button>
+                      )}
+                      {reAnchorMsg && <p style={{ fontSize: 11, color: '#888780', marginTop: 8 }}>{reAnchorMsg}</p>}
+                    </>
+                  )}
+                </div>
+              )}
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: '1rem' }}>
                 <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#EBF0F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>

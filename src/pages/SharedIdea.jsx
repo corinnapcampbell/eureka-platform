@@ -113,7 +113,7 @@ export default function SharedIdea() {
       }
       const { data: freshIdea } = await supabase
         .from('ideas')
-        .select('id, user_id, title, tagline, category, target_audience, market_size, problem, solution, terms, pricing_model, how_it_works, business_model, competitive_advantage, risks, next_steps, asking_price, tease, team, customer_validation, traction, competitive_landscape, revenue_projections, who_pays, revenue_streams, pricing_power, revenue_potential, business_stage, product_image_url, support_files, sketch_image_url, nda_required, pdf_published, deck_published, pdf_snapshot, blockchain_hash, ai_profile, ai_scorecard, created_at')
+        .select('id, user_id, title, tagline, category, target_audience, market_size, problem, solution, terms, pricing_model, how_it_works, business_model, competitive_advantage, risks, next_steps, asking_price, tease, team, customer_validation, traction, competitive_landscape, revenue_projections, who_pays, revenue_streams, pricing_power, revenue_potential, business_stage, product_image_url, support_files, sketch_image_url, nda_required, pdf_published, deck_published, pdf_snapshot, blockchain_hash, ots_status, ots_content_hash, ots_block_height, ai_profile, ai_scorecard, created_at')
         .eq('id', ideaId)
         .single()
       const ideaToSet = freshIdea
@@ -259,7 +259,7 @@ export default function SharedIdea() {
   async function fetchFreshIdea() {
     const { data } = await supabase
       .from('ideas')
-      .select('id, user_id, title, tagline, category, target_audience, market_size, problem, solution, terms, pricing_model, how_it_works, business_model, competitive_advantage, risks, next_steps, asking_price, tease, team, customer_validation, traction, competitive_landscape, revenue_projections, who_pays, revenue_streams, pricing_power, revenue_potential, business_stage, product_image_url, support_files, sketch_image_url, nda_required, pdf_published, deck_published, pdf_snapshot, blockchain_hash, ai_profile, ai_scorecard, created_at')
+      .select('id, user_id, title, tagline, category, target_audience, market_size, problem, solution, terms, pricing_model, how_it_works, business_model, competitive_advantage, risks, next_steps, asking_price, tease, team, customer_validation, traction, competitive_landscape, revenue_projections, who_pays, revenue_streams, pricing_power, revenue_potential, business_stage, product_image_url, support_files, sketch_image_url, nda_required, pdf_published, deck_published, pdf_snapshot, blockchain_hash, ots_status, ots_content_hash, ots_block_height, ai_profile, ai_scorecard, created_at')
       .eq('id', idea.id)
       .single()
     console.log('FRESH IDEA DATA:', JSON.stringify(data, null, 2))
@@ -538,7 +538,11 @@ export default function SharedIdea() {
               <span key={c} style={{ fontSize: 11, background: 'rgba(123,159,247,0.1)', color: '#7b9ff7', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(123,159,247,0.18)' }}>{c}</span>
             ))}
             {idea.blockchain_hash && (
-              <span style={{ fontSize: 11, background: 'rgba(74,222,128,0.08)', color: '#4ade80', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(74,222,128,0.18)' }}>⬡ Timestamped</span>
+              <span style={{ fontSize: 11, background: 'rgba(74,222,128,0.08)', color: '#4ade80', borderRadius: 20, padding: '4px 12px', fontWeight: 500, border: '0.5px solid rgba(74,222,128,0.18)' }}>
+                {(idea.ots_status === 'complete' && idea.ots_content_hash)
+                  ? (idea.ots_content_hash === idea.blockchain_hash ? '🔗 Bitcoin-anchored' : '🔗 Bitcoin-anchored · edited')
+                  : '⬡ Timestamped'}
+              </span>
             )}
           </div>
 
