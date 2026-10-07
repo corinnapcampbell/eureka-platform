@@ -583,7 +583,7 @@ export default function SharedIdea() {
         )}
 
         {/* Card 1: Problem & Solution */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem', width: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '1.25rem', width: '100%' }}>
           {idea.problem && (
             <div style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.85rem' }}>

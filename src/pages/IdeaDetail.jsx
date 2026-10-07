@@ -1060,7 +1060,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
         )}
 
         {/* Card 1: Problem & Solution */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '1.25rem' }}>
           {(idea.problem || isOwner) && (
             <div id="section-problem" style={{ background: '#0e0e1f', borderRadius: 14, padding: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
