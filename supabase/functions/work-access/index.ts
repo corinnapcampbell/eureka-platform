@@ -269,6 +269,60 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    if (action === 'preview') {
+      const authHeader = req.headers.get('Authorization')
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      const userClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } }
+      )
+      const { data: { user }, error: userError } = await userClient.auth.getUser()
+      if (userError || !user) {
+        return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      const { data: work } = await supabase
+        .from('works')
+        .select('id, user_id, title, description, cover_url, allow_download, code_required, nda_required')
+        .eq('share_token', token)
+        .single()
+      if (!work) {
+        return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      if (work.user_id !== user.id) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      const { data: fileRows } = await supabase
+        .from('work_files')
+        .select('id, name, caption, mime_type, size_bytes, storage_path')
+        .eq('work_id', work.id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
+
+      const files: { id: string; name: string; caption: string | null; mime_type: string; size_bytes: number; url: string | null }[] = []
+      if (fileRows && fileRows.length > 0) {
+        const paths = fileRows.map((f: { storage_path: string }) => f.storage_path)
+        const { data: signed } = await supabase.storage.from('work-assets').createSignedUrls(paths, 3600)
+        const urlMap: Record<string, string> = {}
+        if (signed) signed.forEach(({ path, signedUrl }: { path: string; signedUrl: string }) => { if (signedUrl) urlMap[path] = signedUrl })
+        for (const f of fileRows) {
+          files.push({ id: f.id, name: f.name, caption: f.caption, mime_type: f.mime_type, size_bytes: f.size_bytes, url: urlMap[f.storage_path] ?? null })
+        }
+      }
+
+      return new Response(JSON.stringify({
+        preview: true,
+        work: { title: work.title, description: work.description, cover_url: work.cover_url, allow_download: work.allow_download },
+        files,
+        gates: { code_required: work.code_required, nda_required: work.nda_required },
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   } catch (err) {

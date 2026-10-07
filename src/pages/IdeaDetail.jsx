@@ -925,7 +925,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                       setIdea(v => ({ ...v, product_image_url: publicUrl }))
                     } else {
                       console.log('STORAGE ERROR:', error)
-                      alert('Upload failed. Use an image under 20 MB.')
+                      alert('Upload failed. Use an image under 50 MB.')
                     }
                     setUploadingImage(false)
                   }} />
@@ -1834,7 +1834,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                         setSupportFiles(updated)
                         await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
                       } else {
-                        alert('Upload failed. Use an image, PDF or Word file under 20 MB.')
+                        alert('Upload failed. Use an image, PDF or Word file under 50 MB.')
                       }
                       setUploadingFile(false)
                     }} />

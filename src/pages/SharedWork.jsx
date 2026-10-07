@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { supabase } from '../supabase'
 import { ImageMosaic, ImageViewer } from '../components/WorkImages'
 import Logo from '../components/Logo'
 import PdfPages from '../components/PdfPages'
@@ -13,6 +14,9 @@ function isValidEmail(e) {
 
 export default function SharedWork() {
   const { token } = useParams()
+  const [searchParams] = useSearchParams()
+  const [isPreview, setIsPreview] = useState(false)
+  const [previewGates, setPreviewGates] = useState(null)
   const [phase, setPhase] = useState('loading')
   const [coverData, setCoverData] = useState(null)
   const [passedCode, setPassedCode] = useState('')
@@ -31,12 +35,24 @@ export default function SharedWork() {
   const [viewerIndex, setViewerIndex] = useState(null)
 
   useEffect(() => {
-    const stored = sessionStorage.getItem(`work_session_${token}`)
-    if (stored) {
-      callRefresh(stored)
-    } else {
-      callCover()
+    async function init() {
+      if (searchParams.get('preview') === '1') {
+        const { data, error } = await supabase.functions.invoke('work-access', { body: { action: 'preview', token } })
+        if (!error && data?.preview === true) {
+          setIsPreview(true)
+          setPreviewGates(data.gates)
+          processContent(data)
+          return
+        }
+      }
+      const stored = sessionStorage.getItem(`work_session_${token}`)
+      if (stored) {
+        callRefresh(stored)
+      } else {
+        callCover()
+      }
     }
+    init()
   }, [token])
 
   async function callCover() {
@@ -144,6 +160,16 @@ export default function SharedWork() {
   return (
     <div style={{ minHeight: '100vh', background: '#0e0e1f', position: 'relative' }}>
       <div style={{ height: 3, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' }} />
+      {isPreview && (
+        <div style={{ background: 'rgba(123,159,247,0.15)', borderBottom: '0.5px solid rgba(123,159,247,0.35)', padding: '10px 16px', textAlign: 'center' }}>
+          <p style={{ fontSize: 13, color: '#c9d6ff', margin: 0 }}>Preview — this is what your visitors see. This view is not logged.</p>
+          {(previewGates?.code_required || previewGates?.nda_required) && (
+            <p style={{ fontSize: 12, color: 'rgba(201,214,255,0.6)', margin: '4px 0 0' }}>
+              {'Visitors pass ' + [previewGates.code_required && 'an access code', previewGates.nda_required && 'the NDA'].filter(Boolean).join(' and ') + ' before reaching this page.'}
+            </p>
+          )}
+        </div>
+      )}
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.25rem 4rem', width: '100%', boxSizing: 'border-box' }}>
 

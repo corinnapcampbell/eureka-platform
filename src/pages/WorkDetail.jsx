@@ -412,6 +412,11 @@ export default function WorkDetail({ session }) {
               }}>{copied ? 'Copied!' : 'Copy'}</button>
             </div>
           )}
+          {work.share_token && (
+            <button onClick={() => window.open(`/w/${work.share_token}?preview=1`, '_blank')} style={{ background: 'transparent', border: '0.5px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '8px 16px', fontSize: 13, color: '#fff', marginBottom: '1.25rem', cursor: 'pointer' }}>
+              👁 View as visitor
+            </button>
+          )}
           {[
             { field: 'code_required', label: 'Require access code', sub: 'Viewers must enter a code to open this work' },
             { field: 'nda_required', label: 'Require NDA signature', sub: 'Viewers must sign an NDA and provide their name and email' },

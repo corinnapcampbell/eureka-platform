@@ -514,7 +514,7 @@ Please start asking me questions to understand the product better so you can gen
                         setStagedFile(null)
                         setSavedSketch(true); setTimeout(() => setSavedSketch(false), 2000)
                       } else {
-                        alert('Upload failed. Use an image under 20 MB.')
+                        alert('Upload failed. Use an image under 50 MB.')
                       }
                       setUploadingSketch(false)
                     }}
