@@ -28,10 +28,7 @@ export default function InventorProfile() {
       setProfile(prof)
 
       const { data: publishedIdeas } = await supabase
-        .from('ideas')
-        .select('id, title, tagline')
-        .eq('user_id', userId)
-        .eq('is_published', true)
+        .rpc('get_published_ideas_for_inventor', { p_user_id: userId })
 
       if (publishedIdeas?.length) {
         const { data: links } = await supabase
