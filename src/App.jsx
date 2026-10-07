@@ -8,6 +8,7 @@ import SubmitIdea from './pages/SubmitIdea'
 import IdeaDetail from './pages/IdeaDetail'
 import WorkDetail from './pages/WorkDetail'
 import SharedIdea from './pages/SharedIdea'
+import SharedWork from './pages/SharedWork'
 import TradeSecrets from './pages/legal/TradeSecrets'
 import NDA from './pages/legal/NDA'
 import PrivacyPolicy from './pages/PrivacyPolicy'
@@ -75,6 +76,7 @@ export default function App() {
         </ProtectedRoute>
       } />
       <Route path="/share/:token" element={<SharedIdea />} />
+      <Route path="/w/:token" element={<SharedWork />} />
       <Route path="/inventor/:userId" element={<InventorProfile />} />
       <Route path="/deck/view/:shareToken" element={<DeckViewer />} />
       <Route path="/pitch/:ideaId" element={<PitchPDF session={session} />} />

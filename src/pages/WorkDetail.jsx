@@ -19,6 +19,14 @@ export default function WorkDetail({ session }) {
   const [signedUrls, setSignedUrls] = useState({})
   const [viewerIndex, setViewerIndex] = useState(null)
   const [pendingCover, setPendingCover] = useState(null)
+  const [codes, setCodes] = useState([])
+  const [accessLog, setAccessLog] = useState([])
+  const [copied, setCopied] = useState(false)
+  const [newCode, setNewCode] = useState('')
+  const [newLabel, setNewLabel] = useState('')
+  const [newOpenings, setNewOpenings] = useState('1')
+  const [addingCode, setAddingCode] = useState(false)
+  const [codeError, setCodeError] = useState('')
   const fileInputRef = useRef()
   const coverInputRef = useRef()
   const userId = session.user.id
@@ -52,6 +60,10 @@ export default function WorkDetail({ session }) {
           setSignedUrls(map)
         }
       }
+      const { data: c } = await supabase.from('work_codes').select('*').eq('work_id', id).order('created_at', { ascending: true })
+      setCodes(c || [])
+      const { data: l } = await supabase.from('work_access_log').select('*').eq('work_id', id).order('accessed_at', { ascending: false })
+      setAccessLog(l || [])
       setLoading(false)
     }
     load()
@@ -153,6 +165,70 @@ export default function WorkDetail({ session }) {
     }
     await supabase.from('works').delete().eq('id', id)
     navigate('/dashboard')
+  }
+
+  async function toggleWorkField(field, value) {
+    await supabase.from('works').update({ [field]: value }).eq('id', id)
+    setWork(w => ({ ...w, [field]: value }))
+  }
+
+  async function toggleCode(codeId, active) {
+    await supabase.from('work_codes').update({ active }).eq('id', codeId)
+    setCodes(prev => prev.map(c => c.id === codeId ? { ...c, active } : c))
+  }
+
+  async function addCode() {
+    if (newCode.length < 6) { setCodeError('Code must be at least 6 characters.'); return }
+    setAddingCode(true)
+    const openings = newOpenings === 'unlimited' ? null : parseInt(newOpenings)
+    const { data, error } = await supabase.from('work_codes').insert({
+      work_id: id,
+      user_id: userId,
+      code: newCode.toUpperCase(),
+      label: newLabel.trim() || null,
+      uses_total: openings,
+      uses_remaining: openings,
+      active: true,
+    }).select().single()
+    setAddingCode(false)
+    if (error) {
+      setCodeError(error.message?.includes('unique') || error.message?.includes('duplicate') ? 'This code already exists.' : (error.message || 'Error adding code.'))
+      return
+    }
+    setCodes(prev => [...prev, data])
+    setNewCode('')
+    setNewLabel('')
+    setNewOpenings('1')
+    setCodeError('')
+  }
+
+  function generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(`${window.location.origin}/w/${work.share_token}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function exportCsv() {
+    const header = 'Code,Name,Email,Date,IP,NDA\n'
+    const rows = accessLog.map(r => [
+      r.work_code_label || '',
+      r.viewer_name || '',
+      r.viewer_email || '',
+      r.accessed_at ? new Date(r.accessed_at).toLocaleString() : '',
+      r.ip_address || '',
+      r.nda_accepted ? 'Yes' : 'No',
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([header + rows], { type: 'text/csv' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `access-log-${id}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
   }
 
   function formatStorage(bytes) {
@@ -294,9 +370,163 @@ export default function WorkDetail({ session }) {
           )}
         </div>
 
-        <p style={{ fontSize: 13, color: 'var(--muted)', fontStyle: 'italic', marginTop: '2.5rem', marginBottom: '2.5rem' }}>
-          Sharing, access codes and the access log arrive in the next update.
-        </p>
+        {/* Card: Share this work */}
+        <div style={{ background: '#0e0e1f', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '1.75rem', marginTop: '2.5rem', marginBottom: '1.5rem' }}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: '0 0 1rem' }}>Share this work</p>
+          {work.share_token && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px', marginBottom: '1.25rem' }}>
+              <span style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {`${window.location.origin}/w/${work.share_token}`}
+              </span>
+              <button onClick={copyLink} style={{
+                background: copied ? '#EAF3DE' : 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
+                color: copied ? '#3B6D11' : '#fff',
+                border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', flexShrink: 0,
+              }}>{copied ? 'Copied!' : 'Copy'}</button>
+            </div>
+          )}
+          {[
+            { field: 'code_required', label: 'Require access code', sub: 'Viewers must enter a code to open this work' },
+            { field: 'nda_required', label: 'Require NDA signature', sub: 'Viewers must sign an NDA and provide their name and email' },
+            { field: 'allow_download', label: 'Allow download', sub: 'Viewers can download files and save media' },
+          ].map(({ field, label, sub }) => (
+            <div key={field} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div>
+                <p style={{ fontSize: 14, color: '#fff', margin: '0 0 2px' }}>{label}</p>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: 0 }}>{sub}</p>
+              </div>
+              <div
+                onClick={() => toggleWorkField(field, !work[field])}
+                style={{
+                  width: 40, height: 22, borderRadius: 11, position: 'relative', cursor: 'pointer', flexShrink: 0, marginLeft: 16,
+                  background: work[field] ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.15)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 3, left: work[field] ? 21 : 3,
+                  width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s',
+                }} />
+              </div>
+            </div>
+          ))}
+          {work.code_required && !codes.some(c => c.active) && (
+            <p style={{ fontSize: 12, color: '#f59e0b', margin: '0.25rem 0 0' }}>⚠ Require access code is on but you have no active codes. Add one below.</p>
+          )}
+        </div>
+
+        {/* Card: Access codes */}
+        <div style={{ background: '#0e0e1f', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '1.75rem', marginBottom: '1.5rem' }}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: '0 0 1rem' }}>Access codes</p>
+          {codes.length > 0 && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              {codes.map(c => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'monospace', letterSpacing: '0.05em' }}>{c.code}</span>
+                    {c.label && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 8 }}>{c.label}</span>}
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>
+                      {c.uses_total === null ? 'Unlimited openings' : `${c.uses_remaining ?? 0} of ${c.uses_total} remaining`}
+                    </span>
+                  </div>
+                  <div
+                    onClick={() => toggleCode(c.id, !c.active)}
+                    style={{
+                      width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer', flexShrink: 0,
+                      background: c.active ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.12)',
+                      transition: 'background 0.2s',
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute', top: 2, left: c.active ? 18 : 2,
+                      width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                      transition: 'left 0.2s',
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: 120 }}>
+              <input
+                value={newCode}
+                onChange={e => setNewCode(e.target.value.toUpperCase())}
+                placeholder="Code (min 6 chars)"
+                maxLength={20}
+                style={{ width: '100%', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 36px 9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace', letterSpacing: '0.05em' }}
+              />
+              <button
+                onClick={() => setNewCode(generateCode())}
+                title="Generate"
+                style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 14, padding: '2px 4px' }}
+              >⟳</button>
+            </div>
+            <input
+              value={newLabel}
+              onChange={e => setNewLabel(e.target.value)}
+              placeholder="Label (optional)"
+              style={{ flex: 1, minWidth: 100, border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box' }}
+            />
+            <select
+              value={newOpenings}
+              onChange={e => setNewOpenings(e.target.value)}
+              style={{ border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 10px', fontSize: 13, color: '#fff', background: '#1a1a2e', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="1">1 opening</option>
+              <option value="2">2 openings</option>
+              <option value="3">3 openings</option>
+              <option value="5">5 openings</option>
+              <option value="10">10 openings</option>
+              <option value="unlimited">Unlimited</option>
+            </select>
+          </div>
+          {codeError && <p style={{ fontSize: 12, color: '#f87171', margin: '0 0 0.5rem' }}>{codeError}</p>}
+          <button
+            onClick={addCode}
+            disabled={addingCode || !newCode.trim()}
+            style={{
+              background: newCode.trim() ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.08)',
+              color: newCode.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
+              border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 500, cursor: newCode.trim() && !addingCode ? 'pointer' : 'not-allowed',
+            }}
+          >{addingCode ? 'Adding...' : '+ Add code'}</button>
+        </div>
+
+        {/* Card: Who has opened this work */}
+        <div style={{ background: '#0e0e1f', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '1.75rem', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: 0 }}>Who has opened this work</p>
+            {accessLog.length > 0 && (
+              <button onClick={exportCsv} style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', background: 'none', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>Export CSV</button>
+            )}
+          </div>
+          {accessLog.length === 0 ? (
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', margin: 0 }}>No one has opened this work yet.</p>
+          ) : (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.8fr 1.3fr 1.2fr 0.5fr', gap: '0 12px', padding: '6px 10px', marginBottom: 4 }}>
+                {['Code', 'Name / Email', 'Date', 'IP', 'NDA'].map(h => (
+                  <span key={h} style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{h}</span>
+                ))}
+              </div>
+              {accessLog.map((r, i) => (
+                <div key={r.id || i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.8fr 1.3fr 1.2fr 0.5fr', gap: '0 12px', padding: '9px 10px', borderRadius: 8, background: i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.work_code_label || '—'}</span>
+                  <div style={{ minWidth: 0 }}>
+                    {r.viewer_name && <p style={{ fontSize: 12, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.viewer_name}</p>}
+                    {r.viewer_email && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.viewer_email}</p>}
+                    {!r.viewer_name && !r.viewer_email && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>—</span>}
+                  </div>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{r.accessed_at ? new Date(r.accessed_at).toLocaleDateString() : '—'}</span>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.ip_address || '—'}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: r.nda_accepted ? '#86efac' : 'rgba(255,255,255,0.3)' }}>{r.nda_accepted ? 'YES' : '—'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div style={{ borderTop: '0.5px solid var(--border)', paddingTop: '1.5rem' }}>
           <button onClick={deleteWork} style={{
