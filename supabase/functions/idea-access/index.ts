@@ -46,6 +46,29 @@ Deno.serve(async (req) => {
       return data?.code_required === true
     }
 
+    const IDEA_ASSETS_MARKER = '/storage/v1/object/public/idea-assets/'
+    async function signUrlsBatch(urls: (string | null | undefined)[]): Promise<Record<string, string>> {
+      const toSign: string[] = []
+      const originals: Record<string, string> = {}
+      for (const url of urls) {
+        if (!url) continue
+        const idx = url.indexOf(IDEA_ASSETS_MARKER)
+        if (idx === -1) continue
+        const path = decodeURIComponent(url.slice(idx + IDEA_ASSETS_MARKER.length).split('?')[0])
+        if (!path) continue
+        toSign.push(path)
+        originals[path] = url
+      }
+      if (toSign.length === 0) return {}
+      const { data } = await supabase.storage.from('idea-assets').createSignedUrls(toSign, 3600)
+      if (!data) return {}
+      const map: Record<string, string> = {}
+      for (const item of (data as Array<{ path: string; signedUrl: string }>)) {
+        if (item.signedUrl && item.path && originals[item.path]) map[originals[item.path]] = item.signedUrl
+      }
+      return map
+    }
+
     if (action === 'cover') {
       const { data: idea, error } = await supabase
         .from('ideas')
@@ -56,10 +79,11 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
       const code_required = await codeIsOn()
+      const coverSigned = await signUrlsBatch([idea.product_image_url])
       return new Response(JSON.stringify({
         id: idea.id,
         title: idea.title,
-        product_image_url: idea.product_image_url,
+        product_image_url: idea.product_image_url ? (coverSigned[idea.product_image_url] ?? null) : null,
         tease: idea.tease,
         target_audience: idea.target_audience,
         category: idea.category,
@@ -262,6 +286,16 @@ Deno.serve(async (req) => {
 
       const { data: freshIdea } = await supabase.rpc('get_shared_idea', { p_token: token })
 
+      if (freshIdea && typeof freshIdea === 'object') {
+        const fi = freshIdea as Record<string, unknown>
+        const sf = Array.isArray(fi.support_files) ? fi.support_files as Array<Record<string, unknown>> : []
+        const urlsToSign = [fi.product_image_url, fi.sketch_image_url, ...sf.filter(f => f.type !== 'video_link').map(f => f.url)] as (string | null | undefined)[]
+        const signed = await signUrlsBatch(urlsToSign)
+        if (fi.product_image_url) fi.product_image_url = signed[fi.product_image_url as string] ?? null
+        if (fi.sketch_image_url) fi.sketch_image_url = signed[fi.sketch_image_url as string] ?? null
+        for (const f of sf) { if (f.type !== 'video_link' && f.url) f.url = signed[f.url as string] ?? null }
+      }
+
       return new Response(JSON.stringify({ session: sessionToken, idea: freshIdea }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -297,6 +331,16 @@ Deno.serve(async (req) => {
       }
 
       const { data: freshIdea } = await supabase.rpc('get_shared_idea', { p_token: token })
+
+      if (freshIdea && typeof freshIdea === 'object') {
+        const fi = freshIdea as Record<string, unknown>
+        const sf = Array.isArray(fi.support_files) ? fi.support_files as Array<Record<string, unknown>> : []
+        const urlsToSign = [fi.product_image_url, fi.sketch_image_url, ...sf.filter(f => f.type !== 'video_link').map(f => f.url)] as (string | null | undefined)[]
+        const signed = await signUrlsBatch(urlsToSign)
+        if (fi.product_image_url) fi.product_image_url = signed[fi.product_image_url as string] ?? null
+        if (fi.sketch_image_url) fi.sketch_image_url = signed[fi.sketch_image_url as string] ?? null
+        for (const f of sf) { if (f.type !== 'video_link' && f.url) f.url = signed[f.url as string] ?? null }
+      }
 
       return new Response(JSON.stringify({ idea: freshIdea }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }

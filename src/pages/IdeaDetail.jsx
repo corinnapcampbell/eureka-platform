@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import Logo from '../components/Logo'
 import NavBar from '../components/NavBar'
 import { dedupeArray } from '../utils/generatePDF'
+import { signIdeaAssetUrls } from '../utils/ideaAssets'
 import { buildSnapshotHTML } from '../utils/businessModel'
 import BusinessModelSection, { parseBMValue, serializeBMValue } from '../components/BusinessModelSection'
 import Scorecard from '../components/Scorecard'
@@ -152,6 +153,7 @@ export default function IdeaDetail({ session }) {
   const [editUnlimited, setEditUnlimited] = useState(false)
   const [editError, setEditError] = useState('')
   const [confirmState, setConfirmState] = useState(null)
+  const [signedMap, setSignedMap] = useState({})
 
   const startEditRef = useRef(null)
 
@@ -271,6 +273,15 @@ export default function IdeaDetail({ session }) {
     }
     fetchDeck()
   }, [id])
+
+  useEffect(() => {
+    const urls = [
+      idea?.product_image_url,
+      idea?.sketch_image_url,
+      ...supportFiles.filter(f => f.type !== 'video_link').map(f => f.url),
+    ]
+    signIdeaAssetUrls(supabase, urls).then(setSignedMap)
+  }, [idea?.product_image_url, idea?.sketch_image_url, supportFiles])
 
   useEffect(() => {
     async function fetchCodes() {
@@ -889,7 +900,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             <div style={{ marginBottom: '1.25rem', borderRadius: 14, overflow: 'hidden', background: '#fff', border: '0.5px solid rgba(0,0,0,0.08)' }}>
               {idea.product_image_url ? (
                 <div style={{ position: 'relative' }}>
-                  <img src={idea.product_image_url} alt="Product" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', display: 'block' }} />
+                  <img src={signedMap[idea.product_image_url] || idea.product_image_url} alt="Product" style={{ width: '100%', maxHeight: 340, objectFit: 'cover', display: 'block' }} />
                   {isOwner && (
                     <button onClick={async () => {
                       await supabase.from('ideas').update({ product_image_url: null }).eq('id', id)
@@ -914,6 +925,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                       setIdea(v => ({ ...v, product_image_url: publicUrl }))
                     } else {
                       console.log('STORAGE ERROR:', error)
+                      alert('Upload failed. Use an image under 20 MB.')
                     }
                     setUploadingImage(false)
                   }} />
@@ -1147,7 +1159,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               Edit sketch
             </button>
           </div>
-          <img src={idea.sketch_image_url} alt="Product Sketch" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
+          <img src={signedMap[idea.sketch_image_url] || idea.sketch_image_url} alt="Product Sketch" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
         </div>
       )}
           </>
@@ -1725,14 +1737,14 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                             const fi = supportFiles.indexOf(f)
                             return (
                               <div key={f.id} style={{ flexShrink: 0, width: 160, borderRadius: 10, overflow: 'hidden', border: '0.5px solid rgba(0,0,0,0.08)', background: '#fafafa', position: 'relative' }}>
-                                <img src={f.url} alt={f.name} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
+                                <img src={signedMap[f.url] || f.url} alt={f.name} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
                                 <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
                                   <input value={f.name} onChange={async (e) => {
                                     const updated = supportFiles.map((x, xi) => xi === fi ? { ...x, name: e.target.value } : x)
                                     setSupportFiles(updated)
                                     await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
                                   }} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 11, color: '#2c2c2a', fontWeight: 500, outline: 'none', minWidth: 0 }} />
-                                  <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#7b9ff7', textDecoration: 'none', flexShrink: 0 }}>↗</a>
+                                  <a href={signedMap[f.url] || f.url} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#7b9ff7', textDecoration: 'none', flexShrink: 0 }}>↗</a>
                                   <button onClick={async () => {
                                     const updated = supportFiles.filter((_, xi) => xi !== fi)
                                     setSupportFiles(updated)
@@ -1786,7 +1798,7 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                                 setSupportFiles(updated)
                                 await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
                               }} style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13, color: '#2c2c2a', fontWeight: 500, outline: 'none' }} />
-                              <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#7b9ff7', textDecoration: 'none' }}>Open ↗</a>
+                              <a href={signedMap[f.url] || f.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#7b9ff7', textDecoration: 'none' }}>Open ↗</a>
                               <button onClick={async () => {
                                 const updated = supportFiles.filter((_, xi) => xi !== fi)
                                 setSupportFiles(updated)
@@ -1821,6 +1833,8 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                         const updated = [...supportFiles, newFile]
                         setSupportFiles(updated)
                         await supabase.from('ideas').update({ support_files: updated }).eq('id', id)
+                      } else {
+                        alert('Upload failed. Use an image, PDF or Word file under 20 MB.')
                       }
                       setUploadingFile(false)
                     }} />

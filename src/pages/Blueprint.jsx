@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { signIdeaAssetUrls } from '../utils/ideaAssets'
 
 // ── Styles ────────────────────────────────────────
 const s = {
@@ -242,6 +243,7 @@ export default function Blueprint({ session }) {
   const [copied, setCopied] = useState(false)
   const [savedSketch, setSavedSketch] = useState(false)
   const [stagedFile, setStagedFile] = useState(null)
+  const [signedSketchUrl, setSignedSketchUrl] = useState(null)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
 
@@ -290,6 +292,10 @@ How it works: ${ideaData.how_it_works || ''}
 Please start asking me questions to understand the product better so you can generate a 3D blueprint.`
     sendMessage(firstMsg)
   }
+
+  useEffect(() => {
+    signIdeaAssetUrls(supabase, [sketchImageUrl]).then(m => setSignedSketchUrl(m[sketchImageUrl] || null))
+  }, [sketchImageUrl])
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -408,7 +414,7 @@ Please start asking me questions to understand the product better so you can gen
             </div>
             {sketchImageUrl && (
               <div style={{ marginTop: '1rem' }}>
-                <img src={sketchImageUrl} alt="Product Sketch" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
+                <img src={signedSketchUrl || sketchImageUrl} alt="Product Sketch" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
               </div>
             )}
             <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
@@ -507,6 +513,8 @@ Please start asking me questions to understand the product better so you can gen
                         setSketchImageUrl(publicUrl)
                         setStagedFile(null)
                         setSavedSketch(true); setTimeout(() => setSavedSketch(false), 2000)
+                      } else {
+                        alert('Upload failed. Use an image under 20 MB.')
                       }
                       setUploadingSketch(false)
                     }}
