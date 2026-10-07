@@ -8,7 +8,7 @@ import Logo from '../components/Logo'
 import NavBar from '../components/NavBar'
 import BusinessModelSection, { extractBMChips, serializeBMValue } from '../components/BusinessModelSection'
 import { parseBMValue, buildBMHtml, escH } from '../utils/businessModel'
-import { buildPitchHTML, PITCH_SECTIONS } from '../utils/pitchTemplate'
+import { buildPitchHTML, PITCH_SECTIONS, PITCH_LIMITS } from '../utils/pitchTemplate'
 import { signIdeaAssetUrls } from '../utils/ideaAssets'
 
 const FIELDS = [
@@ -460,14 +460,17 @@ function addSuggestion(chips, setChips, val) {
   if (!chips.includes(val)) setChips([...chips, val])
 }
 
-function ChipInput({ chips, setChips, inputVal, setInputVal, placeholder, suggestionList, loadingSuggestions, color = '#7b9ff7' }) {
+function ChipInput({ chips, setChips, inputVal, setInputVal, placeholder, suggestionList, loadingSuggestions, color = '#7b9ff7', maxItems = null, maxChars = null }) {
+  const atMax = maxItems !== null && chips.length >= maxItems
+  const tryAdd = () => { if (!atMax) addChip(chips, setChips, inputVal, setInputVal) }
   return (
     <div style={{ marginTop: 8 }}>
       <div style={{ display: 'flex', gap: 8 }}>
         <input
           value={inputVal}
           onChange={e => setInputVal(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addChip(chips, setChips, inputVal, setInputVal) } }}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); tryAdd() } }}
+          maxLength={maxChars || undefined}
           placeholder={placeholder || 'Type a point and press Enter...'}
           style={{
             flex: 1, padding: '8px 12px', borderRadius: 8,
@@ -477,19 +480,26 @@ function ChipInput({ chips, setChips, inputVal, setInputVal, placeholder, sugges
         />
         <button
           type="button"
-          onClick={() => addChip(chips, setChips, inputVal, setInputVal)}
+          onClick={tryAdd}
+          disabled={atMax}
           style={{
             padding: '8px 14px', borderRadius: 8, border: 'none',
-            background: color, color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+            background: color, color: '#fff', cursor: atMax ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 500,
+            opacity: atMax ? 0.5 : 1,
           }}
         >+ Add</button>
       </div>
+      {(maxItems !== null || maxChars !== null) && (
+        <div style={{ fontSize: 11, color: '#b0b0a8', marginTop: 4 }}>
+          {maxItems !== null ? `${chips.length} of ${maxItems}` : ''}{maxItems !== null && maxChars !== null ? ' · ' : ''}{maxChars !== null ? `up to ${maxChars} characters each` : ''}
+        </div>
+      )}
       {chips.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
           {chips.map((chip, i) => (
             <span key={i} style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: color + '22', border: `1px solid ${color}`,
+              background: color + '22', border: maxChars !== null && chip.length > maxChars ? '1px solid #e24b4a' : `1px solid ${color}`,
               borderRadius: 20, padding: '4px 12px', fontSize: 13, color: '#2c2c2a',
             }}>
               {chip}
@@ -508,19 +518,19 @@ function ChipInput({ chips, setChips, inputVal, setInputVal, placeholder, sugges
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {suggestionList.map((s, i) => (
-              !chips.includes(s) && (
+              !chips.includes(s) && (maxChars === null || s.length <= maxChars) && (
                 <span
                   key={i}
-                  onClick={() => addSuggestion(chips, setChips, s)}
+                  onClick={() => { if (!atMax) addSuggestion(chips, setChips, s) }}
                   style={{
                     display: 'inline-flex', alignItems: 'center',
                     background: 'transparent', border: `1px dashed ${color}88`,
                     borderRadius: 20, padding: '3px 10px', fontSize: 12,
-                    color: '#888', cursor: 'pointer', opacity: 0.75,
+                    color: '#888', cursor: atMax ? 'not-allowed' : 'pointer', opacity: atMax ? 0.4 : 0.75,
                     transition: 'opacity 0.2s',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '0.75'}
+                  onMouseEnter={e => { if (!atMax) e.currentTarget.style.opacity = '1' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = atMax ? '0.4' : '0.75' }}
                 >{s}</span>
               )
             ))}
@@ -685,7 +695,7 @@ export default function PitchPDF({ session }) {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${session?.access_token}`,
             },
-            body: JSON.stringify({ prompt: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}. Team: ${idea.team || ''}. Customer validation: ${idea.customer_validation || ''}. Traction: ${idea.traction || ''}. Generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]}`, target_key: ideaId }),
+            body: JSON.stringify({ prompt: `For this idea: ${idea.title} — ${idea.problem} — ${idea.solution}. Team: ${idea.team || ''}. Customer validation: ${idea.customer_validation || ''}. Traction: ${idea.traction || ''}. Generate suggestions. Return ONLY JSON with no markdown, no backticks, no explanation: {"howItWorks": ["step 1","step 2","step 3","step 4"], "targetMarket": ["🚀 Startup Founders","💰 Investors","⚖️ IP Lawyers","💡 Inventors","🏢 Enterprises"], "freeTier": ["feature 1","feature 2","feature 3","feature 4"], "paidTier": ["feature 1","feature 2","feature 3","feature 4"], "risks": ["risk 1","risk 2","risk 3","risk 4"], "nextSteps": ["milestone 1","milestone 2","milestone 3","milestone 4"]} Each howItWorks step must be at most 95 characters. Each targetMarket item at most 100 characters, with no emoji. Each risk and each nextStep at most 95 characters.`, target_key: ideaId }),
           }
         )
         if (res.status === 429) {
@@ -725,6 +735,15 @@ export default function PitchPDF({ session }) {
     setSuggesting(fieldKey)
     try {
       const { data: { session: aiSession } } = await supabase.auth.getSession()
+      const isTitle = fieldKey.startsWith('title_')
+      const isTeam = fieldKey.startsWith('team_')
+      let maxChars = null
+      if (isTitle) maxChars = PITCH_LIMITS.title
+      else if (isTeam) maxChars = PITCH_LIMITS.team.bio
+      else if (typeof PITCH_LIMITS[fieldKey] === 'number') maxChars = PITCH_LIMITS[fieldKey]
+      const sectionKey = isTitle ? fieldKey.slice(6) : null
+      const sectionLabel = isTitle ? (PITCH_SECTIONS.find(s => s.key === sectionKey)?.label || sectionKey) : undefined
+      const currentValue = isTitle ? (pdfHeadlines[sectionKey] || '') : form[fieldKey]
       const res = await fetch('https://gvjtmyesrrdwkcwkusiz.supabase.co/functions/v1/improve-pitch-field', {
         method: 'POST',
         headers: {
@@ -732,7 +751,7 @@ export default function PitchPDF({ session }) {
           'Authorization': `Bearer ${aiSession?.access_token}`,
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ idea: { ...idea, ...form }, field: fieldKey, currentValue: form[fieldKey], target_key: `${ideaId}_${fieldKey}` }),
+        body: JSON.stringify({ idea: { ...idea, ...form }, field: fieldKey, currentValue, target_key: `${ideaId}_${fieldKey}`, maxChars, sectionLabel }),
       })
       if (res.status === 429) {
         const errData = await res.json().catch(() => ({}))
@@ -782,10 +801,11 @@ export default function PitchPDF({ session }) {
     setGenerating(true)
     const formWithChips = {
       ...form,
-      how_it_works:    howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n'),
-      target_audience: targetMarketChips.join(', '),
-      risks:           risksChips.join('\n'),
-      next_steps:      nextStepsChips.join('\n'),
+      how_it_works:        howItWorksChips.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+      target_audience:     targetMarketChips.join(', '),
+      target_market_items: targetMarketChips,
+      risks:               risksChips.join('\n'),
+      next_steps:          nextStepsChips.join('\n'),
     }
     const ideaWithFormData = {
       ...idea,
@@ -1024,6 +1044,27 @@ export default function PitchPDF({ session }) {
     </div>
   )
 
+  const overLimit = (() => {
+    const out = []
+    for (const { key, label } of FIELDS) {
+      if (typeof PITCH_LIMITS[key] === 'number' && (form[key]?.length || 0) > PITCH_LIMITS[key]) out.push(label)
+    }
+    if ((originStory?.length || 0) > PITCH_LIMITS.origin_story) out.push('Origin Story')
+    teamMembers.forEach((m, i) => { if ((m.bio?.length || 0) > PITCH_LIMITS.team.bio) out.push(`Member ${i + 1} bio`) })
+    if (howItWorksChips.length > PITCH_LIMITS.how_it_works.items) out.push('How It Works (too many steps)')
+    if (howItWorksChips.some(c => c.length > PITCH_LIMITS.how_it_works.chars)) out.push('How It Works (a step is too long)')
+    if (targetMarketChips.length > PITCH_LIMITS.target_market.items) out.push('Target Market (too many items)')
+    if (targetMarketChips.some(c => c.length > PITCH_LIMITS.target_market.chars)) out.push('Target Market (an item is too long)')
+    if (risksChips.length > PITCH_LIMITS.risks.items) out.push('Risks (too many)')
+    if (risksChips.some(c => c.length > PITCH_LIMITS.risks.chars)) out.push('Risks (an item is too long)')
+    if (nextStepsChips.length > PITCH_LIMITS.next_steps.items) out.push('Next Steps (too many)')
+    if (nextStepsChips.some(c => c.length > PITCH_LIMITS.next_steps.chars)) out.push('Next Steps (an item is too long)')
+    if (Object.values(pdfHeadlines).some(v => v?.length > PITCH_LIMITS.title)) out.push('Section title')
+    if (teamMembers.length > PITCH_LIMITS.team.members) out.push('Team (too many members)')
+    if (tractionMilestones.length > PITCH_LIMITS.traction.items) out.push('Traction (too many milestones)')
+    return out
+  })()
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f3' }}>
       {/* Gradient accent bar */}
@@ -1095,14 +1136,22 @@ export default function PitchPDF({ session }) {
                 value={form[key]}
                 onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                 rows={rows}
+                maxLength={typeof PITCH_LIMITS[key] === 'number' ? PITCH_LIMITS[key] : undefined}
                 placeholder={`Enter ${label.toLowerCase()}…`}
                 style={{
-                  width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8,
+                  width: '100%', border: (form[key]?.length || 0) > (PITCH_LIMITS[key] || Infinity) ? '1px solid #e24b4a' : '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8,
                   padding: '10px 12px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.7,
                   resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box',
                   background: '#fafaf8', outline: 'none',
                 }}
               />
+              {typeof PITCH_LIMITS[key] === 'number' && (
+                <div style={{ fontSize: 11, textAlign: 'right', marginTop: 3, color: (form[key]?.length || 0) > PITCH_LIMITS[key] ? '#e24b4a' : '#b0b0a8' }}>
+                  {(form[key]?.length || 0) > PITCH_LIMITS[key]
+                    ? `Shorten by ${(form[key]?.length || 0) - PITCH_LIMITS[key]} characters`
+                    : `${form[key]?.length || 0}/${PITCH_LIMITS[key]}`}
+                </div>
+              )}
               {aiSuggestions[key] && (
                 <div style={{ marginTop: '0.75rem', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 10, padding: '1rem 1.25rem' }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 0.5rem' }}>AI Suggestion — review before using</p>
@@ -1141,6 +1190,7 @@ export default function PitchPDF({ session }) {
               inputVal={howItWorksInput} setInputVal={setHowItWorksInput}
               placeholder="Describe a step and press Enter..."
               suggestionList={suggestions.howItWorks} loadingSuggestions={loadingSuggestions} color="#7b9ff7"
+              maxItems={PITCH_LIMITS.how_it_works.items} maxChars={PITCH_LIMITS.how_it_works.chars}
             />
           </div>
 
@@ -1157,6 +1207,7 @@ export default function PitchPDF({ session }) {
               inputVal={targetMarketInput} setInputVal={setTargetMarketInput}
               placeholder="e.g. 🚀 Startup Founders — press Enter to add"
               suggestionList={suggestions.targetMarket} loadingSuggestions={loadingSuggestions} color="#9b7ff7"
+              maxItems={PITCH_LIMITS.target_market.items} maxChars={PITCH_LIMITS.target_market.chars}
             />
           </div>
 
@@ -1184,8 +1235,11 @@ export default function PitchPDF({ session }) {
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>The Team</div>
                 <div style={{ fontSize: 12, color: '#b0b0a8' }}>Add all team members — name, role, and background</div>
               </div>
-              <button onClick={() => setTeamMembers(m => [...m, { name: '', role: '', bio: '' }])} style={{ background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0 }}>+ Add member</button>
+              <button onClick={() => setTeamMembers(m => [...m, { name: '', role: '', bio: '' }])} disabled={teamMembers.length >= PITCH_LIMITS.team.members} style={{ background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: teamMembers.length >= PITCH_LIMITS.team.members ? 'not-allowed' : 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, opacity: teamMembers.length >= PITCH_LIMITS.team.members ? 0.45 : 1 }}>+ Add member</button>
             </div>
+            {teamMembers.filter(m => m.name.trim()).length > PITCH_LIMITS.team.bioUpTo && (
+              <p style={{ fontSize: 12, color: '#b0b0a8', fontStyle: 'italic', marginBottom: 10 }}>With more than 3 people the PDF lists names and roles only.</p>
+            )}
             {teamMembers.map((m, i) => (
               <div key={i} style={{ border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, padding: '1rem', marginBottom: 10, background: '#fafaf8', position: 'relative' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -1204,7 +1258,8 @@ export default function PitchPDF({ session }) {
                     <span key={r} onClick={() => setTeamMembers(ms => { const n = [...ms]; n[i] = { ...n[i], role: r }; return n })} style={{ fontSize: 11, color: '#7b9ff7', background: 'rgba(123,159,247,0.08)', borderRadius: 20, padding: '2px 8px', cursor: 'pointer', border: '0.5px solid rgba(123,159,247,0.2)' }}>{r}</span>
                   ))}
                 </div>
-                <textarea value={m.bio} onChange={e => setTeamMembers(ms => { const n = [...ms]; n[i] = { ...n[i], bio: e.target.value }; return n })} rows={2} placeholder="Brief background and relevant experience" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fff', outline: 'none' }} />
+                <textarea value={m.bio} onChange={e => setTeamMembers(ms => { const n = [...ms]; n[i] = { ...n[i], bio: e.target.value }; return n })} rows={2} maxLength={PITCH_LIMITS.team.bio} placeholder="Brief background and relevant experience" style={{ width: '100%', border: (m.bio?.length || 0) > PITCH_LIMITS.team.bio ? '1px solid #e24b4a' : '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fff', outline: 'none' }} />
+                <div style={{ fontSize: 11, textAlign: 'right', marginTop: 2, color: (m.bio?.length || 0) > PITCH_LIMITS.team.bio ? '#e24b4a' : '#b0b0a8' }}>{(m.bio?.length || 0) > PITCH_LIMITS.team.bio ? `Shorten by ${(m.bio?.length || 0) - PITCH_LIMITS.team.bio} characters` : `${m.bio?.length || 0}/${PITCH_LIMITS.team.bio}`}</div>
                 {aiSuggestions[`team_${i}`] && (
                   <div style={{ marginTop: 8, background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 8, padding: '0.75rem 1rem' }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 6px' }}>AI Suggestion</p>
@@ -1228,7 +1283,10 @@ export default function PitchPDF({ session }) {
               </div>
               <button onClick={() => aiSuggest('origin_story')} disabled={!!suggesting} style={{ background: suggesting === 'origin_story' ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: suggesting ? 'not-allowed' : 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, opacity: suggesting && suggesting !== 'origin_story' ? 0.45 : 1 }}>{suggesting === 'origin_story' ? '…thinking' : '✨ AI Suggest'}</button>
             </div>
-            <textarea value={originStory} onChange={e => setOriginStory(e.target.value)} rows={4} placeholder="Share the personal moment or insight that sparked this idea…" style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+            <textarea value={originStory} onChange={e => setOriginStory(e.target.value)} rows={4} maxLength={PITCH_LIMITS.origin_story} placeholder="Share the personal moment or insight that sparked this idea…" style={{ width: '100%', border: (originStory?.length || 0) > PITCH_LIMITS.origin_story ? '1px solid #e24b4a' : '0.5px solid rgba(44,44,42,0.15)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#2c2c2a', lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }} />
+            <div style={{ fontSize: 11, textAlign: 'right', marginTop: 3, color: (originStory?.length || 0) > PITCH_LIMITS.origin_story ? '#e24b4a' : '#b0b0a8' }}>
+              {(originStory?.length || 0) > PITCH_LIMITS.origin_story ? `Shorten by ${(originStory?.length || 0) - PITCH_LIMITS.origin_story} characters` : `${originStory?.length || 0}/${PITCH_LIMITS.origin_story}`}
+            </div>
             {aiSuggestions['origin_story'] && (
               <div style={{ marginTop: '0.75rem', background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 10, padding: '1rem 1.25rem' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#7b9ff7', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 0.5rem' }}>AI Suggestion — review before using</p>
@@ -1266,7 +1324,7 @@ export default function PitchPDF({ session }) {
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: 2 }}>Traction &amp; Milestones</div>
                 <div style={{ fontSize: 12, color: '#b0b0a8' }}>Key milestones reached and upcoming</div>
               </div>
-              <button onClick={() => setTractionMilestones(m => [...m, { label: '', date: '', status: 'upcoming' }])} style={{ background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0 }}>+ Add milestone</button>
+              <button onClick={() => setTractionMilestones(m => [...m, { label: '', date: '', status: 'upcoming' }])} disabled={tractionMilestones.length >= PITCH_LIMITS.traction.items} style={{ background: 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 7, padding: '5px 12px', fontSize: 12, color: '#7b9ff7', cursor: tractionMilestones.length >= PITCH_LIMITS.traction.items ? 'not-allowed' : 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, opacity: tractionMilestones.length >= PITCH_LIMITS.traction.items ? 0.45 : 1 }}>+ Add milestone</button>
             </div>
             {tractionMilestones.length === 0 && <p style={{ fontSize: 13, color: '#b0b0a8', fontStyle: 'italic' }}>No milestones yet — click + Add milestone to get started.</p>}
             {tractionMilestones.map((m, i) => (
@@ -1361,6 +1419,7 @@ export default function PitchPDF({ session }) {
               inputVal={risksInput} setInputVal={setRisksInput}
               placeholder="Describe a risk and press Enter..."
               suggestionList={suggestions.risks} loadingSuggestions={loadingSuggestions} color="#e05c7a"
+              maxItems={PITCH_LIMITS.risks.items} maxChars={PITCH_LIMITS.risks.chars}
             />
           </div>
 
@@ -1377,6 +1436,7 @@ export default function PitchPDF({ session }) {
               inputVal={nextStepsInput} setInputVal={setNextStepsInput}
               placeholder="Describe a milestone and press Enter..."
               suggestionList={suggestions.nextSteps} loadingSuggestions={loadingSuggestions} color="#7b9ff7"
+              maxItems={PITCH_LIMITS.next_steps.items} maxChars={PITCH_LIMITS.next_steps.chars}
             />
           </div>
 
@@ -1387,19 +1447,49 @@ export default function PitchPDF({ session }) {
                 <input type="checkbox" checked={!pdfHidden[key]} onChange={e => setPdfHidden(h => ({ ...h, [key]: !e.target.checked }))} style={{ marginTop: 3, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, color: '#2c2c2a' }}>{label}</div>
-                  {!pdfHidden[key] && (
-                    <input
-                      value={pdfHeadlines[key] || ''}
-                      onChange={e => setPdfHeadlines(h => ({ ...h, [key]: e.target.value }))}
-                      placeholder="Custom headline (optional)"
-                      style={{ marginTop: 4, width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }}
-                    />
+                  {!pdfHidden[key] && key !== 'business_model' && (
+                    <div>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4 }}>
+                        <input
+                          value={pdfHeadlines[key] || ''}
+                          onChange={e => setPdfHeadlines(h => ({ ...h, [key]: e.target.value.slice(0, PITCH_LIMITS.title) }))}
+                          maxLength={PITCH_LIMITS.title}
+                          placeholder="Title (optional)"
+                          style={{ flex: 1, border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }}
+                        />
+                        {aiSuggestions[`title_${key}_locked`] ? (
+                          <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                            <button disabled style={{ fontSize: 10, padding: '3px 7px', borderRadius: 5, border: '0.5px solid rgba(220,38,38,0.3)', background: 'transparent', color: 'rgba(220,38,38,0.5)', cursor: 'not-allowed', whiteSpace: 'nowrap' }}>Locked</button>
+                            <a href="/pricing" style={{ fontSize: 10, padding: '3px 7px', borderRadius: 5, border: '0.5px solid rgba(123,159,247,0.4)', background: 'rgba(123,159,247,0.08)', color: '#7b9ff7', textDecoration: 'none', whiteSpace: 'nowrap' }}>Upgrade →</a>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => aiSuggest(`title_${key}`)}
+                            disabled={!!suggesting}
+                            style={{ background: suggesting === `title_${key}` ? 'rgba(123,159,247,0.12)' : 'rgba(123,159,247,0.07)', border: '0.5px solid rgba(123,159,247,0.28)', borderRadius: 6, padding: '4px 10px', fontSize: 11, color: '#7b9ff7', cursor: suggesting ? 'not-allowed' : 'pointer', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0, opacity: suggesting && suggesting !== `title_${key}` ? 0.45 : 1 }}
+                          >{suggesting === `title_${key}` ? '…' : '✨ AI Suggest'}</button>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#b0b0a8', textAlign: 'right', marginTop: 2 }}>{(pdfHeadlines[key] || '').length}/60</div>
+                      {aiSuggestions[`title_${key}`] && (
+                        <div style={{ marginTop: 4, background: 'rgba(123,159,247,0.06)', border: '0.5px solid rgba(123,159,247,0.25)', borderRadius: 6, padding: '6px 10px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, color: '#2c2c2a', flex: 1, fontStyle: 'italic' }}>{aiSuggestions[`title_${key}`]}</span>
+                          <button
+                            onClick={() => { setPdfHeadlines(h => ({ ...h, [key]: aiSuggestions[`title_${key}`].slice(0, PITCH_LIMITS.title) })); setAiSuggestions(s => { const n = { ...s }; delete n[`title_${key}`]; return n }) }}
+                            style={{ background: '#2c2c2a', border: 'none', borderRadius: 5, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          >Use this</button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
             ))}
           </div>
 
+          {overLimit.length > 0 && (
+            <p style={{ fontSize: 13, color: '#e24b4a', marginBottom: '0.75rem' }}>Shorten these before generating: {overLimit.join(', ')}</p>
+          )}
           <div style={{ display: 'flex', gap: 10, marginTop: '0.5rem' }}>
             <button
               onClick={handleStartOverPDF}
@@ -1426,13 +1516,13 @@ export default function PitchPDF({ session }) {
             </button>
             <button
               onClick={handleGenerate}
-              disabled={generating}
+              disabled={generating || overLimit.length > 0}
               style={{
                 flex: 1, background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
                 color: '#fff', border: 'none', borderRadius: 12, padding: '16px',
-                fontSize: 16, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer',
+                fontSize: 16, fontWeight: 600, cursor: generating || overLimit.length > 0 ? 'not-allowed' : 'pointer',
                 letterSpacing: '0.2px',
-                opacity: generating ? 0.75 : 1, transition: 'opacity 0.15s',
+                opacity: generating || overLimit.length > 0 ? 0.75 : 1, transition: 'opacity 0.15s',
               }}
             >
               {generating ? '…Building Preview' : '✨ Generate Preview'}
@@ -1451,7 +1541,7 @@ export default function PitchPDF({ session }) {
             style={{ overflowX: 'auto', transform: `scale(${Math.min(1, (window.innerWidth - 40) / 440)})`, transformOrigin: 'top left' }}
           />
           {continuedSections.length > 0 && (
-            <p style={{ fontSize: 12, color: '#b0b0a8', marginTop: 8 }}>Some sections were trimmed to fit — edit the content to shorten them.</p>
+            <p style={{ fontSize: 12, color: '#b0b0a8', marginTop: 8 }}>{`These sections continue on a second page: ${continuedSections.join(', ')}`}</p>
           )}
 
           <div style={{ display: 'flex', gap: 12, marginTop: '1.75rem' }}>
@@ -1475,14 +1565,14 @@ export default function PitchPDF({ session }) {
             >↺ Start over</button>
             <button
               onClick={handlePublish}
-              disabled={publishing || publishSuccess}
+              disabled={publishing || publishSuccess || overLimit.length > 0}
               style={{
                 flex: 1, background: publishSuccess
                   ? 'linear-gradient(90deg, #5a9f7a, #4a8f6a)'
                   : 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
                 color: '#fff', border: 'none', borderRadius: 12, padding: '14px',
-                fontSize: 15, fontWeight: 600, cursor: publishing || publishSuccess ? 'not-allowed' : 'pointer',
-                opacity: publishing ? 0.7 : 1,
+                fontSize: 15, fontWeight: 600, cursor: publishing || publishSuccess || overLimit.length > 0 ? 'not-allowed' : 'pointer',
+                opacity: publishing || overLimit.length > 0 ? 0.7 : 1,
               }}
             >
               {publishing ? '…Publishing' : publishSuccess ? '✅ Published!' : '✅ Publish'}
@@ -1506,7 +1596,7 @@ export default function PitchPDF({ session }) {
             style={{ overflowX: 'auto', transform: `scale(${Math.min(1, (window.innerWidth - 40) / 440)})`, transformOrigin: 'top left' }}
           />
           {continuedSections.length > 0 && (
-            <p style={{ fontSize: 12, color: '#b0b0a8', marginTop: 8 }}>Some sections were trimmed to fit — edit the content to shorten them.</p>
+            <p style={{ fontSize: 12, color: '#b0b0a8', marginTop: 8 }}>{`These sections continue on a second page: ${continuedSections.join(', ')}`}</p>
           )}
 
           <div style={{ display: 'flex', gap: 12, marginTop: '1.75rem' }}>
@@ -1530,14 +1620,14 @@ export default function PitchPDF({ session }) {
             >↺ Start over</button>
             <button
               onClick={handlePublish}
-              disabled={publishing || publishSuccess}
+              disabled={publishing || publishSuccess || overLimit.length > 0}
               style={{
                 flex: 1, background: publishSuccess
                   ? 'linear-gradient(90deg, #5a9f7a, #4a8f6a)'
                   : 'linear-gradient(90deg, #7b9ff7, #9b7ff7)',
                 color: '#fff', border: 'none', borderRadius: 12, padding: '14px',
-                fontSize: 15, fontWeight: 600, cursor: publishing || publishSuccess ? 'not-allowed' : 'pointer',
-                opacity: publishing ? 0.7 : 1,
+                fontSize: 15, fontWeight: 600, cursor: publishing || publishSuccess || overLimit.length > 0 ? 'not-allowed' : 'pointer',
+                opacity: publishing || overLimit.length > 0 ? 0.7 : 1,
               }}
             >
               {publishing ? '…Publishing' : publishSuccess ? '✅ Published!' : '✅ Publish'}

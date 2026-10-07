@@ -33,8 +33,10 @@ serve(async (req) => {
   const aiRemaining = usageCheck?.remaining ?? null
 
   try {
-    const { idea, field, currentValue } = await req.json()
+    const { idea, field, currentValue, maxChars, sectionLabel } = await req.json()
     if (!idea?.title || !field) return new Response(JSON.stringify({ error: 'idea.title and field are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+    const limit = Number.isFinite(Number(maxChars)) ? Math.min(Math.max(Math.floor(Number(maxChars)), 20), 1200) : null
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!apiKey) return new Response(JSON.stringify({ error: 'API key not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -57,11 +59,15 @@ serve(async (req) => {
       .map(([k, v]) => `${k}: ${v.slice(0, 300)}`)
       .join('\n\n')
 
+    const fieldInstruction = field.startsWith('title_')
+      ? `A short headline for the "${sectionLabel || field.slice(6)}" section of the pitch. One line, no quotation marks, no ending period.`
+      : (instructions[field] || 'Write 2-3 clear, professional sentences.')
+    const limitLine = limit !== null ? `\nHARD LIMIT: the whole answer must be at most ${limit} characters including spaces. Count carefully and stay under it.` : ''
     const prompt = `You are a startup pitch writer. Improve the "${field}" section of a pitch document.
 IDEA TITLE: ${idea.title}
 FULL IDEA CONTEXT:\n${contextLines || '(only the title is provided)'}
 CURRENT VALUE:\n${currentValue?.trim() || '(empty)'}
-INSTRUCTION: ${instructions[field] || 'Write 2-3 clear, professional sentences.'}
+INSTRUCTION: ${fieldInstruction}${limitLine}
 Return ONLY the improved text. No explanation, no label, no markdown, no surrounding quotes.`
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -77,7 +83,13 @@ Return ONLY the improved text. No explanation, no label, no markdown, no surroun
     }
 
     const data = await response.json()
-    const improved = data.content?.[0]?.text?.trim() || ''
+    let improved = data.content?.[0]?.text?.trim() || ''
+    if (limit !== null && improved.length > limit) {
+      const sub = improved.slice(0, limit)
+      const lastSent = Math.max(sub.lastIndexOf('. '), sub.lastIndexOf('! '), sub.lastIndexOf('? '))
+      if (lastSent > 0) improved = improved.slice(0, lastSent + 1).trim()
+      else { const lastSpace = sub.lastIndexOf(' '); improved = (lastSpace > 0 ? sub.slice(0, lastSpace) : sub).trim() }
+    }
     return new Response(JSON.stringify({ improved }), { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-AI-Remaining': String(aiRemaining ?? '') } })
 
   } catch (err) {
