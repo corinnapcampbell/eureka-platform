@@ -140,6 +140,18 @@ export default function IdeaDetail({ session }) {
   const [prePublishRemaining, setPrePublishRemaining] = useState(null)
   const [prePublishLocked, setPrePublishLocked] = useState(false)
   const [prePublishReviewOnly, setPrePublishReviewOnly] = useState(false)
+  const [codeRequired, setCodeRequired] = useState(false)
+  const [ideaCodes, setIdeaCodes] = useState([])
+  const [newCode, setNewCode] = useState('')
+  const [newCodeLabel, setNewCodeLabel] = useState('')
+  const [newCodeOpenings, setNewCodeOpenings] = useState('1')
+  const [addingCode, setAddingCode] = useState(false)
+  const [codeFormError, setCodeFormError] = useState('')
+  const [editingCodeId, setEditingCodeId] = useState(null)
+  const [editOpenings, setEditOpenings] = useState('')
+  const [editUnlimited, setEditUnlimited] = useState(false)
+  const [editError, setEditError] = useState('')
+  const [confirmState, setConfirmState] = useState(null)
 
   const startEditRef = useRef(null)
 
@@ -193,7 +205,7 @@ export default function IdeaDetail({ session }) {
       const [{ data: named }, { data: anon }] = await Promise.all([
         supabase
           .from('idea_access_log')
-          .select('viewer_name, viewer_email, viewer_ip, ip_address, nda_accepted, viewed_at, last_viewed, view_count')
+          .select('viewer_name, viewer_email, viewer_ip, ip_address, nda_accepted, viewed_at, last_viewed, view_count, code_label')
           .eq('idea_id', id),
         supabase
           .from('idea_views')
@@ -261,6 +273,24 @@ export default function IdeaDetail({ session }) {
   }, [id])
 
   useEffect(() => {
+    async function fetchCodes() {
+      const { data: settings } = await supabase
+        .from('idea_access_settings')
+        .select('code_required')
+        .eq('idea_id', id)
+        .maybeSingle()
+      setCodeRequired(settings?.code_required === true)
+      const { data: codes } = await supabase
+        .from('idea_access_codes')
+        .select('*')
+        .eq('idea_id', id)
+        .order('created_at', { ascending: true })
+      setIdeaCodes(codes || [])
+    }
+    fetchCodes()
+  }, [id])
+
+  useEffect(() => {
     async function fetchTier() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -299,6 +329,69 @@ export default function IdeaDetail({ session }) {
     const newVal = !(idea.nda_required ?? true)
     await supabase.from('ideas').update({ nda_required: newVal }).eq('id', id)
     setIdea(prev => ({ ...prev, nda_required: newVal }))
+  }
+
+  function askConfirm(message) {
+    return new Promise(resolve => setConfirmState({ message, resolve }))
+  }
+
+  async function toggleCodeRequired() {
+    const newVal = !codeRequired
+    await supabase.from('idea_access_settings').upsert({ idea_id: id, user_id: session.user.id, code_required: newVal, updated_at: new Date().toISOString() }, { onConflict: 'idea_id' })
+    setCodeRequired(newVal)
+  }
+
+  function generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  }
+
+  async function addIdeaCode() {
+    if (newCode.length < 6) { setCodeFormError('Code must be at least 6 characters.'); return }
+    setAddingCode(true)
+    const openings = newCodeOpenings === 'unlimited' ? null : parseInt(newCodeOpenings)
+    const { data, error } = await supabase.from('idea_access_codes').insert({
+      idea_id: id,
+      user_id: session.user.id,
+      code: newCode.toUpperCase(),
+      label: newCodeLabel.trim() || null,
+      max_uses: openings,
+      active: true,
+    }).select().single()
+    setAddingCode(false)
+    if (error) {
+      setCodeFormError(error.message?.includes('unique') || error.message?.includes('duplicate') ? 'This idea already has that code.' : (error.message || 'Error adding code.'))
+      return
+    }
+    setIdeaCodes(prev => [...prev, data])
+    setNewCode('')
+    setNewCodeLabel('')
+    setNewCodeOpenings('1')
+    setCodeFormError('')
+  }
+
+  async function toggleIdeaCode(codeId, active) {
+    await supabase.from('idea_access_codes').update({ active }).eq('id', codeId)
+    setIdeaCodes(prev => prev.map(c => c.id === codeId ? { ...c, active } : c))
+  }
+
+  async function saveIdeaCodeOpenings(c) {
+    setEditError('')
+    const max = editUnlimited ? null : parseInt(editOpenings)
+    if (!editUnlimited) {
+      if (!editOpenings || isNaN(max) || max < 1) { setEditError('Enter a number of openings, 1 or more.'); return }
+      if (max < (c.uses_count ?? 0)) { setEditError(`Can't be lower than the ${c.uses_count ?? 0} already used.`); return }
+    }
+    const { error } = await supabase.from('idea_access_codes').update({ max_uses: max }).eq('id', c.id)
+    if (error) { setEditError(error.message || 'Could not save. Try again.'); return }
+    setIdeaCodes(prev => prev.map(x => x.id === c.id ? { ...x, max_uses: max } : x))
+    setEditingCodeId(null)
+  }
+
+  async function deleteIdeaCode(c) {
+    if (!await askConfirm(`Delete the code ${c.code}? Anyone using it loses access. The access log keeps its history.`)) return
+    await supabase.from('idea_access_codes').delete().eq('id', c.id)
+    setIdeaCodes(prev => prev.filter(x => x.id !== c.id))
   }
 
   async function saveEdit() {
@@ -346,10 +439,11 @@ export default function IdeaDetail({ session }) {
   }
 
   function exportCSV() {
-    const headers = ['Name', 'Email', 'First Visit', 'Last Visit', 'Visits', 'IP Address', 'NDA Accepted']
+    const headers = ['Name', 'Email', 'Given to (code)', 'First Visit', 'Last Visit', 'Visits', 'IP Address', 'NDA Accepted']
     const rows = accessLog.map(r => [
       r.viewer_name || (r.is_anonymous ? 'Anonymous' : ''),
       r.viewer_email || '',
+      r.code_label || '',
       r.viewed_at ? new Date(r.viewed_at).toLocaleString('en-US') : '',
       r.last_viewed ? new Date(r.last_viewed).toLocaleString('en-US') : '',
       r.view_count || 1,
@@ -2011,6 +2105,30 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             </label>
           </div>
 
+          {/* Code required toggle */}
+          <div style={{ marginBottom: '0.75rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <div
+                onClick={toggleCodeRequired}
+                style={{
+                  width: 40, height: 22, borderRadius: 11, flexShrink: 0, position: 'relative', cursor: 'pointer',
+                  background: codeRequired ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.15)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 3, left: codeRequired ? 21 : 3,
+                  width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s',
+                }} />
+              </div>
+              <span style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>Require access code</span>
+            </label>
+          </div>
+          {codeRequired && !ideaCodes.some(c => c.active) && (
+            <p style={{ fontSize: 12, color: '#f59e0b', margin: '0 0 0.75rem' }}>⚠ Require access code is on but you have no active codes. Add one below.</p>
+          )}
+
           {/* Read before you decide collapsible */}
           <div style={{ marginBottom: '1.25rem' }}>
             <button
@@ -2071,6 +2189,111 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
             </div>
           )}
         </div>
+
+        {/* Card: Access codes */}
+        {isOwner && (
+          <div style={{ background: '#0e0e1f', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '1.75rem', marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: '0 0 1rem' }}>Access codes</p>
+            {ideaCodes.length > 0 && (
+              <div style={{ marginBottom: '1.25rem', maxHeight: 168, overflowY: 'auto' }}>
+                {ideaCodes.map(c => (
+                  <div key={c.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'monospace', letterSpacing: '0.05em' }}>{c.code}</span>
+                        {c.label && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 8 }}>{c.label}</span>}
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>
+                          {c.max_uses === null ? `${c.uses_count ?? 0} used · unlimited` : `${c.uses_count ?? 0} of ${c.max_uses} used`}
+                        </span>
+                      </div>
+                      <button onClick={() => { setEditingCodeId(c.id); setEditUnlimited(c.max_uses === null); setEditOpenings(String(c.max_uses ?? Math.max(1, c.uses_count ?? 0))); setEditError('') }} style={{ fontSize: 12, background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>Edit</button>
+                      <button onClick={() => deleteIdeaCode(c)} style={{ fontSize: 12, background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>Delete</button>
+                      <div
+                        onClick={() => toggleIdeaCode(c.id, !c.active)}
+                        style={{
+                          width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer', flexShrink: 0,
+                          background: c.active ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.12)',
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute', top: 2, left: c.active ? 18 : 2,
+                          width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                          transition: 'left 0.2s',
+                        }} />
+                      </div>
+                    </div>
+                    {editingCodeId === c.id && (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', flexWrap: 'wrap' }}>
+                          <input
+                            type="number"
+                            value={editOpenings}
+                            onChange={e => setEditOpenings(e.target.value)}
+                            min={Math.max(1, c.uses_count ?? 0)}
+                            disabled={editUnlimited}
+                            style={{ width: 80, border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box' }}
+                          />
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={editUnlimited} onChange={e => setEditUnlimited(e.target.checked)} />
+                            Unlimited
+                          </label>
+                          <button onClick={() => saveIdeaCodeOpenings(c)} style={{ background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Save</button>
+                          <button onClick={() => { setEditingCodeId(null); setEditError('') }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                        </div>
+                        {editError && <p style={{ fontSize: 12, color: '#f87171', margin: '0 0 8px' }}>{editError}</p>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: 120 }}>
+                <input
+                  value={newCode}
+                  onChange={e => setNewCode(e.target.value.toUpperCase())}
+                  placeholder="Code (min 6 chars)"
+                  maxLength={20}
+                  style={{ width: '100%', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 36px 9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace', letterSpacing: '0.05em' }}
+                />
+                <button
+                  onClick={() => setNewCode(generateCode())}
+                  title="Generate"
+                  style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 14, padding: '2px 4px' }}
+                >⟳</button>
+              </div>
+              <input
+                value={newCodeLabel}
+                onChange={e => setNewCodeLabel(e.target.value)}
+                placeholder="Given to (name)"
+                style={{ flex: 1, minWidth: 100, border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box' }}
+              />
+              <select
+                value={newCodeOpenings}
+                onChange={e => setNewCodeOpenings(e.target.value)}
+                style={{ border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 10px', fontSize: 13, color: '#fff', background: '#1a1a2e', outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="1">1 opening</option>
+                <option value="2">2 openings</option>
+                <option value="3">3 openings</option>
+                <option value="5">5 openings</option>
+                <option value="10">10 openings</option>
+                <option value="unlimited">Unlimited</option>
+              </select>
+            </div>
+            {codeFormError && <p style={{ fontSize: 12, color: '#f87171', margin: '0 0 0.5rem' }}>{codeFormError}</p>}
+            <button
+              onClick={addIdeaCode}
+              disabled={addingCode || !newCode.trim()}
+              style={{
+                background: newCode.trim() ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.08)',
+                color: newCode.trim() ? '#fff' : 'rgba(255,255,255,0.3)',
+                border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 500, cursor: newCode.trim() && !addingCode ? 'pointer' : 'not-allowed',
+              }}
+            >{addingCode ? 'Adding...' : '+ Add code'}</button>
+          </div>
+        )}
 
         {/* Blockchain fingerprint */}
         {idea.blockchain_hash && (
@@ -2203,8 +2426,9 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                     <div key={`${entry.viewer_email || entry.ip_address || 'x'}-${i}`} style={{ padding: '0.65rem 0', borderBottom: i < Math.min(accessLog.length, 5) - 1 ? '0.5px solid rgba(44,44,42,0.07)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: entry.is_anonymous ? '#888780' : '#2c2c2a' }}>
-                          {entry.viewer_name || entry.viewer_email || 'Anonymous'}
+                          {entry.viewer_name || entry.viewer_email || entry.code_label || 'Anonymous'}
                           {entry.viewer_name && entry.viewer_email && <span style={{ fontWeight: 400, color: '#888780' }}> · {entry.viewer_email}</span>}
+                          {entry.code_label && (entry.viewer_name || entry.viewer_email) && <span style={{ fontWeight: 400, color: '#888780' }}> · code given to {entry.code_label}</span>}
                           {entry.ip_address && <span style={{ fontWeight: 400, color: '#888780' }}> · {entry.ip_address}</span>}
                           {entry.same_network_as && <span style={{ fontWeight: 400, color: '#888780' }}> (same network as {entry.same_network_as})</span>}
                         </span>
@@ -2298,15 +2522,18 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
                     <div className="access-log-row" key={`${entry.viewer_email || entry.ip_address || 'x'}-${i}`} style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.5fr 1.3fr 1.3fr 0.5fr', gap: 8, padding: '0.85rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < accessLog.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center', borderLeft: `3px solid ${entry.is_anonymous ? 'rgba(136,135,128,0.25)' : '#7b9ff7'}` }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: entry.is_anonymous ? '#888780' : '#2c2c2a', wordBreak: 'break-all', lineHeight: 1.35 }}>
-                          {entry.viewer_name || entry.viewer_email || 'Anonymous'}
+                          {entry.viewer_name || entry.viewer_email || entry.code_label || 'Anonymous'}
                         </div>
                         {entry.viewer_name && entry.viewer_email && (
                           <div style={{ fontSize: 11, color: '#888780', wordBreak: 'break-all', lineHeight: 1.3 }}>{entry.viewer_email}</div>
                         )}
+                        {entry.code_label && (entry.viewer_name || entry.viewer_email) && (
+                          <div style={{ fontSize: 11, color: '#888780', lineHeight: 1.3 }}>code given to {entry.code_label}</div>
+                        )}
                         {entry.same_network_as && (
                           <div style={{ fontSize: 10, color: '#9b7ff7', marginTop: 2, lineHeight: 1.3 }}>same network as {entry.same_network_as}</div>
                         )}
-                        {!entry.is_anonymous && (
+                        {entry.nda_accepted && (
                           <div style={{ fontSize: 10, color: '#16a34a', marginTop: 2, fontWeight: 500 }}>NDA accepted</div>
                         )}
                       </div>
@@ -2426,6 +2653,18 @@ Score 1 = very weak, 10 = exceptional. Be honest and direct.`
               <button onClick={saveEdit} disabled={editSaving} style={{ background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 500, opacity: editSaving ? 0.6 : 1, cursor: editSaving ? 'not-allowed' : 'pointer' }}>
                 {editSaving ? 'Saving...' : 'Save changes'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmState && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,14,31,0.7)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: '1.5rem', maxWidth: 360, width: '100%' }}>
+            <p style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.6, margin: '0 0 1.25rem' }}>{confirmState.message}</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => { confirmState.resolve(false); setConfirmState(null) }} style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 8, padding: '9px 18px', fontSize: 13, color: '#2c2c2a', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => { confirmState.resolve(true); setConfirmState(null) }} style={{ background: '#f87171', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Delete</button>
             </div>
           </div>
         </div>
