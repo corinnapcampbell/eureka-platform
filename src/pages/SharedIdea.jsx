@@ -10,6 +10,9 @@ import CompetitiveLandscape from '../components/CompetitiveLandscape'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 
+const IDEA_FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/idea-access`
+const IDEA_HEADERS = { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` }
+
 function splitHowItWorks(text) {
   if (!text?.trim()) return []
   const numMatches = [...text.matchAll(/(?:^|\n)\s*\d+[.)]\s*([^\n]+)/g)]
@@ -96,6 +99,11 @@ export default function SharedIdea() {
   const [mobileDeckCurrent, setMobileDeckCurrent] = useState(0)
   const [showRotatePrompt, setShowRotatePrompt] = useState(true)
   const mobileDeckTouchStart = useRef(null)
+  const [code, setCode] = useState('')
+  const [passedCode, setPassedCode] = useState('')
+  const [codeError, setCodeError] = useState('')
+  const [checkingCode, setCheckingCode] = useState(false)
+  const [ndaError, setNdaError] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setAuthSession(session))
@@ -103,45 +111,59 @@ export default function SharedIdea() {
 
   useEffect(() => {
     async function fetchLink() {
-      const { data: ideaId, error } = await supabase
-        .rpc('get_idea_id_by_token', { p_token: token })
-
-      if (error) console.error('shared_links fetch error:', error.message, error.code)
-      if (!ideaId) {
-        setStage('error')
-        return
-      }
-      const { data: freshIdea } = await supabase
-        .rpc('get_shared_idea', { p_token: token })
-      const ideaToSet = freshIdea
-      console.log('SHARED IDEA product_image_url:', ideaToSet?.product_image_url)
-      setIdea(ideaToSet)
+      const res = await fetch(IDEA_FN, { method: 'POST', headers: IDEA_HEADERS, body: JSON.stringify({ action: 'cover', token }) })
+      if (!res.ok) { setStage('error'); return }
+      const cover = await res.json()
+      setIdea(cover)
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/log-view`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ idea_id: ideaToSet.id }),
+        body: JSON.stringify({ idea_id: cover.id }),
       }).catch(() => {})
-      const { data: profile } = await supabase
-        .from('public_profiles')
-        .select('full_name, avatar_url, headline, is_public')
-        .eq('user_id', ideaToSet.user_id)
-        .eq('is_public', true)
-        .maybeSingle()
-      if (profile) setCreatorProfile(profile)
-      if (ideaToSet.nda_required === false) {
-        setStage('idea')
-      } else {
-        setStage('nda')
-      }
-
-      // Check whether the owner has published a public deck for this idea
       const { data: deck } = await supabase
         .from('pitch_decks')
         .select('share_token, is_public')
-        .eq('idea_id', ideaId)
+        .eq('idea_id', cover.id)
         .eq('is_public', true)
         .maybeSingle()
       if (deck?.share_token) setDeckInfo(deck)
+      const stored = sessionStorage.getItem(`idea_session_${token}`)
+      if (stored) {
+        const refreshRes = await fetch(IDEA_FN, { method: 'POST', headers: IDEA_HEADERS, body: JSON.stringify({ action: 'refresh', token, session: stored }) })
+        const refreshData = await refreshRes.json()
+        if (refreshRes.ok) {
+          setIdea(refreshData.idea)
+          const { data: profile } = await supabase
+            .from('public_profiles')
+            .select('full_name, avatar_url, headline, is_public')
+            .eq('user_id', refreshData.idea.user_id)
+            .eq('is_public', true)
+            .maybeSingle()
+          if (profile) setCreatorProfile(profile)
+          setStage('idea')
+          return
+        }
+        sessionStorage.removeItem(`idea_session_${token}`)
+      }
+      if (cover.code_required) {
+        setStage('code')
+      } else if (cover.nda_required) {
+        setStage('nda')
+      } else {
+        const openRes = await fetch(IDEA_FN, { method: 'POST', headers: IDEA_HEADERS, body: JSON.stringify({ action: 'open', token }) })
+        const openData = await openRes.json()
+        if (!openRes.ok) { setStage('error'); return }
+        sessionStorage.setItem(`idea_session_${token}`, openData.session)
+        setIdea(openData.idea)
+        const { data: profile } = await supabase
+          .from('public_profiles')
+          .select('full_name, avatar_url, headline, is_public')
+          .eq('user_id', openData.idea.user_id)
+          .eq('is_public', true)
+          .maybeSingle()
+        if (profile) setCreatorProfile(profile)
+        setStage('idea')
+      }
     }
     fetchLink()
   }, [token])
@@ -181,14 +203,63 @@ export default function SharedIdea() {
     }
   }
 
+  async function submitCode() {
+    setCheckingCode(true)
+    setCodeError('')
+    const res = await fetch(IDEA_FN, { method: 'POST', headers: IDEA_HEADERS, body: JSON.stringify({ action: 'check', token, code }) })
+    const data = await res.json()
+    setCheckingCode(false)
+    if (res.status === 429 || data.error === 'locked') { setCodeError('Too many attempts. Try again in 15 minutes.'); return }
+    if (!res.ok) { setCodeError("That code isn't valid or has no openings left."); return }
+    setPassedCode(code)
+    if (idea.nda_required) {
+      setStage('nda')
+    } else {
+      const openRes = await fetch(IDEA_FN, { method: 'POST', headers: IDEA_HEADERS, body: JSON.stringify({ action: 'open', token, code }) })
+      const openData = await openRes.json()
+      if (!openRes.ok) {
+        const err = openData.error
+        const isLockout = err === 'locked' || openRes.status === 429
+        setCodeError(isLockout ? 'Too many attempts. Try again in 15 minutes.' : "That code isn't valid or has no openings left.")
+        return
+      }
+      sessionStorage.setItem(`idea_session_${token}`, openData.session)
+      setIdea(openData.idea)
+      const { data: profile } = await supabase
+        .from('public_profiles')
+        .select('full_name, avatar_url, headline, is_public')
+        .eq('user_id', openData.idea.user_id)
+        .eq('is_public', true)
+        .maybeSingle()
+      if (profile) setCreatorProfile(profile)
+      setStage('idea')
+    }
+  }
+
   async function acceptNDA() {
     if (!name.trim() || !email || !isValidEmail(email) || !ndaAgreed || accepting) return
     setAccepting(true)
-    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accept-nda`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ token: token, viewer_email: email.trim(), viewer_name: name.trim() }),
-    })
+    const res = await fetch(IDEA_FN, { method: 'POST', headers: IDEA_HEADERS, body: JSON.stringify({ action: 'open', token, ...(passedCode ? { code: passedCode } : {}), viewer_name: name.trim(), viewer_email: email.trim(), nda_agreed: true }) })
+    const data = await res.json()
+    if (!res.ok) {
+      const err = data.error
+      const isCodeErr = err === 'invalid_code' || err === 'code_required'
+      const isLockout = err === 'locked' || res.status === 429
+      if (isCodeErr) { setNdaError("That code isn't valid or has no openings left."); if (idea?.code_required) setStage('code') }
+      else if (isLockout) { setNdaError('Too many attempts. Try again in 15 minutes.') }
+      else { setNdaError("We couldn't record your signature. Please try again.") }
+      setAccepting(false)
+      return
+    }
+    sessionStorage.setItem(`idea_session_${token}`, data.session)
+    setIdea(data.idea)
+    const { data: profile } = await supabase
+      .from('public_profiles')
+      .select('full_name, avatar_url, headline, is_public')
+      .eq('user_id', data.idea.user_id)
+      .eq('is_public', true)
+      .maybeSingle()
+    if (profile) setCreatorProfile(profile)
     setStage('idea')
     // Fire-and-forget confirmation emails — first visit only
     fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
@@ -198,9 +269,9 @@ export default function SharedIdea() {
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        idea_id: idea.id,
-        user_id: idea.user_id,
-        idea_title: idea.title,
+        idea_id: data.idea.id,
+        user_id: data.idea.user_id,
+        idea_title: data.idea.title,
         viewer_name: name.trim(),
         viewer_email: email.trim(),
       }),
@@ -213,10 +284,10 @@ export default function SharedIdea() {
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        idea_id: idea.id,
+        idea_id: data.idea.id,
         type: 'idea_viewed',
         title: '👀 Your idea was viewed',
-        message: `${name.trim()} (${email.trim()}) accepted the NDA and accessed "${idea.title}"`,
+        message: `${name.trim()} (${email.trim()}) accepted the NDA and accessed "${data.idea.title}"`,
       }),
     }).catch(err => console.error('Notification creation failed:', err))
     setAccepting(false)
@@ -239,11 +310,12 @@ export default function SharedIdea() {
   }
 
   async function fetchFreshIdea() {
-    const { data } = await supabase
-      .rpc('get_shared_idea', { p_token: token })
-    console.log('FRESH IDEA DATA:', JSON.stringify(data, null, 2))
-    if (data) setIdea(data)
-    return data || idea
+    const stored = sessionStorage.getItem(`idea_session_${token}`)
+    if (!stored) return idea
+    const res = await fetch(IDEA_FN, { method: 'POST', headers: IDEA_HEADERS, body: JSON.stringify({ action: 'refresh', token, session: stored }) })
+    const data = await res.json()
+    if (res.ok) { setIdea(data.idea); return data.idea }
+    return idea
   }
 
   async function viewSnapshotPDF() {
@@ -318,7 +390,7 @@ export default function SharedIdea() {
   )
 
   // ─── PHASE 1: TEASER / NDA ───────────────────────────────────────────────
-  if (stage === 'nda') return (
+  if (stage === 'nda' || stage === 'code') return (
     <div style={{ minHeight: '100vh', background: '#0e0e1f', position: 'relative', overflow: 'hidden', width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}>
       {authSession && (
         <a href="/dashboard" style={{ position: 'fixed', top: 14, right: 16, zIndex: 999, background: 'rgba(123,159,247,0.12)', border: '0.5px solid rgba(123,159,247,0.3)', borderRadius: 7, padding: '6px 14px', fontSize: 12, color: '#7b9ff7', textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}>My Dashboard →</a>
@@ -372,98 +444,126 @@ export default function SharedIdea() {
           )
         })()}
 
-        {/* NDA form card */}
-        <div style={{ background: '#fff', borderRadius: 16, padding: '1.75rem', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', border: '0.5px solid rgba(44,44,42,0.08)', marginBottom: '1rem' }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', margin: '0 0 1.25rem' }}>Sign NDA to view this idea</p>
-
-          {/* Name field */}
-          <input
-            type="text"
-            placeholder="Your full name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 10, padding: '12px 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: '0.75rem', fontFamily: 'Outfit, sans-serif' }}
-          />
-
-          {/* Email field */}
-          <input
-            type="email"
-            placeholder="Your email address"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && acceptNDA()}
-            style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 10, padding: '12px 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: '0.75rem', fontFamily: 'Outfit, sans-serif' }}
-          />
-          {email && !isValidEmail(email) && (
-            <p style={{ color: '#e24b4a', fontSize: 12, margin: '-0.5rem 0 0.75rem' }}>Please enter a valid email address.</p>
-          )}
-
-          {/* NDA expandable */}
-          <div style={{ marginBottom: '1rem', border: '0.5px solid rgba(44,44,42,0.12)', borderRadius: 10, overflow: 'hidden' }}>
-            <div
-              onClick={() => setNdaExpanded(v => !v)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', cursor: 'pointer', background: 'rgba(44,44,42,0.02)' }}
-            >
-              <span style={{ fontSize: 13, fontWeight: 500, color: '#2c2c2a' }}>📄 View NDA contents</span>
-              <span style={{ fontSize: 12, color: '#888', transition: 'transform 0.2s', display: 'inline-block', transform: ndaExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-            </div>
-            {ndaExpanded && (
-              <div style={{ padding: '1rem 1.25rem', borderTop: '0.5px solid rgba(44,44,42,0.08)', background: '#fafaf8' }}>
-                <p style={{ fontSize: 12, color: '#555', lineHeight: 1.7, margin: '0 0 0.75rem' }}>By signing this NDA you agree to:</p>
-                {[
-                  'Hold all shared information in strict confidence',
-                  'Not disclose any content to third parties without written consent',
-                  'Use the information only to evaluate a potential business relationship',
-                  'Not copy, reproduce, or distribute the content in any form',
-                  'These obligations last for 5 years from the date of signing',
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-                    <span style={{ color: '#7b9ff7', fontSize: 12, flexShrink: 0 }}>✓</span>
-                    <span style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>{item}</span>
-                  </div>
-                ))}
-                <a href="/legal/nda" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#7b9ff7', textDecoration: 'underline', display: 'inline-block', marginTop: '0.5rem' }}>Read full NDA →</a>
-              </div>
-            )}
-          </div>
-
-          {/* Agree checkbox */}
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: '1.25rem', cursor: 'pointer' }}>
-            <div
-              onClick={() => setNdaAgreed(v => !v)}
+        {stage === 'code' ? (
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.75rem', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', border: '0.5px solid rgba(44,44,42,0.08)', marginBottom: '1rem' }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', margin: '0 0 1rem' }}>Enter your access code</p>
+            <input
+              type="text"
+              placeholder="Access code"
+              value={code}
+              onChange={e => setCode(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && code.trim() && !checkingCode && submitCode()}
+              style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 10, padding: '12px 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: '0.75rem', fontFamily: 'Outfit, sans-serif', letterSpacing: '0.05em' }}
+            />
+            {codeError && <p style={{ color: '#e24b4a', fontSize: 12, margin: '-0.25rem 0 0.75rem' }}>{codeError}</p>}
+            <button
+              onClick={submitCode}
+              disabled={!code.trim() || checkingCode}
               style={{
-                width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 1,
-                background: ndaAgreed ? 'linear-gradient(135deg, #7b9ff7, #9b7ff7)' : '#fff',
-                border: ndaAgreed ? 'none' : '1.5px solid rgba(44,44,42,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.15s', cursor: 'pointer'
+                width: '100%', background: code.trim() ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(44,44,42,0.1)',
+                border: 'none', borderRadius: 12, padding: '14px',
+                fontSize: 15, fontWeight: 600,
+                color: code.trim() ? '#fff' : 'rgba(44,44,42,0.3)',
+                cursor: code.trim() && !checkingCode ? 'pointer' : 'not-allowed',
+                transition: 'all 0.15s',
+              }}
+            >{checkingCode ? 'Checking...' : 'Continue'}</button>
+          </div>
+        ) : (
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.75rem', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', border: '0.5px solid rgba(44,44,42,0.08)', marginBottom: '1rem' }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', margin: '0 0 1.25rem' }}>Sign NDA to view this idea</p>
+
+            {/* Name field */}
+            <input
+              type="text"
+              placeholder="Your full name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 10, padding: '12px 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: '0.75rem', fontFamily: 'Outfit, sans-serif' }}
+            />
+
+            {/* Email field */}
+            <input
+              type="email"
+              placeholder="Your email address"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && acceptNDA()}
+              style={{ width: '100%', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 10, padding: '12px 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: '0.75rem', fontFamily: 'Outfit, sans-serif' }}
+            />
+            {email && !isValidEmail(email) && (
+              <p style={{ color: '#e24b4a', fontSize: 12, margin: '-0.5rem 0 0.75rem' }}>Please enter a valid email address.</p>
+            )}
+
+            {/* NDA expandable */}
+            <div style={{ marginBottom: '1rem', border: '0.5px solid rgba(44,44,42,0.12)', borderRadius: 10, overflow: 'hidden' }}>
+              <div
+                onClick={() => setNdaExpanded(v => !v)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', cursor: 'pointer', background: 'rgba(44,44,42,0.02)' }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#2c2c2a' }}>📄 View NDA contents</span>
+                <span style={{ fontSize: 12, color: '#888', transition: 'transform 0.2s', display: 'inline-block', transform: ndaExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </div>
+              {ndaExpanded && (
+                <div style={{ padding: '1rem 1.25rem', borderTop: '0.5px solid rgba(44,44,42,0.08)', background: '#fafaf8' }}>
+                  <p style={{ fontSize: 12, color: '#555', lineHeight: 1.7, margin: '0 0 0.75rem' }}>By signing this NDA you agree to:</p>
+                  {[
+                    'Hold all shared information in strict confidence',
+                    'Not disclose any content to third parties without written consent',
+                    'Use the information only to evaluate a potential business relationship',
+                    'Not copy, reproduce, or distribute the content in any form',
+                    'These obligations last for 5 years from the date of signing',
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                      <span style={{ color: '#7b9ff7', fontSize: 12, flexShrink: 0 }}>✓</span>
+                      <span style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>{item}</span>
+                    </div>
+                  ))}
+                  <a href="/legal/nda" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#7b9ff7', textDecoration: 'underline', display: 'inline-block', marginTop: '0.5rem' }}>Read full NDA →</a>
+                </div>
+              )}
+            </div>
+
+            {/* Agree checkbox */}
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: '1.25rem', cursor: 'pointer' }}>
+              <div
+                onClick={() => setNdaAgreed(v => !v)}
+                style={{
+                  width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 1,
+                  background: ndaAgreed ? 'linear-gradient(135deg, #7b9ff7, #9b7ff7)' : '#fff',
+                  border: ndaAgreed ? 'none' : '1.5px solid rgba(44,44,42,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s', cursor: 'pointer'
+                }}
+              >
+                {ndaAgreed && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+              </div>
+              <span style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>
+                I have read and agree to the <a href="/legal/nda" target="_blank" rel="noopener noreferrer" style={{ color: '#7b9ff7', textDecoration: 'underline' }}>Non-Disclosure Agreement</a>. I understand my identity and access time will be logged and I am bound by its terms.
+              </span>
+            </label>
+
+            {ndaError && <p style={{ color: '#e24b4a', fontSize: 12, margin: '-0.25rem 0 0.75rem' }}>{ndaError}</p>}
+
+            {/* Submit button */}
+            <button
+              onClick={acceptNDA}
+              disabled={!name.trim() || !email || !isValidEmail(email) || !ndaAgreed || accepting}
+              style={{
+                width: '100%', background: name.trim() && email && isValidEmail(email) && ndaAgreed
+                  ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)'
+                  : 'rgba(44,44,42,0.1)',
+                border: 'none', borderRadius: 12, padding: '14px',
+                fontSize: 15, fontWeight: 600,
+                color: name.trim() && email && isValidEmail(email) && ndaAgreed ? '#fff' : 'rgba(44,44,42,0.3)',
+                cursor: name.trim() && email && isValidEmail(email) && ndaAgreed ? 'pointer' : 'not-allowed',
+                transition: 'all 0.15s'
               }}
             >
-              {ndaAgreed && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>}
-            </div>
-            <span style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>
-              I have read and agree to the <a href="/legal/nda" target="_blank" rel="noopener noreferrer" style={{ color: '#7b9ff7', textDecoration: 'underline' }}>Non-Disclosure Agreement</a>. I understand my identity and access time will be logged and I am bound by its terms.
-            </span>
-          </label>
-
-          {/* Submit button */}
-          <button
-            onClick={acceptNDA}
-            disabled={!name.trim() || !email || !isValidEmail(email) || !ndaAgreed || accepting}
-            style={{
-              width: '100%', background: name.trim() && email && isValidEmail(email) && ndaAgreed
-                ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)'
-                : 'rgba(44,44,42,0.1)',
-              border: 'none', borderRadius: 12, padding: '14px',
-              fontSize: 15, fontWeight: 600,
-              color: name.trim() && email && isValidEmail(email) && ndaAgreed ? '#fff' : 'rgba(44,44,42,0.3)',
-              cursor: name.trim() && email && isValidEmail(email) && ndaAgreed ? 'pointer' : 'not-allowed',
-              transition: 'all 0.15s'
-            }}
-          >
-            {accepting ? 'Logging access...' : '✍️ Sign & View Idea'}
-          </button>
-        </div>
+              {accepting ? 'Logging access...' : '✍️ Sign & View Idea'}
+            </button>
+          </div>
+        )}
 
         {/* Protection badge */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.75rem', marginTop: '1.25rem' }}>
