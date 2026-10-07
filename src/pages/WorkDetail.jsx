@@ -60,9 +60,9 @@ export default function WorkDetail({ session }) {
           setSignedUrls(map)
         }
       }
-      const { data: c } = await supabase.from('work_codes').select('*').eq('work_id', id).order('created_at', { ascending: true })
+      const { data: c } = await supabase.from('work_access_codes').select('*').eq('work_id', id).order('created_at', { ascending: true })
       setCodes(c || [])
-      const { data: l } = await supabase.from('work_access_log').select('*').eq('work_id', id).order('accessed_at', { ascending: false })
+      const { data: l } = await supabase.from('work_access_log').select('*').eq('work_id', id).order('opened_at', { ascending: false })
       setAccessLog(l || [])
       setLoading(false)
     }
@@ -173,7 +173,7 @@ export default function WorkDetail({ session }) {
   }
 
   async function toggleCode(codeId, active) {
-    await supabase.from('work_codes').update({ active }).eq('id', codeId)
+    await supabase.from('work_access_codes').update({ active }).eq('id', codeId)
     setCodes(prev => prev.map(c => c.id === codeId ? { ...c, active } : c))
   }
 
@@ -181,13 +181,12 @@ export default function WorkDetail({ session }) {
     if (newCode.length < 6) { setCodeError('Code must be at least 6 characters.'); return }
     setAddingCode(true)
     const openings = newOpenings === 'unlimited' ? null : parseInt(newOpenings)
-    const { data, error } = await supabase.from('work_codes').insert({
+    const { data, error } = await supabase.from('work_access_codes').insert({
       work_id: id,
       user_id: userId,
       code: newCode.toUpperCase(),
       label: newLabel.trim() || null,
-      uses_total: openings,
-      uses_remaining: openings,
+      max_uses: openings,
       active: true,
     }).select().single()
     setAddingCode(false)
@@ -216,10 +215,10 @@ export default function WorkDetail({ session }) {
   function exportCsv() {
     const header = 'Code,Name,Email,Date,IP,NDA\n'
     const rows = accessLog.map(r => [
-      r.work_code_label || '',
+      r.code_label || '',
       r.viewer_name || '',
       r.viewer_email || '',
-      r.accessed_at ? new Date(r.accessed_at).toLocaleString() : '',
+      r.opened_at ? new Date(r.opened_at).toLocaleString() : '',
       r.ip_address || '',
       r.nda_accepted ? 'Yes' : 'No',
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
@@ -427,7 +426,7 @@ export default function WorkDetail({ session }) {
                     <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'monospace', letterSpacing: '0.05em' }}>{c.code}</span>
                     {c.label && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 8 }}>{c.label}</span>}
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>
-                      {c.uses_total === null ? 'Unlimited openings' : `${c.uses_remaining ?? 0} of ${c.uses_total} remaining`}
+                      {c.max_uses === null ? `${c.uses_count ?? 0} used · unlimited` : `${c.uses_count ?? 0} of ${c.max_uses} used`}
                     </span>
                   </div>
                   <div
@@ -513,13 +512,13 @@ export default function WorkDetail({ session }) {
               </div>
               {accessLog.map((r, i) => (
                 <div key={r.id || i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.8fr 1.3fr 1.2fr 0.5fr', gap: '0 12px', padding: '9px 10px', borderRadius: 8, background: i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.work_code_label || '—'}</span>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.code_label || '—'}</span>
                   <div style={{ minWidth: 0 }}>
                     {r.viewer_name && <p style={{ fontSize: 12, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.viewer_name}</p>}
                     {r.viewer_email && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.viewer_email}</p>}
                     {!r.viewer_name && !r.viewer_email && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>—</span>}
                   </div>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{r.accessed_at ? new Date(r.accessed_at).toLocaleDateString() : '—'}</span>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{r.opened_at ? new Date(r.opened_at).toLocaleDateString() : '—'}</span>
                   <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.ip_address || '—'}</span>
                   <span style={{ fontSize: 11, fontWeight: 600, color: r.nda_accepted ? '#86efac' : 'rgba(255,255,255,0.3)' }}>{r.nda_accepted ? 'YES' : '—'}</span>
                 </div>

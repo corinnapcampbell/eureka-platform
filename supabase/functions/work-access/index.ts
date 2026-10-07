@@ -75,15 +75,14 @@ Deno.serve(async (req) => {
       }
 
       const { data: codeRow } = await supabase
-        .from('work_codes')
-        .select('id')
+        .from('work_access_codes')
+        .select('id, max_uses, uses_count')
         .eq('work_id', work.id)
         .ilike('code', code)
         .eq('active', true)
-        .or('uses_remaining.is.null,uses_remaining.gt.0')
         .maybeSingle()
 
-      if (!codeRow) {
+      if (!codeRow || (codeRow.max_uses !== null && codeRow.uses_count >= codeRow.max_uses)) {
         await supabase.from('work_access_attempts').insert({ work_id: work.id, ip_address: ip, attempted_at: new Date().toISOString() })
         return new Response(JSON.stringify({ error: 'invalid_code' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
@@ -163,23 +162,24 @@ Deno.serve(async (req) => {
       }
 
       const now = new Date().toISOString()
-      await supabase.from('work_access_log').insert({
+      const { data: logRow } = await supabase.from('work_access_log').insert({
         work_id: work.id,
+        owner_id: work.user_id,
+        work_title: work.title,
         viewer_name: name ?? null,
         viewer_email: email ?? null,
         ip_address: ip,
         code_id: codeId,
-        work_code_label: codeLabel,
+        code_label: codeLabel,
         nda_accepted: !!work.nda_required,
-        accessed_at: now,
-      })
+        opened_at: now,
+      }).select('id').single()
 
       const sessionToken = crypto.randomUUID()
       await supabase.from('work_sessions').insert({
+        token: sessionToken,
         work_id: work.id,
-        session_token: sessionToken,
-        viewer_name: name ?? null,
-        viewer_email: email ?? null,
+        log_id: logRow?.id ?? null,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       })
 
@@ -214,9 +214,9 @@ Deno.serve(async (req) => {
 
       const { data: sess } = await supabase
         .from('work_sessions')
-        .select('id, expires_at')
+        .select('token, expires_at')
         .eq('work_id', work.id)
-        .eq('session_token', sessionToken)
+        .eq('token', sessionToken)
         .single()
       if (!sess || new Date(sess.expires_at) < new Date()) {
         return new Response(JSON.stringify({ error: 'session_expired' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
