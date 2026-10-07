@@ -6,6 +6,7 @@ import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import SubmitIdea from './pages/SubmitIdea'
 import IdeaDetail from './pages/IdeaDetail'
+import WorkDetail from './pages/WorkDetail'
 import SharedIdea from './pages/SharedIdea'
 import TradeSecrets from './pages/legal/TradeSecrets'
 import NDA from './pages/legal/NDA'
@@ -66,6 +67,11 @@ export default function App() {
       <Route path="/idea/:id" element={
         <ProtectedRoute session={session}>
           <IdeaDetail session={session} />
+        </ProtectedRoute>
+      } />
+      <Route path="/work/:id" element={
+        <ProtectedRoute session={session}>
+          <WorkDetail session={session} />
         </ProtectedRoute>
       } />
       <Route path="/share/:token" element={<SharedIdea />} />

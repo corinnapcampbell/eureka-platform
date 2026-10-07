@@ -10,6 +10,8 @@ export default function Dashboard({ session }) {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [onboardingStep, setOnboardingStep] = useState(0)
+  const [tab, setTab] = useState('ideas')
+  const [works, setWorks] = useState([])
   const navigate = useNavigate()
   const name = session.user.user_metadata?.full_name?.split(' ')[0] || 'there'
  
@@ -20,6 +22,11 @@ export default function Dashboard({ session }) {
         .select('*')
         .order('created_at', { ascending: false })
       setIdeas(data || [])
+      const { data: worksData } = await supabase
+        .from('works')
+        .select('id, title, description, cover_url, created_at')
+        .order('created_at', { ascending: false })
+      setWorks(worksData || [])
       setLoading(false)
     }
     fetchIdeas()
@@ -34,6 +41,21 @@ export default function Dashboard({ session }) {
   async function completeOnboarding() {
     setShowOnboarding(false)
     await supabase.auth.updateUser({ data: { onboarding_complete: true } })
+  }
+
+  async function createWork() {
+    const { data, error } = await supabase
+      .from('works')
+      .insert({ user_id: session.user.id, title: 'Untitled work' })
+      .select()
+      .single()
+    if (error) {
+      if (error.message?.includes('WORK_LIMIT_REACHED')) {
+        alert("You've reached the free limit of 2 Works. Delete one to create another.")
+      }
+      return
+    }
+    navigate(`/work/${data.id}`)
   }
 
   return (
@@ -231,15 +253,31 @@ export default function Dashboard({ session }) {
               {ideas.length === 0 ? 'Your vault is empty. Submit your first idea.' : `You have ${ideas.length} idea${ideas.length !== 1 ? 's' : ''} protected.`}
             </p>
           </div>
-          <button onClick={() => navigate('/submit')} style={{
+          <button onClick={tab === 'ideas' ? () => navigate('/submit') : createWork} style={{
             background: 'var(--ink)', color: '#fff', border: 'none',
             borderRadius: 8, padding: '12px 24px', fontSize: 14, fontWeight: 500,
             whiteSpace: 'nowrap'
-          }}>+ New idea</button>
+          }}>{tab === 'ideas' ? '+ New idea' : '+ New work'}</button>
         </div>
  
+        {/* Tab bar */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: '2rem' }}>
+          <button onClick={() => setTab('ideas')} style={{
+            fontSize: 14, fontWeight: 500, borderRadius: 8, padding: '8px 20px', cursor: 'pointer',
+            background: tab === 'ideas' ? 'var(--ink)' : 'transparent',
+            color: tab === 'ideas' ? '#fff' : 'var(--muted)',
+            border: tab === 'ideas' ? 'none' : '0.5px solid var(--border)',
+          }}>Ideas</button>
+          <button onClick={() => setTab('works')} style={{
+            fontSize: 14, fontWeight: 500, borderRadius: 8, padding: '8px 20px', cursor: 'pointer',
+            background: tab === 'works' ? 'var(--ink)' : 'transparent',
+            color: tab === 'works' ? '#fff' : 'var(--muted)',
+            border: tab === 'works' ? 'none' : '0.5px solid var(--border)',
+          }}>Works</button>
+        </div>
+
         {/* Ideas grid */}
-        {loading ? (
+        {tab === 'ideas' && (loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
             <div className="spinner" style={{ width: 28, height: 28 }} />
           </div>
@@ -251,7 +289,22 @@ export default function Dashboard({ session }) {
               <IdeaCard key={idea.id} idea={idea} index={i} navigate={navigate} />
             ))}
           </div>
-        )}
+        ))}
+
+        {/* Works grid */}
+        {tab === 'works' && (loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
+            <div className="spinner" style={{ width: 28, height: 28 }} />
+          </div>
+        ) : works.length === 0 ? (
+          <WorksEmptyState onCreate={createWork} />
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+            {works.map((work, i) => (
+              <WorkCard key={work.id} work={work} index={i} navigate={navigate} />
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -313,6 +366,56 @@ function EmptyState({ navigate }) {
         background: 'var(--ink)', color: '#fff', border: 'none',
         borderRadius: 8, padding: '12px 28px', fontSize: 14, fontWeight: 500
       }}>Submit your first idea</button>
+    </div>
+  )
+}
+
+function WorkCard({ work, index, navigate }) {
+  const date = new Date(work.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return (
+    <div
+      onClick={() => navigate(`/work/${work.id}`)}
+      className="animate-fadeUp"
+      style={{
+        background: 'var(--white)', border: '0.5px solid var(--border)',
+        borderRadius: 14, overflow: 'hidden', cursor: 'pointer',
+        transition: 'border-color 0.2s, transform 0.15s',
+        animationDelay: `${index * 0.06}s`,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)' }}
+    >
+      {work.cover_url && (
+        <img src={work.cover_url} alt={work.title} style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
+      )}
+      <div style={{ padding: '1.25rem' }}>
+        <h3 className="serif" style={{ fontSize: 18, lineHeight: 1.3, marginBottom: '0.5rem' }}>{work.title}</h3>
+        {work.description && (
+          <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {work.description}
+          </p>
+        )}
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{date}</span>
+      </div>
+    </div>
+  )
+}
+
+function WorksEmptyState({ onCreate }) {
+  return (
+    <div style={{
+      border: '1px dashed var(--border)', borderRadius: 16,
+      padding: '5rem 2rem', textAlign: 'center'
+    }}>
+      <div style={{ fontSize: 36, marginBottom: '1rem' }}>🗂️</div>
+      <h2 className="serif" style={{ fontSize: 24, marginBottom: '0.75rem' }}>No works yet</h2>
+      <p style={{ fontSize: 15, color: 'var(--muted)', marginBottom: '2rem', maxWidth: 360, margin: '0 auto 2rem' }}>
+        Create a work to upload and share files with anyone.
+      </p>
+      <button onClick={onCreate} style={{
+        background: 'var(--ink)', color: '#fff', border: 'none',
+        borderRadius: 8, padding: '12px 28px', fontSize: 14, fontWeight: 500
+      }}>Create your first work</button>
     </div>
   )
 }
