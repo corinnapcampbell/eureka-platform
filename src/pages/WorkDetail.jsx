@@ -32,6 +32,7 @@ export default function WorkDetail({ session }) {
   const [editUnlimited, setEditUnlimited] = useState(false)
   const [editError, setEditError] = useState('')
   const [confirmState, setConfirmState] = useState(null)
+  const [showLogModal, setShowLogModal] = useState(false)
   const fileInputRef = useRef()
   const coverInputRef = useRef()
   const userId = session.user.id
@@ -177,12 +178,14 @@ export default function WorkDetail({ session }) {
   }
 
   async function toggleWorkField(field, value) {
-    await supabase.from('works').update({ [field]: value }).eq('id', id)
+    const { error } = await supabase.from('works').update({ [field]: value }).eq('id', id)
+    if (error) { alert('Could not save. Please try again.'); return }
     setWork(w => ({ ...w, [field]: value }))
   }
 
   async function toggleCode(codeId, active) {
-    await supabase.from('work_access_codes').update({ active }).eq('id', codeId)
+    const { error } = await supabase.from('work_access_codes').update({ active }).eq('id', codeId)
+    if (error) { alert('Could not save. Please try again.'); return }
     setCodes(prev => prev.map(c => c.id === codeId ? { ...c, active } : c))
   }
 
@@ -269,6 +272,22 @@ export default function WorkDetail({ session }) {
   const videoFiles = files.filter(f => f.mime_type?.startsWith('video/'))
   const audioFiles = files.filter(f => f.mime_type?.startsWith('audio/'))
   const otherFiles = files.filter(f => !f.mime_type?.startsWith('image/') && !f.mime_type?.startsWith('video/') && !f.mime_type?.startsWith('audio/'))
+
+  const logGroups = (() => {
+    const map = new Map()
+    for (const r of accessLog) {
+      const key = r.code_id ?? r.viewer_email ?? r.ip_address ?? 'unknown'
+      if (!map.has(key)) {
+        map.set(key, { label: r.code_label || null, name: r.viewer_name || null, email: r.viewer_email || null, ip: r.ip_address || null, nda: false, count: 0, first: r.opened_at, last: r.opened_at })
+      }
+      const g = map.get(key)
+      g.count++
+      if (r.nda_accepted) g.nda = true
+      if (r.opened_at && g.first && r.opened_at < g.first) g.first = r.opened_at
+      if (r.opened_at && (!g.last || r.opened_at > g.last)) { g.last = r.opened_at; g.ip = r.ip_address || null }
+    }
+    return [...map.values()].sort((a, b) => (b.last || '').localeCompare(a.last || ''))
+  })()
 
   if (loading) return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -556,31 +575,31 @@ export default function WorkDetail({ session }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: 0 }}>Who has opened this work</p>
             {accessLog.length > 0 && (
-              <button onClick={exportCsv} style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', background: 'none', border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer' }}>Export CSV</button>
+              <button onClick={() => setShowLogModal(true)} style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>View Full Access Log →</button>
             )}
           </div>
           {accessLog.length === 0 ? (
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', margin: 0 }}>No one has opened this work yet.</p>
           ) : (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.8fr 1.3fr 1.2fr 0.5fr', gap: '0 12px', padding: '6px 10px', marginBottom: 4 }}>
-                {['Given to', 'Name / Email', 'Date', 'IP', 'NDA'].map(h => (
-                  <span key={h} style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{h}</span>
-                ))}
-              </div>
-              {accessLog.map((r, i) => (
-                <div key={r.id || i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.8fr 1.3fr 1.2fr 0.5fr', gap: '0 12px', padding: '9px 10px', borderRadius: 8, background: i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.code_label || '—'}</span>
-                  <div style={{ minWidth: 0 }}>
-                    {r.viewer_name && <p style={{ fontSize: 12, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.viewer_name}</p>}
-                    {r.viewer_email && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.viewer_email}</p>}
-                    {!r.viewer_name && !r.viewer_email && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>—</span>}
+              {logGroups.slice(0, 5).map((g, i) => (
+                <div key={i} style={{ padding: '10px 0', borderBottom: i < Math.min(logGroups.length, 5) - 1 ? '0.5px solid rgba(255,255,255,0.06)' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                      {g.label || g.name || g.email || 'Anonymous'}
+                      {(g.label && (g.name || g.email)) && <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}> · {[g.name, g.email].filter(Boolean).join(' · ')}</span>}
+                      {g.ip && <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}> · {g.ip}</span>}
+                    </span>
+                    <span style={{ fontSize: 11, background: 'rgba(123,159,247,0.15)', color: '#7b9ff7', borderRadius: 4, padding: '2px 7px', fontWeight: 500, flexShrink: 0 }}>Openings: {g.count}</span>
                   </div>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{r.opened_at ? new Date(r.opened_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</span>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.ip_address || '—'}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: r.nda_accepted ? '#86efac' : 'rgba(255,255,255,0.3)' }}>{r.nda_accepted ? 'YES' : '—'}</span>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', margin: '3px 0 0' }}>
+                    First: {g.first ? new Date(g.first).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'} · Last: {g.last ? new Date(g.last).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                  </p>
                 </div>
               ))}
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', margin: '0.75rem 0 0' }}>
+                {logGroups.length} visitor{logGroups.length === 1 ? '' : 's'} · {accessLog.length} total openings
+              </p>
             </div>
           )}
         </div>
@@ -621,6 +640,78 @@ export default function WorkDetail({ session }) {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => { confirmState.resolve(false); setConfirmState(null) }} style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 8, padding: '9px 18px', fontSize: 13, color: '#2c2c2a', cursor: 'pointer' }}>Cancel</button>
               <button onClick={() => { confirmState.resolve(true); setConfirmState(null) }} style={{ background: '#f87171', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLogModal && (
+        <style>{`
+          @media (max-width: 780px) {
+            .wk-log-row, .wk-log-head { grid-template-columns: 1fr !important; gap: 4px !important; }
+            .wk-log-head { display: none !important; }
+          }
+        `}</style>
+      )}
+      {showLogModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflowY: 'auto', padding: '2rem 1rem' }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 900, padding: '2rem', margin: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', gap: 12 }}>
+              <div>
+                <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, marginBottom: '0.2rem' }}>🔐 Full Access Log</h2>
+                <p style={{ fontSize: 13, color: '#888780' }}>{work.title}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                <button onClick={exportCsv} style={{ background: '#f5f5f3', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 7, padding: '7px 14px', fontSize: 13, color: '#2c2c2a', cursor: 'pointer', fontWeight: 500 }}>↓ Export CSV</button>
+                <button onClick={() => setShowLogModal(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#888780', cursor: 'pointer', padding: '0 4px' }}>✕</button>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              {[
+                { label: 'Visitors', value: logGroups.length },
+                { label: 'Total openings', value: accessLog.length },
+                { label: 'First opened', value: accessLog.length ? new Date(accessLog[accessLog.length - 1].opened_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
+                { label: 'Last opened', value: accessLog.length ? new Date(accessLog[0].opened_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '—' },
+              ].map(stat => (
+                <div key={stat.label} style={{ background: '#f9f9f7', borderRadius: 10, padding: '0.85rem 1rem' }}>
+                  <p style={{ fontSize: 10, color: '#888780', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>{stat.label}</p>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: '#7b9ff7', margin: 0 }}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 10, overflow: 'auto' }}>
+              <div style={{ minWidth: 520 }}>
+                <div className="wk-log-head" style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.5fr 1.3fr 1.3fr 0.5fr', background: '#f5f6fa', padding: '0.65rem 1rem', borderBottom: '0.5px solid rgba(44,44,42,0.1)' }}>
+                  {['Given to / Name & Email', 'IP Address', 'First opened', 'Last opened', 'Openings'].map(h => (
+                    <span key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#7b9ff7' }}>{h}</span>
+                  ))}
+                </div>
+                {logGroups.length === 0 ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#888780', fontSize: 13 }}>No access records yet.</div>
+                ) : (
+                  logGroups.map((g, i) => (
+                    <div className="wk-log-row" key={i} style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.5fr 1.3fr 1.3fr 0.5fr', gap: 8, padding: '0.85rem 1rem', background: i % 2 === 0 ? '#fff' : '#fafaf8', borderBottom: i < logGroups.length - 1 ? '0.5px solid rgba(44,44,42,0.06)' : 'none', alignItems: 'center', borderLeft: '3px solid #7b9ff7' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', wordBreak: 'break-all', lineHeight: 1.35 }}>
+                          {g.label || g.name || g.email || 'Anonymous'}
+                        </div>
+                        {g.label && (g.name || g.email) && (
+                          <div style={{ fontSize: 11, color: '#888780', wordBreak: 'break-all', lineHeight: 1.3 }}>{[g.name, g.email].filter(Boolean).join(' · ')}</div>
+                        )}
+                        {g.nda && <div style={{ fontSize: 10, color: '#16a34a', marginTop: 2, fontWeight: 500 }}>NDA accepted</div>}
+                      </div>
+                      <span style={{ fontSize: 12, color: '#555552', fontFamily: 'monospace', wordBreak: 'break-all', lineHeight: 1.35 }}>{g.ip || '—'}</span>
+                      <span style={{ fontSize: 12, color: '#555552', lineHeight: 1.35 }}>
+                        {g.first ? new Date(g.first).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                      </span>
+                      <span style={{ fontSize: 12, color: '#555552', lineHeight: 1.35 }}>
+                        {g.last ? new Date(g.last).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                      </span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#7b9ff7' }}>{g.count}</span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>

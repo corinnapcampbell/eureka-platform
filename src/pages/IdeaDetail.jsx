@@ -348,7 +348,8 @@ export default function IdeaDetail({ session }) {
 
   async function toggleCodeRequired() {
     const newVal = !codeRequired
-    await supabase.from('idea_access_settings').upsert({ idea_id: id, user_id: session.user.id, code_required: newVal, updated_at: new Date().toISOString() }, { onConflict: 'idea_id' })
+    const { error } = await supabase.from('idea_access_settings').upsert({ idea_id: id, user_id: session.user.id, code_required: newVal, updated_at: new Date().toISOString() }, { onConflict: 'idea_id' })
+    if (error) { alert('Could not save. Please try again.'); return }
     setCodeRequired(newVal)
   }
 
@@ -382,7 +383,8 @@ export default function IdeaDetail({ session }) {
   }
 
   async function toggleIdeaCode(codeId, active) {
-    await supabase.from('idea_access_codes').update({ active }).eq('id', codeId)
+    const { error } = await supabase.from('idea_access_codes').update({ active }).eq('id', codeId)
+    if (error) { alert('Could not save. Please try again.'); return }
     setIdeaCodes(prev => prev.map(c => c.id === codeId ? { ...c, active } : c))
   }
 
@@ -472,7 +474,7 @@ export default function IdeaDetail({ session }) {
   }
 
   async function deleteIdea() {
-    if (!window.confirm('Are you sure you want to delete this idea? This cannot be undone.')) return
+    if (!(await askConfirm('Are you sure you want to delete this idea? This cannot be undone.'))) return
     setDeleting(true)
     await supabase.from('ideas').delete().eq('id', id)
     navigate('/dashboard')
