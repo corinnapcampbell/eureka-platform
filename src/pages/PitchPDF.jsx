@@ -8,6 +8,8 @@ import Logo from '../components/Logo'
 import NavBar from '../components/NavBar'
 import BusinessModelSection, { extractBMChips, serializeBMValue } from '../components/BusinessModelSection'
 import { parseBMValue, buildBMHtml, escH } from '../utils/businessModel'
+import { buildPitchHTML, PITCH_SECTIONS } from '../utils/pitchTemplate'
+import { signIdeaAssetUrls } from '../utils/ideaAssets'
 
 const FIELDS = [
   { key: 'tagline',               label: 'Tagline',               hint: 'One punchy sentence capturing the essence of your idea', rows: 2 },
@@ -569,6 +571,10 @@ export default function PitchPDF({ session }) {
   const [cvForm, setCvForm] = useState({ waitlist: '', interviews: '', pilots: '', stage: '' })
   const [tractionMilestones, setTractionMilestones] = useState([])
   const [revenueForm, setRevenueForm] = useState({ startingUsers: '', monthlyGrowthRate: '', conversionRate: '', paidPriceOverride: '' })
+  const [pdfHeadlines,      setPdfHeadlines]      = useState({})
+  const [pdfHidden,         setPdfHidden]         = useState({})
+  const [productImageUrl,   setProductImageUrl]   = useState(null)
+  const [continuedSections, setContinuedSections] = useState([])
 
   useEffect(() => {
     async function load() {
@@ -581,6 +587,8 @@ export default function PitchPDF({ session }) {
       if (!user || !data || data.user_id !== user.id) { redirectAway(); return }
 
       setIdea(data)
+      const signedMap = await signIdeaAssetUrls(supabase, [data.product_image_url])
+      setProductImageUrl(signedMap[data.product_image_url] || null)
       if (data.pdf_draft) {
         const d = data.pdf_draft
         setForm({
@@ -605,6 +613,8 @@ export default function PitchPDF({ session }) {
         if (d.cvForm) setCvForm(d.cvForm)
         if (d.tractionMilestones) setTractionMilestones(d.tractionMilestones)
         if (d.revenueForm) setRevenueForm(d.revenueForm)
+        if (d.pdfHeadlines) setPdfHeadlines(d.pdfHeadlines)
+        if (d.pdfHidden)    setPdfHidden(d.pdfHidden)
         setLoading(false)
         return
       }
@@ -761,6 +771,8 @@ export default function PitchPDF({ session }) {
       cvForm,
       tractionMilestones,
       revenueForm,
+      pdfHeadlines,
+      pdfHidden,
     }
     await supabase.from('ideas').update({ pdf_draft: draft }).eq('id', ideaId)
     setSavingProgress(false)
@@ -784,7 +796,8 @@ export default function PitchPDF({ session }) {
       _pdf_traction_milestones: tractionMilestones,
       _pdf_revenue_projections: revenueForm,
     }
-    const html = buildPreviewHTML(formWithChips, ideaWithFormData, session?.user?.email, bmValue)
+    const { html, continued } = await buildPitchHTML({ form: formWithChips, idea: ideaWithFormData, userEmail: session?.user?.email, bmValue, headlines: pdfHeadlines, hidden: pdfHidden, productImageUrl })
+    setContinuedSections(continued)
     setPreviewHTML(html)
     setGenerating(false)
     isMobile ? setStage('preview') : setStage('preview-desktop')
@@ -805,6 +818,8 @@ export default function PitchPDF({ session }) {
       _pdf_customer_validation: cvForm,
       _pdf_traction_milestones: tractionMilestones,
       _pdf_revenue_projections: revenueForm,
+      _pdf_headlines: pdfHeadlines,
+      _pdf_hidden:    pdfHidden,
     }
     await supabase.from('ideas').update({
       pdf_published: true,
@@ -842,7 +857,7 @@ export default function PitchPDF({ session }) {
           'position:fixed',
           'left:-9999px',
           'top:0',
-          'width:375px',
+          'width:440px',
           'overflow:visible',
           'z-index:-1',
         ].join(';')
@@ -862,10 +877,10 @@ export default function PitchPDF({ session }) {
             scale: 2,
             useCORS: true,
             logging: false,
-            width: 375,
-            height: 667,
-            windowWidth: 375,
-            windowHeight: 667,
+            width: 440,
+            height: 680,
+            windowWidth: 440,
+            windowHeight: 680,
             x: 0,
             y: offsetTop,
             scrollY: -offsetTop,
@@ -888,7 +903,7 @@ export default function PitchPDF({ session }) {
           'position:fixed',
           'left:-9999px',
           'top:0',
-          'width:375px',
+          'width:440px',
           'overflow:visible',
           'z-index:-1',
         ].join(';')
@@ -897,7 +912,7 @@ export default function PitchPDF({ session }) {
         document.body.appendChild(wrapper)
 
         const pageEls = wrapper.querySelectorAll('.page')
-        const pdf = new jsPDF({ unit: 'pt', format: [375, 667], orientation: 'portrait' })
+        const pdf = new jsPDF({ unit: 'pt', format: [396, 612], orientation: 'portrait' })
 
         for (let i = 0; i < pageEls.length; i++) {
           const pageEl = pageEls[i]
@@ -906,17 +921,17 @@ export default function PitchPDF({ session }) {
             scale: 2,
             useCORS: true,
             logging: false,
-            width: 375,
-            height: 667,
-            windowWidth: 375,
-            windowHeight: 667,
+            width: 440,
+            height: 680,
+            windowWidth: 440,
+            windowHeight: 680,
             x: 0,
             y: offsetTop,
             scrollY: -offsetTop,
           })
           const imgData = canvas.toDataURL('image/jpeg', 0.95)
-          if (i > 0) pdf.addPage([375, 667], 'portrait')
-          pdf.addImage(imgData, 'JPEG', 0, 0, 375, 667)
+          if (i > 0) pdf.addPage([396, 612], 'portrait')
+          pdf.addImage(imgData, 'JPEG', 0, 0, 396, 612)
         }
 
         document.body.removeChild(wrapper)
@@ -934,7 +949,7 @@ export default function PitchPDF({ session }) {
     if (!previewHTML) return
     setDownloading(true)
     try {
-      const printWindow = window.open('', '_blank', 'width=420,height=720')
+      const printWindow = window.open('', '_blank', 'width=480,height=760')
       printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
@@ -950,22 +965,22 @@ export default function PitchPDF({ session }) {
   html, body {
     margin: 0;
     padding: 0;
-    width: 375px;
+    width: 528px;
     background: #fff;
   }
   @media print {
     @page {
       margin: 0;
-      size: 375px 667px;
+      size: 5.5in 8.5in;
     }
     html, body {
-      width: 375px;
+      width: 528px;
       margin: 0;
       padding: 0;
     }
     #pdf-preview .page {
-      width: 375px !important;
-      height: 667px !important;
+      width: 440px !important;
+      height: 680px !important;
       overflow: hidden !important;
       page-break-after: always !important;
       break-after: page !important;
@@ -1365,6 +1380,26 @@ export default function PitchPDF({ session }) {
             />
           </div>
 
+          <div style={{ background: '#fff', border: '0.5px solid rgba(44,44,42,0.1)', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2a', marginBottom: '0.75rem' }}>Sections in your PDF</div>
+            {PITCH_SECTIONS.map(({ key, label }) => (
+              <div key={key} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
+                <input type="checkbox" checked={!pdfHidden[key]} onChange={e => setPdfHidden(h => ({ ...h, [key]: !e.target.checked }))} style={{ marginTop: 3, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: '#2c2c2a' }}>{label}</div>
+                  {!pdfHidden[key] && (
+                    <input
+                      value={pdfHeadlines[key] || ''}
+                      onChange={e => setPdfHeadlines(h => ({ ...h, [key]: e.target.value }))}
+                      placeholder="Custom headline (optional)"
+                      style={{ marginTop: 4, width: '100%', border: '0.5px solid rgba(44,44,42,0.15)', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: '#2c2c2a', fontFamily: 'inherit', boxSizing: 'border-box', background: '#fafaf8', outline: 'none' }}
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div style={{ display: 'flex', gap: 10, marginTop: '0.5rem' }}>
             <button
               onClick={handleStartOverPDF}
@@ -1413,8 +1448,11 @@ export default function PitchPDF({ session }) {
             ref={previewRef}
             id="pdf-preview"
             dangerouslySetInnerHTML={{ __html: previewHTML }}
-            style={{ overflowX: 'auto' }}
+            style={{ overflowX: 'auto', transform: `scale(${Math.min(1, (window.innerWidth - 40) / 440)})`, transformOrigin: 'top left' }}
           />
+          {continuedSections.length > 0 && (
+            <p style={{ fontSize: 12, color: '#b0b0a8', marginTop: 8 }}>Some sections were trimmed to fit — edit the content to shorten them.</p>
+          )}
 
           <div style={{ display: 'flex', gap: 12, marginTop: '1.75rem' }}>
             <button
@@ -1465,8 +1503,11 @@ export default function PitchPDF({ session }) {
             ref={previewRef}
             id="pdf-preview"
             dangerouslySetInnerHTML={{ __html: previewHTML }}
-            style={{ overflowX: 'auto' }}
+            style={{ overflowX: 'auto', transform: `scale(${Math.min(1, (window.innerWidth - 40) / 440)})`, transformOrigin: 'top left' }}
           />
+          {continuedSections.length > 0 && (
+            <p style={{ fontSize: 12, color: '#b0b0a8', marginTop: 8 }}>Some sections were trimmed to fit — edit the content to shorten them.</p>
+          )}
 
           <div style={{ display: 'flex', gap: 12, marginTop: '1.75rem' }}>
             <button
