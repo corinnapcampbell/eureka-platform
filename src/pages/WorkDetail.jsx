@@ -27,6 +27,9 @@ export default function WorkDetail({ session }) {
   const [newOpenings, setNewOpenings] = useState('1')
   const [addingCode, setAddingCode] = useState(false)
   const [codeError, setCodeError] = useState('')
+  const [editingCodeId, setEditingCodeId] = useState(null)
+  const [editOpenings, setEditOpenings] = useState('')
+  const [editUnlimited, setEditUnlimited] = useState(false)
   const fileInputRef = useRef()
   const coverInputRef = useRef()
   const userId = session.user.id
@@ -175,6 +178,24 @@ export default function WorkDetail({ session }) {
   async function toggleCode(codeId, active) {
     await supabase.from('work_access_codes').update({ active }).eq('id', codeId)
     setCodes(prev => prev.map(c => c.id === codeId ? { ...c, active } : c))
+  }
+
+  async function saveCodeOpenings(c) {
+    const max = editUnlimited ? null : parseInt(editOpenings)
+    if (!editUnlimited && (isNaN(max) || max < 1 || max < (c.uses_count ?? 0))) {
+      setCodeError(`Openings can't be lower than the ${c.uses_count ?? 0} already used.`)
+      return
+    }
+    await supabase.from('work_access_codes').update({ max_uses: max }).eq('id', c.id)
+    setCodes(prev => prev.map(x => x.id === c.id ? { ...x, max_uses: max } : x))
+    setCodeError('')
+    setEditingCodeId(null)
+  }
+
+  async function deleteCode(c) {
+    if (!confirm(`Delete the code ${c.code}? Anyone using it loses access. The access log keeps its history.`)) return
+    await supabase.from('work_access_codes').delete().eq('id', c.id)
+    setCodes(prev => prev.filter(x => x.id !== c.id))
   }
 
   async function addCode() {
@@ -419,30 +440,52 @@ export default function WorkDetail({ session }) {
         <div style={{ background: '#0e0e1f', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '1.75rem', marginBottom: '1.5rem' }}>
           <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: '0 0 1rem' }}>Access codes</p>
           {codes.length > 0 && (
-            <div style={{ marginBottom: '1.25rem' }}>
+            <div style={{ marginBottom: '1.25rem', maxHeight: 168, overflowY: 'auto' }}>
               {codes.map(c => (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'monospace', letterSpacing: '0.05em' }}>{c.code}</span>
-                    {c.label && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 8 }}>{c.label}</span>}
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>
-                      {c.max_uses === null ? `${c.uses_count ?? 0} used · unlimited` : `${c.uses_count ?? 0} of ${c.max_uses} used`}
-                    </span>
+                <div key={c.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'monospace', letterSpacing: '0.05em' }}>{c.code}</span>
+                      {c.label && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginLeft: 8 }}>{c.label}</span>}
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginLeft: 8 }}>
+                        {c.max_uses === null ? `${c.uses_count ?? 0} used · unlimited` : `${c.uses_count ?? 0} of ${c.max_uses} used`}
+                      </span>
+                    </div>
+                    <button onClick={() => { setEditingCodeId(c.id); setEditUnlimited(c.max_uses === null); setEditOpenings(String(c.max_uses ?? Math.max(1, c.uses_count ?? 0))) }} style={{ fontSize: 12, background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>Edit</button>
+                    <button onClick={() => deleteCode(c)} style={{ fontSize: 12, background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>Delete</button>
+                    <div
+                      onClick={() => toggleCode(c.id, !c.active)}
+                      style={{
+                        width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer', flexShrink: 0,
+                        background: c.active ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.12)',
+                        transition: 'background 0.2s',
+                      }}
+                    >
+                      <div style={{
+                        position: 'absolute', top: 2, left: c.active ? 18 : 2,
+                        width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                        transition: 'left 0.2s',
+                      }} />
+                    </div>
                   </div>
-                  <div
-                    onClick={() => toggleCode(c.id, !c.active)}
-                    style={{
-                      width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer', flexShrink: 0,
-                      background: c.active ? 'linear-gradient(90deg, #7b9ff7, #9b7ff7)' : 'rgba(255,255,255,0.12)',
-                      transition: 'background 0.2s',
-                    }}
-                  >
-                    <div style={{
-                      position: 'absolute', top: 2, left: c.active ? 18 : 2,
-                      width: 16, height: 16, borderRadius: '50%', background: '#fff',
-                      transition: 'left 0.2s',
-                    }} />
-                  </div>
+                  {editingCodeId === c.id && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
+                      <input
+                        type="number"
+                        value={editOpenings}
+                        onChange={e => setEditOpenings(e.target.value)}
+                        min={Math.max(1, c.uses_count ?? 0)}
+                        disabled={editUnlimited}
+                        style={{ width: 80, border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={editUnlimited} onChange={e => setEditUnlimited(e.target.checked)} />
+                        Unlimited
+                      </label>
+                      <button onClick={() => saveCodeOpenings(c)} style={{ background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Save</button>
+                      <button onClick={() => setEditingCodeId(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

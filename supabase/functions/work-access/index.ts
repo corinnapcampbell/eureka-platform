@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
 
       const { data: work } = await supabase
         .from('works')
-        .select('id, title, description, cover_url, allow_download')
+        .select('id, title, description, cover_url, allow_download, code_required')
         .eq('share_token', token)
         .single()
       if (!work) {
@@ -218,12 +218,31 @@ Deno.serve(async (req) => {
 
       const { data: sess } = await supabase
         .from('work_sessions')
-        .select('token, expires_at')
+        .select('token, expires_at, log_id')
         .eq('work_id', work.id)
         .eq('token', sessionToken)
         .single()
       if (!sess || new Date(sess.expires_at) < new Date()) {
         return new Response(JSON.stringify({ error: 'session_expired' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      if (work.code_required) {
+        const { data: logEntry } = await supabase
+          .from('work_access_log')
+          .select('code_id')
+          .eq('id', sess.log_id)
+          .single()
+        if (!logEntry || !logEntry.code_id) {
+          return new Response(JSON.stringify({ error: 'session_expired' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
+        const { data: codeEntry } = await supabase
+          .from('work_access_codes')
+          .select('active')
+          .eq('id', logEntry.code_id)
+          .single()
+        if (!codeEntry || !codeEntry.active) {
+          return new Response(JSON.stringify({ error: 'session_expired' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        }
       }
 
       const { data: fileRows } = await supabase
