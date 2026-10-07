@@ -30,6 +30,7 @@ export default function WorkDetail({ session }) {
   const [editingCodeId, setEditingCodeId] = useState(null)
   const [editOpenings, setEditOpenings] = useState('')
   const [editUnlimited, setEditUnlimited] = useState(false)
+  const [editError, setEditError] = useState('')
   const [confirmState, setConfirmState] = useState(null)
   const fileInputRef = useRef()
   const coverInputRef = useRef()
@@ -186,14 +187,15 @@ export default function WorkDetail({ session }) {
   }
 
   async function saveCodeOpenings(c) {
+    setEditError('')
     const max = editUnlimited ? null : parseInt(editOpenings)
-    if (!editUnlimited && (isNaN(max) || max < 1 || max < (c.uses_count ?? 0))) {
-      setCodeError(`Openings can't be lower than the ${c.uses_count ?? 0} already used.`)
-      return
+    if (!editUnlimited) {
+      if (!editOpenings || isNaN(max) || max < 1) { setEditError('Enter a number of openings, 1 or more.'); return }
+      if (max < (c.uses_count ?? 0)) { setEditError(`Can't be lower than the ${c.uses_count ?? 0} already used.`); return }
     }
-    await supabase.from('work_access_codes').update({ max_uses: max }).eq('id', c.id)
+    const { error } = await supabase.from('work_access_codes').update({ max_uses: max }).eq('id', c.id)
+    if (error) { setEditError(error.message || 'Could not save. Try again.'); return }
     setCodes(prev => prev.map(x => x.id === c.id ? { ...x, max_uses: max } : x))
-    setCodeError('')
     setEditingCodeId(null)
   }
 
@@ -456,7 +458,7 @@ export default function WorkDetail({ session }) {
                         {c.max_uses === null ? `${c.uses_count ?? 0} used · unlimited` : `${c.uses_count ?? 0} of ${c.max_uses} used`}
                       </span>
                     </div>
-                    <button onClick={() => { setEditingCodeId(c.id); setEditUnlimited(c.max_uses === null); setEditOpenings(String(c.max_uses ?? Math.max(1, c.uses_count ?? 0))) }} style={{ fontSize: 12, background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>Edit</button>
+                    <button onClick={() => { setEditingCodeId(c.id); setEditUnlimited(c.max_uses === null); setEditOpenings(String(c.max_uses ?? Math.max(1, c.uses_count ?? 0))); setEditError('') }} style={{ fontSize: 12, background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', cursor: 'pointer' }}>Edit</button>
                     <button onClick={() => deleteCode(c)} style={{ fontSize: 12, background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>Delete</button>
                     <div
                       onClick={() => toggleCode(c.id, !c.active)}
@@ -474,21 +476,24 @@ export default function WorkDetail({ session }) {
                     </div>
                   </div>
                   {editingCodeId === c.id && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
-                      <input
-                        type="number"
-                        value={editOpenings}
-                        onChange={e => setEditOpenings(e.target.value)}
-                        min={Math.max(1, c.uses_count ?? 0)}
-                        disabled={editUnlimited}
-                        style={{ width: 80, border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box' }}
-                      />
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={editUnlimited} onChange={e => setEditUnlimited(e.target.checked)} />
-                        Unlimited
-                      </label>
-                      <button onClick={() => saveCodeOpenings(c)} style={{ background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Save</button>
-                      <button onClick={() => setEditingCodeId(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', flexWrap: 'wrap' }}>
+                        <input
+                          type="number"
+                          value={editOpenings}
+                          onChange={e => setEditOpenings(e.target.value)}
+                          min={Math.max(1, c.uses_count ?? 0)}
+                          disabled={editUnlimited}
+                          style={{ width: 80, border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box' }}
+                        />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={editUnlimited} onChange={e => setEditUnlimited(e.target.checked)} />
+                          Unlimited
+                        </label>
+                        <button onClick={() => saveCodeOpenings(c)} style={{ background: 'linear-gradient(90deg, #7b9ff7, #9b7ff7)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Save</button>
+                        <button onClick={() => { setEditingCodeId(null); setEditError('') }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                      </div>
+                      {editError && <p style={{ fontSize: 12, color: '#f87171', margin: '0 0 8px' }}>{editError}</p>}
                     </div>
                   )}
                 </div>
