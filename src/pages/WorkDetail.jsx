@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import NavBar from '../components/NavBar'
+import { ImageMosaic, ImageViewer } from '../components/WorkImages'
+import CoverCropper from '../components/CoverCropper'
 
 export default function WorkDetail({ session }) {
   const { id } = useParams()
@@ -15,6 +17,8 @@ export default function WorkDetail({ session }) {
   const [uploadingCover, setUploadingCover] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState([])
   const [signedUrls, setSignedUrls] = useState({})
+  const [viewerIndex, setViewerIndex] = useState(null)
+  const [pendingCover, setPendingCover] = useState(null)
   const fileInputRef = useRef()
   const coverInputRef = useRef()
   const userId = session.user.id
@@ -63,18 +67,28 @@ export default function WorkDetail({ session }) {
   async function uploadCover(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    setPendingCover(file)
+    e.target.value = ''
+  }
+
+  async function saveCroppedCover(blob) {
     setUploadingCover(true)
-    const ext = file.name.split('.').pop()
-    const path = `${userId}/${id}/cover.${ext}`
-    const { error } = await supabase.storage.from('work-covers').upload(path, file, { upsert: true, contentType: file.type })
+    const path = `${userId}/${id}/cover.jpg`
+    const { error } = await supabase.storage.from('work-covers').upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
     if (!error) {
       const { data } = supabase.storage.from('work-covers').getPublicUrl(path)
       const url = data.publicUrl + '?t=' + Date.now()
       await supabase.from('works').update({ cover_url: url, updated_at: new Date().toISOString() }).eq('id', id)
+      if (work.cover_url) {
+        const oldExt = work.cover_url.split('?')[0].split('.').pop()
+        if (oldExt !== 'jpg') {
+          await supabase.storage.from('work-covers').remove([`${userId}/${id}/cover.${oldExt}`])
+        }
+      }
       setWork(w => ({ ...w, cover_url: url }))
     }
+    setPendingCover(null)
     setUploadingCover(false)
-    e.target.value = ''
   }
 
   async function uploadFiles(e) {
@@ -180,7 +194,7 @@ export default function WorkDetail({ session }) {
             Cover <span style={{ fontWeight: 400, color: 'var(--muted)' }}>(visible to anyone with the link)</span>
           </label>
           {work.cover_url && (
-            <img src={work.cover_url} alt="cover" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 10, marginBottom: 10, border: '0.5px solid var(--border)' }} />
+            <img src={work.cover_url} alt="cover" style={{ width: '100%', aspectRatio: '2 / 1', objectFit: 'cover', display: 'block', borderRadius: 10, marginBottom: 10, border: '0.5px solid var(--border)' }} />
           )}
           <button onClick={() => coverInputRef.current?.click()} disabled={uploadingCover} style={{
             background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 8,
@@ -244,11 +258,7 @@ export default function WorkDetail({ session }) {
           {imageFiles.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--muted)', marginBottom: '0.75rem' }}>Images</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
-                {imageFiles.map(f => (
-                  <FileImageCard key={f.id} file={f} url={signedUrls[f.storage_path]} onSaveCaption={saveCaption} onDelete={deleteFile} />
-                ))}
-              </div>
+              <ImageMosaic images={imageFiles} urls={signedUrls} onOpen={setViewerIndex} />
             </div>
           )}
 
@@ -296,28 +306,27 @@ export default function WorkDetail({ session }) {
         </div>
 
       </div>
-    </div>
-  )
-}
 
-function FileImageCard({ file, url, onSaveCaption, onDelete }) {
-  const [caption, setCaption] = useState(file.caption || '')
-  const [editing, setEditing] = useState(false)
-  return (
-    <div style={{ border: '0.5px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--white)' }}>
-      {url && <img src={url} alt={file.name} style={{ width: '100%', height: 140, objectFit: 'cover' }} />}
-      <div style={{ padding: '0.5rem' }}>
-        <p style={{ fontSize: 11, color: 'var(--muted)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</p>
-        {editing ? (
-          <div style={{ display: 'flex', gap: 4 }}>
-            <input value={caption} onChange={e => setCaption(e.target.value)} style={{ flex: 1, fontSize: 11, border: '0.5px solid var(--border)', borderRadius: 4, padding: '3px 6px', outline: 'none' }} />
-            <button onClick={() => { onSaveCaption(file.id, caption); setEditing(false) }} style={{ fontSize: 11, background: 'var(--ink)', color: '#fff', border: 'none', borderRadius: 4, padding: '3px 8px', cursor: 'pointer' }}>Save</button>
-          </div>
-        ) : (
-          <p onClick={() => setEditing(true)} style={{ fontSize: 11, color: 'var(--muted)', margin: 0, cursor: 'pointer', fontStyle: caption ? 'normal' : 'italic' }}>{caption || 'Add caption'}</p>
-        )}
-        <button onClick={() => onDelete(file)} style={{ marginTop: 6, fontSize: 11, color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Delete</button>
-      </div>
+      {(() => {
+        if (viewerIndex === null || imageFiles.length === 0) return null
+        const safeIndex = Math.min(viewerIndex, imageFiles.length - 1)
+        return (
+          <ImageViewer
+            images={imageFiles}
+            urls={signedUrls}
+            index={safeIndex}
+            onIndex={setViewerIndex}
+            onClose={() => setViewerIndex(null)}
+            onSaveCaption={saveCaption}
+            onDelete={deleteFile}
+          />
+        )
+      })()}
+
+      {pendingCover && (
+        <CoverCropper file={pendingCover} onCancel={() => setPendingCover(null)} onSave={saveCroppedCover} />
+      )}
+
     </div>
   )
 }

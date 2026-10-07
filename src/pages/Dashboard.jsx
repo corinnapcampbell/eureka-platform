@@ -386,7 +386,7 @@ function WorkCard({ work, index, navigate }) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)' }}
     >
       {work.cover_url && (
-        <img src={work.cover_url} alt={work.title} style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
+        <img src={work.cover_url} alt={work.title} style={{ width: '100%', aspectRatio: '2 / 1', objectFit: 'cover', display: 'block' }} />
       )}
       <div style={{ padding: '1.25rem' }}>
         <h3 className="serif" style={{ fontSize: 18, lineHeight: 1.3, marginBottom: '0.5rem' }}>{work.title}</h3>
