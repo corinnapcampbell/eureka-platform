@@ -4,7 +4,7 @@ import { ImageMosaic, ImageViewer } from '../components/WorkImages'
 import Logo from '../components/Logo'
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/work-access`
-const HEADERS = { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY }
+const HEADERS = { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` }
 
 function isValidEmail(e) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
