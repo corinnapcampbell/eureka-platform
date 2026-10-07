@@ -126,6 +126,7 @@ export default function SharedWork() {
   const videoFiles = files.filter(f => f.mime_type?.startsWith('video/'))
   const audioFiles = files.filter(f => f.mime_type?.startsWith('audio/'))
   const otherFiles = files.filter(f => !f.mime_type?.startsWith('image/') && !f.mime_type?.startsWith('video/') && !f.mime_type?.startsWith('audio/'))
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
   if (phase === 'loading') return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f' }}>
@@ -337,17 +338,31 @@ export default function SharedWork() {
             {otherFiles.length > 0 && (
               <div style={{ marginBottom: '1.5rem' }}>
                 <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)', marginBottom: '0.75rem' }}>Files</p>
-                {otherFiles.map(f => (
-                  <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 16px', marginBottom: '0.5rem' }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 14, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
-                      {f.caption && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: '2px 0 0' }}>{f.caption}</p>}
+                {otherFiles.map(f => {
+                  const isPdf = f.mime_type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                  return (
+                    <div key={f.id}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 16px', marginBottom: '0.5rem' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: 14, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
+                          {f.caption && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', margin: '2px 0 0' }}>{f.caption}</p>}
+                        </div>
+                        {work.allow_download && f.url && (
+                          <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#7b9ff7', textDecoration: 'none', flexShrink: 0, marginLeft: 12 }}>Open</a>
+                        )}
+                      </div>
+                      {!work.allow_download && isPdf && !isMobile && f.url && (
+                        <iframe src={`${f.url}#toolbar=0&navpanes=0`} title={f.name} style={{ width: '100%', height: 600, border: 'none', borderRadius: 8, background: '#fff', marginBottom: '0.75rem' }} />
+                      )}
+                      {!work.allow_download && isPdf && isMobile && (
+                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Open this link on a computer to view this document.</p>
+                      )}
+                      {!work.allow_download && !isPdf && (
+                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Downloads are off for this work.</p>
+                      )}
                     </div>
-                    {work.allow_download && f.url && (
-                      <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#7b9ff7', textDecoration: 'none', flexShrink: 0, marginLeft: 12 }}>Open</a>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
