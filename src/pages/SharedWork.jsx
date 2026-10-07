@@ -69,8 +69,8 @@ export default function SharedWork() {
     const res = await fetch(FN, { method: 'POST', headers: HEADERS, body: JSON.stringify({ action: 'check', token, code }) })
     const data = await res.json()
     setChecking(false)
-    if (res.status === 429) { setCodeError('Too many attempts. Please try again later.'); return }
-    if (!res.ok) { setCodeError('Incorrect access code.'); return }
+    if (res.status === 429 || data.error === 'locked') { setCodeError('Too many attempts. Try again in 15 minutes.'); return }
+    if (!res.ok) { setCodeError("That code isn't valid or has no openings left."); return }
     setPassedCode(code)
     if (coverData?.nda_required) {
       setPhase('nda')
@@ -95,7 +95,19 @@ export default function SharedWork() {
     const res = await fetch(FN, { method: 'POST', headers: HEADERS, body: JSON.stringify(b) })
     const data = await res.json()
     setOpening(false)
-    if (!res.ok) { setOpenError(data.error || 'Something went wrong.'); return }
+    if (!res.ok) {
+      const err = data.error
+      const isCodeErr = err === 'invalid_code' || err === 'code_required'
+      const isLockout = err === 'locked' || res.status === 429
+      const msg = isCodeErr ? "That code isn't valid or has no openings left."
+        : isLockout ? 'Too many attempts. Try again in 15 minutes.'
+        : err === 'nda_required' ? 'Please fill in your name, a valid email, and accept the NDA.'
+        : 'Something went wrong. Please try again.'
+      const cdArg = cd ?? coverData
+      if ((isCodeErr || isLockout) && cdArg?.code_required) { setCodeError(msg); setPassedCode(''); setPhase('code') }
+      else { setOpenError(msg) }
+      return
+    }
     sessionStorage.setItem(`work_session_${token}`, data.session)
     processContent(data)
   }

@@ -74,13 +74,12 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'locked' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
-      const { data: codeRow } = await supabase
+      const { data: codeCandidates } = await supabase
         .from('work_access_codes')
-        .select('id, max_uses, uses_count')
+        .select('id, code, max_uses, uses_count')
         .eq('work_id', work.id)
-        .ilike('code', code)
         .eq('active', true)
-        .maybeSingle()
+      const codeRow = (codeCandidates || []).find(r => r.code.trim().toLowerCase() === String(code).trim().toLowerCase()) ?? null
 
       if (!codeRow || (codeRow.max_uses !== null && codeRow.uses_count >= codeRow.max_uses)) {
         await supabase.from('work_access_attempts').insert({ work_id: work.id, ip_address: ip, attempted_at: new Date().toISOString() })
@@ -102,7 +101,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
-      if (work.nda_required && (!name?.trim() || !email || !nda_agreed)) {
+      if (work.nda_required && (!name?.trim() || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !nda_agreed)) {
         return new Response(JSON.stringify({ error: 'nda_required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
@@ -162,7 +161,7 @@ Deno.serve(async (req) => {
       }
 
       const now = new Date().toISOString()
-      const { data: logRow } = await supabase.from('work_access_log').insert({
+      const { data: logRow, error: logError } = await supabase.from('work_access_log').insert({
         work_id: work.id,
         owner_id: work.user_id,
         work_title: work.title,
@@ -173,21 +172,26 @@ Deno.serve(async (req) => {
         code_label: codeLabel,
         nda_accepted: !!work.nda_required,
         opened_at: now,
+        user_agent: req.headers.get('user-agent') || null,
       }).select('id').single()
+      if (logError || !logRow) {
+        console.error('[work-access] log insert failed:', logError)
+        return new Response(JSON.stringify({ error: 'log_failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
 
       const sessionToken = crypto.randomUUID()
       await supabase.from('work_sessions').insert({
         token: sessionToken,
         work_id: work.id,
         log_id: logRow?.id ?? null,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       })
 
       await supabase.from('notifications').insert({
         user_id: work.user_id,
         type: 'work_opened',
         title: 'Someone opened your work',
-        message: `${name || email || 'Someone'} opened "${work.title}"`,
+        message: `${codeLabel || name || email || 'Someone'} opened "${work.title}"`,
       })
 
       return new Response(JSON.stringify({

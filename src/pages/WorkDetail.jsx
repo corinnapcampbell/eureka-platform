@@ -213,7 +213,7 @@ export default function WorkDetail({ session }) {
   }
 
   function exportCsv() {
-    const header = 'Code,Name,Email,Date,IP,NDA\n'
+    const header = 'Given to,Name,Email,Date,IP,NDA\n'
     const rows = accessLog.map(r => [
       r.code_label || '',
       r.viewer_name || '',
@@ -465,7 +465,7 @@ export default function WorkDetail({ session }) {
             <input
               value={newLabel}
               onChange={e => setNewLabel(e.target.value)}
-              placeholder="Label (optional)"
+              placeholder="Given to (name)"
               style={{ flex: 1, minWidth: 100, border: '0.5px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.06)', outline: 'none', boxSizing: 'border-box' }}
             />
             <select
@@ -506,7 +506,7 @@ export default function WorkDetail({ session }) {
           ) : (
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.8fr 1.3fr 1.2fr 0.5fr', gap: '0 12px', padding: '6px 10px', marginBottom: 4 }}>
-                {['Code', 'Name / Email', 'Date', 'IP', 'NDA'].map(h => (
+                {['Given to', 'Name / Email', 'Date', 'IP', 'NDA'].map(h => (
                   <span key={h} style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{h}</span>
                 ))}
               </div>
@@ -518,7 +518,7 @@ export default function WorkDetail({ session }) {
                     {r.viewer_email && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.viewer_email}</p>}
                     {!r.viewer_name && !r.viewer_email && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>—</span>}
                   </div>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{r.opened_at ? new Date(r.opened_at).toLocaleDateString() : '—'}</span>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{r.opened_at ? new Date(r.opened_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</span>
                   <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.ip_address || '—'}</span>
                   <span style={{ fontSize: 11, fontWeight: 600, color: r.nda_accepted ? '#86efac' : 'rgba(255,255,255,0.3)' }}>{r.nda_accepted ? 'YES' : '—'}</span>
                 </div>
