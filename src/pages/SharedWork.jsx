@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { ImageMosaic, ImageViewer } from '../components/WorkImages'
 import Logo from '../components/Logo'
+import PdfPages from '../components/PdfPages'
 
 const FN = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/work-access`
 const HEADERS = { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` }
@@ -126,8 +127,6 @@ export default function SharedWork() {
   const videoFiles = files.filter(f => f.mime_type?.startsWith('video/'))
   const audioFiles = files.filter(f => f.mime_type?.startsWith('audio/'))
   const otherFiles = files.filter(f => !f.mime_type?.startsWith('image/') && !f.mime_type?.startsWith('video/') && !f.mime_type?.startsWith('audio/'))
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
   if (phase === 'loading') return (
     <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e0e1f' }}>
       <div className="spinner" />
@@ -351,11 +350,8 @@ export default function SharedWork() {
                           <a href={f.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: '#7b9ff7', textDecoration: 'none', flexShrink: 0, marginLeft: 12 }}>Open</a>
                         )}
                       </div>
-                      {!work.allow_download && isPdf && !isMobile && f.url && (
-                        <iframe src={`${f.url}#toolbar=0&navpanes=0`} title={f.name} style={{ width: '100%', height: 600, border: 'none', borderRadius: 8, background: '#fff', marginBottom: '0.75rem' }} />
-                      )}
-                      {!work.allow_download && isPdf && isMobile && (
-                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Open this link on a computer to view this document.</p>
+                      {!work.allow_download && isPdf && f.url && (
+                        <PdfPages url={f.url} name={f.name} />
                       )}
                       {!work.allow_download && !isPdf && (
                         <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Downloads are off for this work.</p>
