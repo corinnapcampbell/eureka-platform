@@ -30,6 +30,7 @@ export default function WorkDetail({ session }) {
   const [editingCodeId, setEditingCodeId] = useState(null)
   const [editOpenings, setEditOpenings] = useState('')
   const [editUnlimited, setEditUnlimited] = useState(false)
+  const [confirmState, setConfirmState] = useState(null)
   const fileInputRef = useRef()
   const coverInputRef = useRef()
   const userId = session.user.id
@@ -149,8 +150,12 @@ export default function WorkDetail({ session }) {
     setFiles(prev => prev.map(f => f.id === fileId ? { ...f, caption } : f))
   }
 
+  function askConfirm(message) {
+    return new Promise(resolve => setConfirmState({ message, resolve }))
+  }
+
   async function deleteFile(file) {
-    if (!confirm(`Delete "${file.name}"?`)) return
+    if (!await askConfirm(`Delete "${file.name}"?`)) return
     await supabase.storage.from('work-assets').remove([file.storage_path])
     await supabase.from('work_files').delete().eq('id', file.id)
     setFiles(prev => prev.filter(f => f.id !== file.id))
@@ -158,7 +163,7 @@ export default function WorkDetail({ session }) {
   }
 
   async function deleteWork() {
-    if (!confirm('Delete this work and all its files? This cannot be undone.')) return
+    if (!await askConfirm('Delete this work and all its files? This cannot be undone.')) return
     if (files.length > 0) {
       await supabase.storage.from('work-assets').remove(files.map(f => f.storage_path))
     }
@@ -193,7 +198,7 @@ export default function WorkDetail({ session }) {
   }
 
   async function deleteCode(c) {
-    if (!confirm(`Delete the code ${c.code}? Anyone using it loses access. The access log keeps its history.`)) return
+    if (!await askConfirm(`Delete the code ${c.code}? Anyone using it loses access. The access log keeps its history.`)) return
     await supabase.from('work_access_codes').delete().eq('id', c.id)
     setCodes(prev => prev.filter(x => x.id !== c.id))
   }
@@ -597,6 +602,18 @@ export default function WorkDetail({ session }) {
 
       {pendingCover && (
         <CoverCropper file={pendingCover} onCancel={() => setPendingCover(null)} onSave={saveCroppedCover} />
+      )}
+
+      {confirmState && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,14,31,0.7)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div style={{ background: '#fff', borderRadius: 14, padding: '1.5rem', maxWidth: 360, width: '100%' }}>
+            <p style={{ fontSize: 14, color: '#2c2c2a', lineHeight: 1.6, margin: '0 0 1.25rem' }}>{confirmState.message}</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => { confirmState.resolve(false); setConfirmState(null) }} style={{ background: 'none', border: '0.5px solid rgba(44,44,42,0.2)', borderRadius: 8, padding: '9px 18px', fontSize: 13, color: '#2c2c2a', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => { confirmState.resolve(true); setConfirmState(null) }} style={{ background: '#f87171', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Delete</button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
